@@ -1,0 +1,75 @@
+{
+  "symptom_aliases": {
+    "温度过高": "温度异常",
+    "温升过快": "温度异常",
+    "过压": "电压异常",
+    "欠压": "电压异常",
+    "电流尖峰": "电流异常",
+    "内阻增大": "内阻异常",
+    "容量衰减过快": "容量骤降"
+  },
+  "faults": [
+    {
+      "name": "容量衰减异常",
+      "category": "老化故障",
+      "severity": "high",
+      "description": "电池容量衰减速度超出正常老化范围，剩余寿命快速下降。",
+      "symptoms": ["容量骤降", "温度异常", "电流异常"],
+      "causes": ["过充", "高温环境", "快充", "深度充放电"],
+      "recommendations": ["降低充电倍率", "控制使用温度", "避免满充满放"],
+      "evidence_templates": [
+        "检测到{symptom}，说明容量保持率已经偏离健康区间。",
+        "结合最近循环数据，容量曲线下降斜率明显增大。"
+      ]
+    },
+    {
+      "name": "热失控风险",
+      "category": "安全故障",
+      "severity": "critical",
+      "description": "电池出现持续高温或温升异常，存在热失控风险。",
+      "symptoms": ["温度异常", "电流异常", "电压异常"],
+      "causes": ["散热不足", "过充", "内部短路", "机械损伤"],
+      "recommendations": ["立即停用电池", "检查散热系统", "安排安全检修"],
+      "evidence_templates": [
+        "{symptom}与安全类故障高度相关，应优先排查热失控链路。",
+        "异常温升通常伴随电化学副反应增强，需要尽快隔离电池。"
+      ]
+    },
+    {
+      "name": "电压采样异常",
+      "category": "电气故障",
+      "severity": "medium",
+      "description": "电压采样或单体电压行为异常，可能影响SOC/SOH估计。",
+      "symptoms": ["电压异常", "电流异常"],
+      "causes": ["采样线路噪声", "连接松动", "BMS校准偏差"],
+      "recommendations": ["检查采样回路", "重新标定BMS", "复核传感器连接"],
+      "evidence_templates": [
+        "{symptom}提示电池电气行为偏离标称工作区间。"
+      ]
+    },
+    {
+      "name": "内阻增大",
+      "category": "老化故障",
+      "severity": "medium",
+      "description": "电池内阻上升导致发热增加和功率性能下降。",
+      "symptoms": ["内阻异常", "温度异常", "容量骤降"],
+      "causes": ["SEI膜增厚", "长期存储", "低温循环"],
+      "recommendations": ["进行容量校准", "优化工作温度", "降低峰值电流"],
+      "evidence_templates": [
+        "{symptom}通常伴随极化加剧和功率衰退。"
+      ]
+    },
+    {
+      "name": "工况波动异常",
+      "category": "运行故障",
+      "severity": "low",
+      "description": "外部负载或环境波动造成指标短时异常，需要持续观察。",
+      "symptoms": ["电流异常", "温度异常", "电压异常"],
+      "causes": ["负载突变", "环境温度波动", "采样频率不稳定"],
+      "recommendations": ["继续观察后续循环", "增加采样频率", "记录异常工况"],
+      "evidence_templates": [
+        "{symptom}更像短时工况扰动，建议结合后续记录再确认。"
+      ]
+    }
+  ]
+}

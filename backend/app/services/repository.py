@@ -1,0 +1,343 @@
+"""SQLite 访问层。"""
+
+from __future__ import annotations
+
+import json
+from datetime import datetime
+from typing import Any, Iterable, Optional
+
+from backend.app.core.database import DatabaseManager, get_database
+
+
+class BHMSRepository:
+    def __init__(self, database: Optional[DatabaseManager] = None):
+        self.database = database or get_database()
+
+    @staticmethod
+    def _now() -> str:
+        return datetime.utcnow().isoformat()
+
+    def count_batteries(self) -> int:
+        with self.database.connection() as connection:
+            row = connection.execute("SELECT COUNT(*) AS count FROM batteries").fetchone()
+            return int(row["count"])
+
+    def upsert_battery(self, battery: dict[str, Any]) -> None:
+        with self.database.connection() as connection:
+            connection.execute(
+                """
+                INSERT INTO batteries (
+                    battery_id, source, chemistry, nominal_capacity, cycle_count,
+                    latest_capacity, initial_capacity, health_score, status,
+                    last_update, dataset_path, metadata_json
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(battery_id) DO UPDATE SET
+                    source=excluded.source,
+                    chemistry=excluded.chemistry,
+                    nominal_capacity=excluded.nominal_capacity,
+                    cycle_count=excluded.cycle_count,
+                    latest_capacity=excluded.latest_capacity,
+                    initial_capacity=excluded.initial_capacity,
+                    health_score=excluded.health_score,
+                    status=excluded.status,
+                    last_update=excluded.last_update,
+                    dataset_path=excluded.dataset_path,
+                    metadata_json=excluded.metadata_json
+                """,
+                (
+                    battery["battery_id"],
+                    battery["source"],
+                    battery.get("chemistry"),
+                    battery.get("nominal_capacity"),
+                    battery.get("cycle_count", 0),
+                    battery.get("latest_capacity"),
+                    battery.get("initial_capacity"),
+                    battery.get("health_score", 0.0),
+                    battery.get("status", "unknown"),
+                    battery.get("last_update"),
+                    battery.get("dataset_path"),
+                    json.dumps(battery.get("metadata", {}), ensure_ascii=False),
+                ),
+            )
+
+    def replace_cycle_points(self, battery_id: str, points: Iterable[dict[str, Any]]) -> int:
+        points = list(points)
+        with self.database.connection() as connection:
+            connection.execute("DELETE FROM cycle_points WHERE battery_id = ?", (battery_id,))
+            for point in points:
+                connection.execute(
+                    """
+                    INSERT INTO cycle_points (
+                        battery_id, cycle_number, timestamp, ambient_temperature,
+                        voltage_mean, voltage_std, voltage_min, voltage_max,
+                        current_mean, current_std, current_load_mean,
+                        temperature_mean, temperature_std, temperature_rise_rate,
+                        internal_resistance, capacity, source_type
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        point["battery_id"],
+                        point["cycle_number"],
+                        point.get("timestamp"),
+                        point.get("ambient_temperature"),
+                        point.get("voltage_mean"),
+                        point.get("voltage_std"),
+                        point.get("voltage_min"),
+                        point.get("voltage_max"),
+                        point.get("current_mean"),
+                        point.get("current_std"),
+                        point.get("current_load_mean"),
+                        point.get("temperature_mean"),
+                        point.get("temperature_std"),
+                        point.get("temperature_rise_rate"),
+                        point.get("internal_resistance"),
+                        point.get("capacity"),
+                        point.get("source_type"),
+                    ),
+                )
+        return len(points)
+
+    def insert_dataset_file(self, record: dict[str, Any]) -> int:
+        with self.database.connection() as connection:
+            cursor = connection.execute(
+                """
+                INSERT INTO dataset_files (
+                    battery_id, file_name, file_path, file_type, row_count, created_at, validation_summary_json
+                ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    record.get("battery_id"),
+                    record["file_name"],
+                    record["file_path"],
+                    record["file_type"],
+                    record.get("row_count", 0),
+                    record.get("created_at", self._now()),
+                    json.dumps(record.get("validation_summary", {}), ensure_ascii=False),
+                ),
+            )
+            return int(cursor.lastrowid)
+
+    def list_batteries(self, page: int, page_size: int) -> tuple[list[dict[str, Any]], int]:
+        offset = (page - 1) * page_size
+        with self.database.connection() as connection:
+            total_row = connection.execute("SELECT COUNT(*) AS count FROM batteries").fetchone()
+            rows = connection.execute(
+                """
+                SELECT battery_id, source, chemistry, nominal_capacity, cycle_count,
+                       latest_capacity, initial_capacity, health_score, status, last_update, dataset_path
+                FROM batteries
+                ORDER BY battery_id
+                LIMIT ? OFFSET ?
+                """,
+                (page_size, offset),
+            ).fetchall()
+        return [dict(row) for row in rows], int(total_row["count"])
+
+    def get_battery(self, battery_id: str) -> Optional[dict[str, Any]]:
+        with self.database.connection() as connection:
+            row = connection.execute(
+                """
+                SELECT battery_id, source, chemistry, nominal_capacity, cycle_count,
+                       latest_capacity, initial_capacity, health_score, status, last_update, dataset_path
+                FROM batteries WHERE battery_id = ?
+                """,
+                (battery_id,),
+            ).fetchone()
+        return dict(row) if row else None
+
+    def get_cycle_points(self, battery_id: str, limit: int = 200, descending: bool = False) -> list[dict[str, Any]]:
+        order = "DESC" if descending else "ASC"
+        with self.database.connection() as connection:
+            rows = connection.execute(
+                f"""
+                SELECT battery_id, cycle_number, timestamp, ambient_temperature,
+                       voltage_mean, voltage_std, voltage_min, voltage_max,
+                       current_mean, current_std, current_load_mean,
+                       temperature_mean, temperature_std, temperature_rise_rate,
+                       internal_resistance, capacity, source_type
+                FROM cycle_points
+                WHERE battery_id = ?
+                ORDER BY cycle_number {order}
+                LIMIT ?
+                """,
+                (battery_id, limit),
+            ).fetchall()
+        items = [dict(row) for row in rows]
+        return list(reversed(items)) if descending else items
+
+    def get_latest_cycle_point(self, battery_id: str) -> Optional[dict[str, Any]]:
+        items = self.get_cycle_points(battery_id, limit=1, descending=True)
+        return items[0] if items else None
+
+    def insert_prediction(self, record: dict[str, Any]) -> int:
+        with self.database.connection() as connection:
+            cursor = connection.execute(
+                """
+                INSERT INTO prediction_records (
+                    battery_id, model_name, predicted_rul, confidence,
+                    input_seq_len, created_at, source, payload_json
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    record["battery_id"],
+                    record["model_name"],
+                    record["predicted_rul"],
+                    record["confidence"],
+                    record["input_seq_len"],
+                    record.get("created_at", self._now()),
+                    record.get("source", "api"),
+                    json.dumps(record.get("payload", {}), ensure_ascii=False),
+                ),
+            )
+            return int(cursor.lastrowid)
+
+    def list_predictions(self, battery_id: str, limit: int = 10) -> list[dict[str, Any]]:
+        with self.database.connection() as connection:
+            rows = connection.execute(
+                """
+                SELECT id, battery_id, model_name, predicted_rul, confidence, input_seq_len, created_at, source
+                FROM prediction_records
+                WHERE battery_id = ?
+                ORDER BY created_at DESC
+                LIMIT ?
+                """,
+                (battery_id, limit),
+            ).fetchall()
+        return [dict(row) for row in rows]
+
+    def insert_anomaly_events(self, battery_id: str, events: Iterable[dict[str, Any]]) -> list[int]:
+        event_ids: list[int] = []
+        with self.database.connection() as connection:
+            for event in events:
+                cursor = connection.execute(
+                    """
+                    INSERT INTO anomaly_events (
+                        battery_id, code, symptom, severity, metric_name,
+                        metric_value, threshold_value, description,
+                        source, created_at, metadata_json
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        battery_id,
+                        event["code"],
+                        event["symptom"],
+                        event["severity"],
+                        event.get("metric_name"),
+                        event.get("metric_value"),
+                        event.get("threshold_value"),
+                        event.get("description"),
+                        event.get("source", "statistical"),
+                        self._now(),
+                        json.dumps({"evidence": event.get("evidence", [])}, ensure_ascii=False),
+                    ),
+                )
+                event_ids.append(int(cursor.lastrowid))
+        return event_ids
+
+    def list_anomalies(self, battery_id: str, limit: int = 10) -> list[dict[str, Any]]:
+        with self.database.connection() as connection:
+            rows = connection.execute(
+                """
+                SELECT code, symptom, severity, metric_name, metric_value, threshold_value, description, source, metadata_json
+                FROM anomaly_events
+                WHERE battery_id = ?
+                ORDER BY created_at DESC
+                LIMIT ?
+                """,
+                (battery_id, limit),
+            ).fetchall()
+        result = []
+        for row in rows:
+            item = dict(row)
+            metadata = json.loads(item.pop("metadata_json") or "{}")
+            item["evidence"] = metadata.get("evidence", [])
+            result.append(item)
+        return result
+
+    def insert_diagnosis(self, record: dict[str, Any]) -> int:
+        with self.database.connection() as connection:
+            cursor = connection.execute(
+                """
+                INSERT INTO diagnosis_records (
+                    battery_id, fault_type, confidence, severity, description,
+                    root_causes_json, recommendations_json, related_symptoms_json,
+                    evidence_json, created_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    record["battery_id"],
+                    record["fault_type"],
+                    record["confidence"],
+                    record["severity"],
+                    record.get("description"),
+                    json.dumps(record.get("root_causes", []), ensure_ascii=False),
+                    json.dumps(record.get("recommendations", []), ensure_ascii=False),
+                    json.dumps(record.get("related_symptoms", []), ensure_ascii=False),
+                    json.dumps(record.get("evidence", []), ensure_ascii=False),
+                    record.get("created_at", self._now()),
+                ),
+            )
+            return int(cursor.lastrowid)
+
+    def list_diagnoses(self, battery_id: str, limit: int = 10) -> list[dict[str, Any]]:
+        with self.database.connection() as connection:
+            rows = connection.execute(
+                """
+                SELECT id, battery_id, fault_type, confidence, severity, description,
+                       root_causes_json, recommendations_json, related_symptoms_json,
+                       evidence_json, created_at
+                FROM diagnosis_records
+                WHERE battery_id = ?
+                ORDER BY created_at DESC
+                LIMIT ?
+                """,
+                (battery_id, limit),
+            ).fetchall()
+        result = []
+        for row in rows:
+            item = dict(row)
+            item["root_causes"] = json.loads(item.pop("root_causes_json") or "[]")
+            item["recommendations"] = json.loads(item.pop("recommendations_json") or "[]")
+            item["related_symptoms"] = json.loads(item.pop("related_symptoms_json") or "[]")
+            item["evidence"] = json.loads(item.pop("evidence_json") or "[]")
+            result.append(item)
+        return result
+
+    def dashboard_summary(self) -> dict[str, Any]:
+        with self.database.connection() as connection:
+            counts = connection.execute(
+                """
+                SELECT COUNT(*) AS total,
+                       SUM(CASE WHEN status = 'good' THEN 1 ELSE 0 END) AS good_count,
+                       SUM(CASE WHEN status = 'warning' THEN 1 ELSE 0 END) AS warning_count,
+                       SUM(CASE WHEN status = 'critical' THEN 1 ELSE 0 END) AS critical_count,
+                       AVG(health_score) AS average_health_score
+                FROM batteries
+                """
+            ).fetchone()
+            alerts = connection.execute(
+                """
+                SELECT battery_id, symptom, severity, description
+                FROM anomaly_events
+                ORDER BY created_at DESC
+                LIMIT 5
+                """
+            ).fetchall()
+            trend_rows = connection.execute(
+                """
+                SELECT cycle_number, AVG(capacity) AS avg_capacity
+                FROM cycle_points
+                GROUP BY cycle_number
+                ORDER BY cycle_number ASC
+                LIMIT 50
+                """
+            ).fetchall()
+        return {
+            "total_batteries": int(counts["total"] or 0),
+            "good_batteries": int(counts["good_count"] or 0),
+            "warning_batteries": int(counts["warning_count"] or 0),
+            "critical_batteries": int(counts["critical_count"] or 0),
+            "average_health_score": float(counts["average_health_score"] or 0.0),
+            "recent_alerts": [dict(row) for row in alerts],
+            "capacity_trend": [dict(row) for row in trend_rows],
+        }

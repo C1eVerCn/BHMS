@@ -1,0 +1,83 @@
+.app-shell {
+  min-height: 100vh;
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #ffffff;
+  padding: 0 24px;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.brand-mark {
+  width: 42px;
+  height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #1677ff, #69b1ff);
+  color: #ffffff;
+  font-size: 20px;
+}
+
+.app-sider {
+  background: #ffffff;
+  box-shadow: 2px 0 12px rgba(15, 23, 42, 0.05);
+}
+
+.content-shell {
+  padding: 20px;
+}
+
+.content-card {
+  padding: 24px;
+  margin: 0;
+  min-height: 280px;
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+}
+
+.page-title {
+  margin-bottom: 24px;
+  font-weight: 700;
+}
+
+.stat-card,
+.chart-container {
+  border-radius: 16px;
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.05);
+}
+
+.stat-card .ant-statistic-title {
+  font-size: 14px;
+  color: #64748b;
+}
+
+.stat-card .ant-statistic-content {
+  font-size: 30px;
+  font-weight: 700;
+}
+
+@media (max-width: 992px) {
+  .content-shell {
+    padding: 16px;
+  }
+
+  .content-card {
+    padding: 16px;
+    border-radius: 12px;
+  }
+}
+
+@media (max-width: 768px) {
+  .app-header {
+    padding: 0 16px;
+  }
+}
