@@ -1,4 +1,4 @@
-"""RUL 推理服务，支持训练权重与启发式 fallback。"""
+"""RUL 推理服务，支持来源级训练权重与启发式 fallback。"""
 
 from __future__ import annotations
 
@@ -18,6 +18,8 @@ class PredictionOutput:
     confidence: float
     model_name: str
     model_version: str
+    model_source: str
+    checkpoint_id: Optional[str] = None
     fallback_used: bool = False
 
 
@@ -30,22 +32,36 @@ class RULInferenceService:
     def predict(
         self,
         sequence: np.ndarray,
+        source: str,
         model_name: str = "hybrid",
         feature_cols: Optional[Sequence[str]] = None,
     ) -> PredictionOutput:
-        try:
-            return self._predict_with_checkpoint(sequence, model_name=model_name)
-        except Exception:
-            return self._heuristic_predict(sequence, feature_cols=feature_cols)
+        source = source.lower()
+        for candidate in self._preferred_models(source, model_name):
+            try:
+                return self._predict_with_checkpoint(sequence, source=source, model_name=candidate)
+            except Exception:
+                continue
+        return self._heuristic_predict(sequence, source=source, feature_cols=feature_cols)
 
-    def _predict_with_checkpoint(self, sequence: np.ndarray, model_name: str) -> PredictionOutput:
+    def _preferred_models(self, source: str, requested: str) -> list[str]:
+        if requested == "auto":
+            return ["hybrid", "bilstm"]
+        ordered = [requested]
+        if requested != "hybrid":
+            ordered.append("hybrid")
+        if "bilstm" not in ordered:
+            ordered.append("bilstm")
+        return ordered
+
+    def _predict_with_checkpoint(self, sequence: np.ndarray, source: str, model_name: str) -> PredictionOutput:
         import torch
         from ml.models.baseline import BiLSTMConfig, BiLSTMRULPredictor
         from ml.models.hybrid import RULPredictor, RULPredictorConfig
 
-        checkpoint_path = self._resolve_checkpoint(model_name)
+        checkpoint_path = self._resolve_checkpoint(source=source, model_name=model_name)
         checkpoint = torch.load(checkpoint_path, map_location="cpu")
-        runtime_key = f"{model_name}:{checkpoint_path}"
+        runtime_key = f"{source}:{model_name}:{checkpoint_path}"
         model = self._cache.get(runtime_key)
         if model is None:
             model_type = checkpoint["model_type"]
@@ -65,22 +81,25 @@ class RULInferenceService:
             prediction = model.predict(tensor).item()
         return PredictionOutput(
             predicted_rul=max(0.0, float(prediction)),
-            confidence=0.86,
+            confidence=0.9 if model_name == "hybrid" else 0.82,
             model_name=model_name,
             model_version=str(checkpoint.get("model_version", checkpoint.get("epoch", "trained"))),
+            model_source=source.lower(),
+            checkpoint_id=checkpoint_path.name,
             fallback_used=False,
         )
 
     def _heuristic_predict(
         self,
         sequence: np.ndarray,
+        source: str,
         feature_cols: Optional[Sequence[str]] = None,
     ) -> PredictionOutput:
         columns = list(feature_cols or DEFAULT_FEATURE_COLUMNS)
         capacity_index = columns.index("capacity") if "capacity" in columns else -1
         cycle_index = columns.index("cycle_number") if "cycle_number" in columns else -1
         if capacity_index < 0 or cycle_index < 0:
-            return PredictionOutput(120.0, 0.55, "heuristic", "heuristic-v1", fallback_used=True)
+            return PredictionOutput(120.0, 0.55, "heuristic", "heuristic-v1", source, checkpoint_id=None, fallback_used=True)
 
         capacities = sequence[:, capacity_index].astype(float)
         cycles = sequence[:, cycle_index].astype(float)
@@ -102,27 +121,28 @@ class RULInferenceService:
             confidence=confidence,
             model_name="heuristic",
             model_version="heuristic-v1",
+            model_source=source.lower(),
+            checkpoint_id=None,
             fallback_used=True,
         )
 
-    def _resolve_checkpoint(self, model_name: str) -> Path:
+    def _resolve_checkpoint(self, source: str, model_name: str) -> Path:
         candidates = [
+            self.model_dir / source / model_name / f"{model_name}_best.pt",
+            self.model_dir / source / model_name / f"{model_name}_final.pt",
             self.model_dir / f"{model_name}_best.pt",
-            self.model_dir / f"{model_name}.pt",
-            self.model_dir / "checkpoints" / f"{model_name}_best.pt",
-            self.model_dir / "checkpoints" / "best_model.pt",
         ]
         for candidate in candidates:
             if candidate.exists():
                 return candidate
-        raise FileNotFoundError(f"未找到模型权重: {model_name}")
+        raise FileNotFoundError(f"未找到来源 {source} 的模型权重: {model_name}")
 
     @staticmethod
     def sequence_from_cycle_points(points: Iterable[dict[str, float]], feature_cols: Optional[Sequence[str]] = None) -> np.ndarray:
         columns = list(feature_cols or DEFAULT_FEATURE_COLUMNS)
         rows = []
         for point in points:
-            rows.append([float(point.get(column, 0.0)) for column in columns])
+            rows.append([float(point.get(column, 0.0) or 0.0) for column in columns])
         if not rows:
             raise ValueError("历史序列为空，无法执行预测")
         return np.asarray(rows, dtype=float)

@@ -1,0 +1,147 @@
+{
+  "source": "calce",
+  "model_type": "hybrid",
+  "model_version": "calce-hybrid-v1",
+  "best_val_loss": 21.988803640007973,
+  "best_checkpoint": "data/models/calce/hybrid/hybrid_best.pt",
+  "final_checkpoint": "data/models/calce/hybrid/hybrid_final.pt",
+  "data_summary": {
+    "csv_path": "data/processed/calce/calce_cycle_summary.csv",
+    "source": "calce",
+    "seq_len": 24,
+    "batch_size": 8,
+    "feature_columns": [
+      "voltage_mean",
+      "voltage_std",
+      "voltage_min",
+      "voltage_max",
+      "current_mean",
+      "current_std",
+      "temperature_mean",
+      "temperature_std",
+      "temperature_rise_rate",
+      "capacity",
+      "cycle_number"
+    ],
+    "split": {
+      "train_batteries": [
+        "calce::calce_demo::CALCE_000",
+        "calce::calce_demo::CALCE_001",
+        "calce::calce_demo::CALCE_002"
+      ],
+      "val_batteries": [
+        "calce::calce_demo::CALCE_003"
+      ],
+      "test_batteries": [
+        "calce::calce_demo::CALCE_004",
+        "calce::calce_demo::CALCE_005"
+      ]
+    },
+    "normalization": {
+      "means": {
+        "voltage_mean": 3.6994695833333333,
+        "voltage_std": 0.060145,
+        "voltage_min": 3.450334583333334,
+        "voltage_max": 4.12242625,
+        "current_mean": -1.7993979166666667,
+        "current_std": 0.11952208333333333,
+        "temperature_mean": 25.04144416666667,
+        "temperature_std": 1.4979258333333334,
+        "temperature_rise_rate": 0.6557170833333333,
+        "capacity": 1.9523721666666665,
+        "cycle_number": 40.5
+      },
+      "stds": {
+        "voltage_mean": 0.027520046326748596,
+        "voltage_std": 0.005822418598257372,
+        "voltage_min": 0.02945718807002895,
+        "voltage_max": 0.03009455824459797,
+        "current_mean": 0.0458849407466806,
+        "current_std": 0.010882741106589626,
+        "temperature_mean": 1.139951297373111,
+        "temperature_std": 0.12137349312201116,
+        "temperature_rise_rate": 0.2696897261975195,
+        "capacity": 0.10944684389909205,
+        "cycle_number": 23.092206477510977
+      }
+    },
+    "num_batteries": 6,
+    "num_samples": {
+      "train": 171,
+      "val": 57,
+      "test": 114
+    }
+  },
+  "history": {
+    "train": [
+      {
+        "loss": 26.531774174083363,
+        "rmse": 31.332951198924672,
+        "mae": 27.023546739058062,
+        "mape": 93.69786869395863,
+        "r2": -3.315802899273959,
+        "lr": 0.0003
+      },
+      {
+        "loss": 25.637323119423606,
+        "rmse": 30.319238142533735,
+        "mae": 26.133192929354582,
+        "mape": 90.13539019497958,
+        "r2": -3.642959410494024,
+        "lr": 0.0002926829491861254
+      },
+      {
+        "loss": 25.418025797063653,
+        "rmse": 29.852931196039375,
+        "mae": 25.916100068525836,
+        "mape": 89.6699447631836,
+        "r2": -61.45750389315865,
+        "lr": 0.0002714480406590546
+      }
+    ],
+    "val": [
+      {
+        "loss": 23.12131404876709,
+        "rmse": 23.77547863125801,
+        "mae": 23.61692449450493,
+        "mape": 94.49963760375977,
+        "r2": -209375.28198751807,
+        "lr": 0.0003
+      },
+      {
+        "loss": 22.41973826289177,
+        "rmse": 23.0701906979084,
+        "mae": 22.91588720679283,
+        "mape": 106.29538774490356,
+        "r2": -823754.504749164,
+        "lr": 0.0002926829491861254
+      },
+      {
+        "loss": 21.988803640007973,
+        "rmse": 22.628121107816696,
+        "mae": 22.484203904867172,
+        "mape": 114.74476623535156,
+        "r2": -1401735.3646086007,
+        "lr": 0.0002714480406590546
+      }
+    ],
+    "test": [
+      {
+        "loss": 23.25883139769236,
+        "rmse": 24.091077677408855,
+        "mae": 23.753161430358887,
+        "mape": 97.31750208536783,
+        "r2": -132.60446622371674,
+        "lr": 0.0002383738952177247
+      }
+    ]
+  },
+  "test_metrics": {
+    "loss": 23.25883139769236,
+    "rmse": 24.091077677408855,
+    "mae": 23.753161430358887,
+    "mape": 97.31750208536783,
+    "r2": -132.60446622371674,
+    "lr": 0.0002383738952177247
+  }
+}

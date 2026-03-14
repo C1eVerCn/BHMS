@@ -1,13 +1,18 @@
-"""数据处理模块。"""
+"""Data utilities exports."""
 
+from ml.data.dataset import BatterySequenceDataset, NormalizationStats, RULDataModule, create_synthetic_data
 from ml.data.nasa_preprocessor import DEFAULT_FEATURE_COLUMNS, DatasetSplit, NASABatteryPreprocessor
+from ml.data.schema import TRAINING_FEATURE_COLUMNS, build_canonical_battery_id, finalize_cycle_frame
 
-__all__ = ["DEFAULT_FEATURE_COLUMNS", "DatasetSplit", "NASABatteryPreprocessor"]
-
-try:
-    from ml.data.dataset import BatterySequenceDataset, NormalizationStats, RULDataModule, create_synthetic_data
-
-    __all__.extend(["BatterySequenceDataset", "NormalizationStats", "RULDataModule", "create_synthetic_data"])
-except ModuleNotFoundError:
-    # 允许在未安装 torch 的推理/后端环境中仅使用预处理能力。
-    pass
+__all__ = [
+    "BatterySequenceDataset",
+    "NormalizationStats",
+    "RULDataModule",
+    "create_synthetic_data",
+    "DEFAULT_FEATURE_COLUMNS",
+    "DatasetSplit",
+    "NASABatteryPreprocessor",
+    "TRAINING_FEATURE_COLUMNS",
+    "build_canonical_battery_id",
+    "finalize_cycle_frame",
+]

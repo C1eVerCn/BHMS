@@ -21,11 +21,14 @@ class PredictionService:
         self.diagnosis_engine = GraphRAGEngine(knowledge_path=self.settings.knowledge_path)
 
     def predict_rul(self, battery_id: str, model_name: str = "hybrid", seq_len: int = 30, historical_data: Optional[list[dict[str, Any]]] = None) -> dict[str, Any]:
+        battery = self.repository.get_battery(battery_id)
+        if battery is None:
+            raise BHMSException(f"未找到电池 {battery_id}", status_code=404, code="battery_not_found")
         points = historical_data or self.repository.get_cycle_points(battery_id, limit=seq_len, descending=True)
         if len(points) < 10:
             raise BHMSException("历史数据不足，至少需要 10 个周期点", status_code=400, code="insufficient_history")
         sequence = self.inference_service.sequence_from_cycle_points(points)
-        output = self.inference_service.predict(sequence, model_name=model_name)
+        output = self.inference_service.predict(sequence, source=battery["source"], model_name=model_name)
         record_id = self.repository.insert_prediction(
             {
                 "battery_id": battery_id,
@@ -34,7 +37,12 @@ class PredictionService:
                 "confidence": output.confidence,
                 "input_seq_len": len(points),
                 "source": "api",
-                "payload": {"fallback_used": output.fallback_used},
+                "payload": {
+                    "fallback_used": output.fallback_used,
+                    "model_version": output.model_version,
+                    "model_source": output.model_source,
+                    "checkpoint_id": output.checkpoint_id,
+                },
             }
         )
         return {
@@ -44,6 +52,8 @@ class PredictionService:
             "predicted_rul": round(output.predicted_rul, 2),
             "confidence": round(output.confidence, 3),
             "model_version": output.model_version,
+            "model_source": output.model_source,
+            "checkpoint_id": output.checkpoint_id,
             "fallback_used": output.fallback_used,
             "prediction_time": datetime.utcnow().isoformat(),
         }

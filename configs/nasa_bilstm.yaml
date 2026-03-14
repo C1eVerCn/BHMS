@@ -1,0 +1,26 @@
+data:
+  csv_path: data/processed/nasa/nasa_cycle_summary.csv
+  seq_len: 30
+  feature_columns:
+    - voltage_mean
+    - voltage_std
+    - voltage_min
+    - voltage_max
+    - current_mean
+    - current_std
+    - temperature_mean
+    - temperature_std
+    - temperature_rise_rate
+    - capacity
+    - cycle_number
+model:
+  hidden_dim: 64
+  num_layers: 2
+  dropout: 0.1
+training:
+  num_epochs: 30
+  batch_size: 16
+  learning_rate: 0.0005
+  weight_decay: 0.001
+  patience: 20
+  model_version: nasa-bilstm-v1

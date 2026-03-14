@@ -1,0 +1,31 @@
+{
+  "source": "nasa",
+  "models": {
+    "bilstm": {
+      "best_val_loss": 0.6047635511918501,
+      "test_metrics": {
+        "loss": 32.068589225411415,
+        "rmse": 35.06854870915413,
+        "mae": 32.55826556682587,
+        "mape": 97.93481206893921,
+        "r2": -55.922711223363876,
+        "lr": 0.00039715242044697206
+      },
+      "best_checkpoint": "data/models/nasa/bilstm/bilstm_best.pt",
+      "final_checkpoint": "data/models/nasa/bilstm/bilstm_final.pt"
+    },
+    "hybrid": {
+      "best_val_loss": 0.0,
+      "test_metrics": {
+        "loss": 32.06891740858555,
+        "rmse": 35.06944790482521,
+        "mae": 32.55859375,
+        "mape": 97.93526792526245,
+        "r2": -55.92281038314104,
+        "lr": 0.00015049999999999997
+      },
+      "best_checkpoint": "data/models/nasa/hybrid/hybrid_best.pt",
+      "final_checkpoint": "data/models/nasa/hybrid/hybrid_final.pt"
+    }
+  }
+}

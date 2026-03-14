@@ -78,7 +78,7 @@ const Dashboard: React.FC = () => {
 
       <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
         <Col xs={24} lg={14}>
-          <Card title="NASA 导入样本容量趋势" className="chart-container">
+          <Card title="按来源导入后的容量趋势" className="chart-container">
             {dashboard?.capacity_trend.length ? (
               <ReactECharts option={trendOption} style={{ height: 320 }} />
             ) : (
@@ -98,7 +98,26 @@ const Dashboard: React.FC = () => {
       </Row>
 
       <Row gutter={[16, 16]}>
-        <Col span={24}>
+        <Col xs={24} lg={8}>
+          <Card title="数据源分布" style={{ height: '100%' }}>
+            {dashboard?.batteries_by_source.length ? (
+              <List
+                dataSource={dashboard.batteries_by_source}
+                renderItem={(item) => (
+                  <List.Item>
+                    <Space style={{ width: '100%', justifyContent: 'space-between' }}>
+                      <Text strong>{item.source.toUpperCase()}</Text>
+                      <Badge count={item.battery_count} color="#1677ff" />
+                    </Space>
+                  </List.Item>
+                )}
+              />
+            ) : (
+              <Empty description="暂无来源分布" />
+            )}
+          </Card>
+        </Col>
+        <Col xs={24} lg={16}>
           <Card title="最近告警" extra={<Text type="secondary">平均健康分 {dashboard?.average_health_score.toFixed(1) ?? '0.0'}</Text>}>
             {dashboard?.recent_alerts.length ? (
               <List

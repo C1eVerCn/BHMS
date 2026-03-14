@@ -18,3 +18,5 @@ data/bhms.db
 data/raw/nasa/5. Battery Data Set/
 
 data/raw/nasa/
+data/uploads/
+data/models/logs/

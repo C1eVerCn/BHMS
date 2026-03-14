@@ -1,0 +1,26 @@
+data:
+  csv_path: data/processed/calce/calce_cycle_summary.csv
+  seq_len: 24
+  feature_columns:
+    - voltage_mean
+    - voltage_std
+    - voltage_min
+    - voltage_max
+    - current_mean
+    - current_std
+    - temperature_mean
+    - temperature_std
+    - temperature_rise_rate
+    - capacity
+    - cycle_number
+model:
+  hidden_dim: 48
+  num_layers: 1
+  dropout: 0.1
+training:
+  num_epochs: 20
+  batch_size: 8
+  learning_rate: 0.0005
+  weight_decay: 0.001
+  patience: 10
+  model_version: calce-bilstm-v1

@@ -1,0 +1,31 @@
+{
+  "source": "kaggle",
+  "models": {
+    "bilstm": {
+      "best_val_loss": 21.584999710321426,
+      "test_metrics": {
+        "loss": 22.46203187306722,
+        "rmse": 23.274049679438274,
+        "mae": 22.954842718442283,
+        "mape": 107.86174392700195,
+        "r2": -128.40412276585897,
+        "lr": 0.00039715242044697206
+      },
+      "best_checkpoint": "data/models/kaggle/bilstm/bilstm_best.pt",
+      "final_checkpoint": "data/models/kaggle/bilstm/bilstm_final.pt"
+    },
+    "hybrid": {
+      "best_val_loss": 21.826394826173782,
+      "test_metrics": {
+        "loss": 23.11567447980245,
+        "rmse": 23.940061712265013,
+        "mae": 23.611383120218914,
+        "mape": 98.34155705769857,
+        "r2": -131.03062624931334,
+        "lr": 0.0002383738952177247
+      },
+      "best_checkpoint": "data/models/kaggle/hybrid/hybrid_best.pt",
+      "final_checkpoint": "data/models/kaggle/hybrid/hybrid_final.pt"
+    }
+  }
+}

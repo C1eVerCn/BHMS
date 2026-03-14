@@ -145,6 +145,8 @@ const Prediction: React.FC = () => {
                   <Progress percent={Number((latestPrediction.confidence * 100).toFixed(1))} size="small" />
                 </Descriptions.Item>
                 <Descriptions.Item label="模型版本">{latestPrediction.model_version}</Descriptions.Item>
+                <Descriptions.Item label="模型来源">{latestPrediction.model_source}</Descriptions.Item>
+                <Descriptions.Item label="Checkpoint">{latestPrediction.checkpoint_id ?? '--'}</Descriptions.Item>
                 <Descriptions.Item label="推理模式">{latestPrediction.fallback_used ? '启发式 fallback' : '训练模型'}</Descriptions.Item>
               </Descriptions>
             ) : (

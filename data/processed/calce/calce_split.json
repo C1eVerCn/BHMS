@@ -1,0 +1,14 @@
+{
+  "train_batteries": [
+    "calce::calce_demo::CALCE_000",
+    "calce::calce_demo::CALCE_001",
+    "calce::calce_demo::CALCE_002"
+  ],
+  "val_batteries": [
+    "calce::calce_demo::CALCE_003"
+  ],
+  "test_batteries": [
+    "calce::calce_demo::CALCE_004",
+    "calce::calce_demo::CALCE_005"
+  ]
+}

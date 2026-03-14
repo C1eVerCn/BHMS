@@ -1,0 +1,14 @@
+{
+  "train_batteries": [
+    "kaggle::kaggle_demo::KAGGLE_000",
+    "kaggle::kaggle_demo::KAGGLE_001",
+    "kaggle::kaggle_demo::KAGGLE_002"
+  ],
+  "val_batteries": [
+    "kaggle::kaggle_demo::KAGGLE_003"
+  ],
+  "test_batteries": [
+    "kaggle::kaggle_demo::KAGGLE_004",
+    "kaggle::kaggle_demo::KAGGLE_005"
+  ]
+}

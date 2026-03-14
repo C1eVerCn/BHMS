@@ -1,0 +1,225 @@
+{
+  "source": "kaggle",
+  "model_type": "hybrid",
+  "model_version": "kaggle-hybrid-v1",
+  "model_config": {
+    "input_dim": 11,
+    "d_model": 48,
+    "xlstm_layers": 1,
+    "xlstm_heads": 4,
+    "use_mlstm": true,
+    "use_slstm": true,
+    "transformer_layers": 1,
+    "transformer_heads": 8,
+    "transformer_ff_mult": 4,
+    "fusion_dim": 48,
+    "output_dim": 1,
+    "max_rul": 2000.0,
+    "dropout": 0.1,
+    "max_seq_len": 5000
+  },
+  "training_config": {
+    "source": "kaggle",
+    "model_type": "hybrid",
+    "num_epochs": 3,
+    "batch_size": 8,
+    "learning_rate": 0.0003,
+    "weight_decay": 0.001,
+    "lr_scheduler": "cosine_warm_restarts",
+    "early_stopping": true,
+    "patience": 3,
+    "min_delta": 0.0001,
+    "loss_type": "huber",
+    "huber_delta": 1.0,
+    "checkpoint_dir": "data/models",
+    "log_dir": "data/models/logs",
+    "device": "auto",
+    "use_amp": false,
+    "max_grad_norm": 1.0,
+    "seed": 42,
+    "model_version": "kaggle-hybrid-v1",
+    "resume_from": null,
+    "run_name": null
+  },
+  "data_summary": {
+    "csv_path": "data/processed/kaggle/kaggle_cycle_summary.csv",
+    "source": "kaggle",
+    "seq_len": 24,
+    "batch_size": 8,
+    "feature_columns": [
+      "voltage_mean",
+      "voltage_std",
+      "voltage_min",
+      "voltage_max",
+      "current_mean",
+      "current_std",
+      "temperature_mean",
+      "temperature_std",
+      "temperature_rise_rate",
+      "capacity",
+      "cycle_number"
+    ],
+    "split": {
+      "train_batteries": [
+        "kaggle::kaggle_demo::KAGGLE_000",
+        "kaggle::kaggle_demo::KAGGLE_001",
+        "kaggle::kaggle_demo::KAGGLE_002"
+      ],
+      "val_batteries": [
+        "kaggle::kaggle_demo::KAGGLE_003"
+      ],
+      "test_batteries": [
+        "kaggle::kaggle_demo::KAGGLE_004",
+        "kaggle::kaggle_demo::KAGGLE_005"
+      ]
+    },
+    "normalization": {
+      "means": {
+        "voltage_mean": 3.701045833333333,
+        "voltage_std": 0.060064166666666675,
+        "voltage_min": 3.44822375,
+        "voltage_max": 4.119416666666667,
+        "current_mean": -1.7954837499999998,
+        "current_std": 0.12071041666666667,
+        "temperature_mean": 25.048025,
+        "temperature_std": 1.5003033333333335,
+        "temperature_rise_rate": 0.6338529166666667,
+        "capacity": 1.8749420416666667,
+        "cycle_number": 40.5
+      },
+      "stds": {
+        "voltage_mean": 0.029613383505416764,
+        "voltage_std": 0.005790463364206894,
+        "voltage_min": 0.028296885475333978,
+        "voltage_max": 0.027645488882556513,
+        "current_mean": 0.04686777707129031,
+        "current_std": 0.011259851974739967,
+        "temperature_mean": 1.1221658252942537,
+        "temperature_std": 0.11653721825618152,
+        "temperature_rise_rate": 0.26022648883519345,
+        "capacity": 0.09759091494386964,
+        "cycle_number": 23.092206477510977
+      }
+    },
+    "num_batteries": 6,
+    "num_samples": {
+      "train": 171,
+      "val": 57,
+      "test": 114
+    }
+  },
+  "feature_columns": [
+    "voltage_mean",
+    "voltage_std",
+    "voltage_min",
+    "voltage_max",
+    "current_mean",
+    "current_std",
+    "temperature_mean",
+    "temperature_std",
+    "temperature_rise_rate",
+    "capacity",
+    "cycle_number"
+  ],
+  "normalization": {
+    "means": {
+      "voltage_mean": 3.701045833333333,
+      "voltage_std": 0.060064166666666675,
+      "voltage_min": 3.44822375,
+      "voltage_max": 4.119416666666667,
+      "current_mean": -1.7954837499999998,
+      "current_std": 0.12071041666666667,
+      "temperature_mean": 25.048025,
+      "temperature_std": 1.5003033333333335,
+      "temperature_rise_rate": 0.6338529166666667,
+      "capacity": 1.8749420416666667,
+      "cycle_number": 40.5
+    },
+    "stds": {
+      "voltage_mean": 0.029613383505416764,
+      "voltage_std": 0.005790463364206894,
+      "voltage_min": 0.028296885475333978,
+      "voltage_max": 0.027645488882556513,
+      "current_mean": 0.04686777707129031,
+      "current_std": 0.011259851974739967,
+      "temperature_mean": 1.1221658252942537,
+      "temperature_std": 0.11653721825618152,
+      "temperature_rise_rate": 0.26022648883519345,
+      "capacity": 0.09759091494386964,
+      "cycle_number": 23.092206477510977
+    }
+  },
+  "best_val_loss": 21.826394826173782,
+  "test_metrics": {
+    "loss": 23.11567447980245,
+    "rmse": 23.940061712265013,
+    "mae": 23.611383120218914,
+    "mape": 98.34155705769857,
+    "r2": -131.03062624931334,
+    "lr": 0.0002383738952177247
+  },
+  "history": {
+    "train": [
+      {
+        "loss": 26.546269460157916,
+        "rmse": 31.398364067077637,
+        "mae": 27.03520141948353,
+        "mape": 92.424842487682,
+        "r2": -3.3409116051413794,
+        "lr": 0.0003
+      },
+      {
+        "loss": 25.211823029951617,
+        "rmse": 29.89618223363703,
+        "mae": 25.704900221391156,
+        "mape": 89.20237454501066,
+        "r2": -3.508751544085416,
+        "lr": 0.0002926829491861254
+      },
+      {
+        "loss": 25.093188979408957,
+        "rmse": 29.53395752473311,
+        "mae": 25.585374918850984,
+        "mape": 89.10282481800427,
+        "r2": -63.96169606122103,
+        "lr": 0.0002714480406590546
+      }
+    ],
+    "val": [
+      {
+        "loss": 22.90990161895752,
+        "rmse": 23.56723377108574,
+        "mae": 23.40223240852356,
+        "mape": 101.01789569854736,
+        "r2": -502645.78229391575,
+        "lr": 0.0003
+      },
+      {
+        "loss": 22.328697815537453,
+        "rmse": 22.97348728775978,
+        "mae": 22.82164004445076,
+        "mape": 110.29508829116821,
+        "r2": -1063030.5449006706,
+        "lr": 0.0002926829491861254
+      },
+      {
+        "loss": 21.826394826173782,
+        "rmse": 22.46052634716034,
+        "mae": 22.322261452674866,
+        "mape": 117.41881084442139,
+        "r2": -1605697.6195786,
+        "lr": 0.0002714480406590546
+      }
+    ],
+    "test": [
+      {
+        "loss": 23.11567447980245,
+        "rmse": 23.940061712265013,
+        "mae": 23.611383120218914,
+        "mape": 98.34155705769857,
+        "r2": -131.03062624931334,
+        "lr": 0.0002383738952177247
+      }
+    ]
+  }
+}

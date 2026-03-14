@@ -22,17 +22,44 @@ class BHMSRepository:
             row = connection.execute("SELECT COUNT(*) AS count FROM batteries").fetchone()
             return int(row["count"])
 
+    def count_batteries_by_source(self, source: str) -> int:
+        with self.database.connection() as connection:
+            row = connection.execute("SELECT COUNT(*) AS count FROM batteries WHERE source = ?", (source,)).fetchone()
+            return int(row["count"])
+
+    def count_canonical_batteries_by_source(self, source: str) -> int:
+        with self.database.connection() as connection:
+            row = connection.execute(
+                "SELECT COUNT(*) AS count FROM batteries WHERE LOWER(source) = ? AND battery_id LIKE ?",
+                (source.lower(), f"{source.lower()}::%"),
+            ).fetchone()
+            return int(row["count"])
+
+    def delete_batteries_by_source(self, source: str) -> None:
+        with self.database.connection() as connection:
+            battery_rows = connection.execute("SELECT battery_id FROM batteries WHERE LOWER(source) = ?", (source.lower(),)).fetchall()
+            battery_ids = [row["battery_id"] for row in battery_rows]
+            for battery_id in battery_ids:
+                connection.execute("DELETE FROM cycle_points WHERE battery_id = ?", (battery_id,))
+                connection.execute("DELETE FROM prediction_records WHERE battery_id = ?", (battery_id,))
+                connection.execute("DELETE FROM anomaly_events WHERE battery_id = ?", (battery_id,))
+                connection.execute("DELETE FROM diagnosis_records WHERE battery_id = ?", (battery_id,))
+            connection.execute("DELETE FROM batteries WHERE LOWER(source) = ?", (source.lower(),))
+
     def upsert_battery(self, battery: dict[str, Any]) -> None:
         with self.database.connection() as connection:
             connection.execute(
                 """
                 INSERT INTO batteries (
-                    battery_id, source, chemistry, nominal_capacity, cycle_count,
-                    latest_capacity, initial_capacity, health_score, status,
-                    last_update, dataset_path, metadata_json
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    battery_id, canonical_battery_id, source, dataset_name, source_battery_id,
+                    chemistry, nominal_capacity, cycle_count, latest_capacity, initial_capacity,
+                    health_score, status, last_update, dataset_path, include_in_training, metadata_json
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(battery_id) DO UPDATE SET
+                    canonical_battery_id=excluded.canonical_battery_id,
                     source=excluded.source,
+                    dataset_name=excluded.dataset_name,
+                    source_battery_id=excluded.source_battery_id,
                     chemistry=excluded.chemistry,
                     nominal_capacity=excluded.nominal_capacity,
                     cycle_count=excluded.cycle_count,
@@ -42,11 +69,15 @@ class BHMSRepository:
                     status=excluded.status,
                     last_update=excluded.last_update,
                     dataset_path=excluded.dataset_path,
+                    include_in_training=excluded.include_in_training,
                     metadata_json=excluded.metadata_json
                 """,
                 (
                     battery["battery_id"],
+                    battery.get("canonical_battery_id", battery["battery_id"]),
                     battery["source"],
+                    battery.get("dataset_name"),
+                    battery.get("source_battery_id"),
                     battery.get("chemistry"),
                     battery.get("nominal_capacity"),
                     battery.get("cycle_count", 0),
@@ -56,6 +87,7 @@ class BHMSRepository:
                     battery.get("status", "unknown"),
                     battery.get("last_update"),
                     battery.get("dataset_path"),
+                    int(bool(battery.get("include_in_training", False))),
                     json.dumps(battery.get("metadata", {}), ensure_ascii=False),
                 ),
             )
@@ -68,15 +100,20 @@ class BHMSRepository:
                 connection.execute(
                     """
                     INSERT INTO cycle_points (
-                        battery_id, cycle_number, timestamp, ambient_temperature,
+                        battery_id, canonical_battery_id, source, dataset_name, source_battery_id,
+                        cycle_number, timestamp, ambient_temperature,
                         voltage_mean, voltage_std, voltage_min, voltage_max,
                         current_mean, current_std, current_load_mean,
                         temperature_mean, temperature_std, temperature_rise_rate,
                         internal_resistance, capacity, source_type
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     (
                         point["battery_id"],
+                        point.get("canonical_battery_id", point["battery_id"]),
+                        point.get("source"),
+                        point.get("dataset_name"),
+                        point.get("source_battery_id"),
                         point["cycle_number"],
                         point.get("timestamp"),
                         point.get("ambient_temperature"),
@@ -102,20 +139,63 @@ class BHMSRepository:
             cursor = connection.execute(
                 """
                 INSERT INTO dataset_files (
-                    battery_id, file_name, file_path, file_type, row_count, created_at, validation_summary_json
-                ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                    battery_id, source, dataset_name, file_name, file_path,
+                    file_type, row_count, include_in_training, created_at, validation_summary_json
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     record.get("battery_id"),
+                    record.get("source"),
+                    record.get("dataset_name"),
                     record["file_name"],
                     record["file_path"],
                     record["file_type"],
                     record.get("row_count", 0),
+                    int(bool(record.get("include_in_training", False))),
                     record.get("created_at", self._now()),
                     json.dumps(record.get("validation_summary", {}), ensure_ascii=False),
                 ),
             )
             return int(cursor.lastrowid)
+
+    def insert_training_run(self, record: dict[str, Any]) -> int:
+        with self.database.connection() as connection:
+            cursor = connection.execute(
+                """
+                INSERT INTO training_runs (
+                    source, model_type, model_version, best_checkpoint_path, final_checkpoint_path,
+                    metrics_json, metadata_json, created_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    record["source"],
+                    record["model_type"],
+                    record.get("model_version"),
+                    record.get("best_checkpoint_path"),
+                    record.get("final_checkpoint_path"),
+                    json.dumps(record.get("metrics", {}), ensure_ascii=False),
+                    json.dumps(record.get("metadata", {}), ensure_ascii=False),
+                    record.get("created_at", self._now()),
+                ),
+            )
+            return int(cursor.lastrowid)
+
+    def latest_training_run(self, source: str, model_type: str) -> Optional[dict[str, Any]]:
+        with self.database.connection() as connection:
+            row = connection.execute(
+                """
+                SELECT * FROM training_runs
+                WHERE source = ? AND model_type = ?
+                ORDER BY created_at DESC LIMIT 1
+                """,
+                (source, model_type),
+            ).fetchone()
+        if row is None:
+            return None
+        item = dict(row)
+        item["metrics"] = json.loads(item.pop("metrics_json") or "{}")
+        item["metadata"] = json.loads(item.pop("metadata_json") or "{}")
+        return item
 
     def list_batteries(self, page: int, page_size: int) -> tuple[list[dict[str, Any]], int]:
         offset = (page - 1) * page_size
@@ -123,10 +203,12 @@ class BHMSRepository:
             total_row = connection.execute("SELECT COUNT(*) AS count FROM batteries").fetchone()
             rows = connection.execute(
                 """
-                SELECT battery_id, source, chemistry, nominal_capacity, cycle_count,
-                       latest_capacity, initial_capacity, health_score, status, last_update, dataset_path
+                SELECT battery_id, canonical_battery_id, source, dataset_name, source_battery_id,
+                       chemistry, nominal_capacity, cycle_count, latest_capacity,
+                       initial_capacity, health_score, status, last_update, dataset_path,
+                       include_in_training
                 FROM batteries
-                ORDER BY battery_id
+                ORDER BY source, battery_id
                 LIMIT ? OFFSET ?
                 """,
                 (page_size, offset),
@@ -137,8 +219,10 @@ class BHMSRepository:
         with self.database.connection() as connection:
             row = connection.execute(
                 """
-                SELECT battery_id, source, chemistry, nominal_capacity, cycle_count,
-                       latest_capacity, initial_capacity, health_score, status, last_update, dataset_path
+                SELECT battery_id, canonical_battery_id, source, dataset_name, source_battery_id,
+                       chemistry, nominal_capacity, cycle_count, latest_capacity,
+                       initial_capacity, health_score, status, last_update, dataset_path,
+                       include_in_training
                 FROM batteries WHERE battery_id = ?
                 """,
                 (battery_id,),
@@ -150,7 +234,8 @@ class BHMSRepository:
         with self.database.connection() as connection:
             rows = connection.execute(
                 f"""
-                SELECT battery_id, cycle_number, timestamp, ambient_temperature,
+                SELECT battery_id, canonical_battery_id, source, dataset_name, source_battery_id,
+                       cycle_number, timestamp, ambient_temperature,
                        voltage_mean, voltage_std, voltage_min, voltage_max,
                        current_mean, current_std, current_load_mean,
                        temperature_mean, temperature_std, temperature_rise_rate,
@@ -195,7 +280,7 @@ class BHMSRepository:
         with self.database.connection() as connection:
             rows = connection.execute(
                 """
-                SELECT id, battery_id, model_name, predicted_rul, confidence, input_seq_len, created_at, source
+                SELECT id, battery_id, model_name, predicted_rul, confidence, input_seq_len, created_at, source, payload_json
                 FROM prediction_records
                 WHERE battery_id = ?
                 ORDER BY created_at DESC
@@ -203,7 +288,12 @@ class BHMSRepository:
                 """,
                 (battery_id, limit),
             ).fetchall()
-        return [dict(row) for row in rows]
+        result = []
+        for row in rows:
+            item = dict(row)
+            item["payload"] = json.loads(item.pop("payload_json") or "{}")
+            result.append(item)
+        return result
 
     def insert_anomaly_events(self, battery_id: str, events: Iterable[dict[str, Any]]) -> list[int]:
         event_ids: list[int] = []
@@ -315,6 +405,14 @@ class BHMSRepository:
                 FROM batteries
                 """
             ).fetchone()
+            source_rows = connection.execute(
+                """
+                SELECT source, COUNT(*) AS battery_count
+                FROM batteries
+                GROUP BY source
+                ORDER BY source
+                """
+            ).fetchall()
             alerts = connection.execute(
                 """
                 SELECT battery_id, symptom, severity, description
@@ -338,6 +436,7 @@ class BHMSRepository:
             "warning_batteries": int(counts["warning_count"] or 0),
             "critical_batteries": int(counts["critical_count"] or 0),
             "average_health_score": float(counts["average_health_score"] or 0.0),
+            "batteries_by_source": [dict(row) for row in source_rows],
             "recent_alerts": [dict(row) for row in alerts],
             "capacity_trend": [dict(row) for row in trend_rows],
         }

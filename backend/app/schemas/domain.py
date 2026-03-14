@@ -9,6 +9,10 @@ from pydantic import BaseModel, Field
 
 class CyclePoint(BaseModel):
     battery_id: str = Field(..., description="电池 ID")
+    canonical_battery_id: Optional[str] = None
+    source: Optional[str] = None
+    dataset_name: Optional[str] = None
+    source_battery_id: Optional[str] = None
     cycle_number: int = Field(..., description="循环次数")
     timestamp: Optional[str] = Field(default=None, description="时间戳")
     ambient_temperature: float = 0.0
@@ -29,7 +33,10 @@ class CyclePoint(BaseModel):
 
 class Battery(BaseModel):
     battery_id: str
+    canonical_battery_id: Optional[str] = None
     source: str
+    dataset_name: Optional[str] = None
+    source_battery_id: Optional[str] = None
     chemistry: Optional[str] = None
     nominal_capacity: Optional[float] = None
     initial_capacity: Optional[float] = None
@@ -39,6 +46,19 @@ class Battery(BaseModel):
     status: str
     last_update: Optional[str] = None
     dataset_path: Optional[str] = None
+    include_in_training: bool = False
+
+
+class TrainingRun(BaseModel):
+    id: int
+    source: str
+    model_type: str
+    model_version: Optional[str] = None
+    best_checkpoint_path: Optional[str] = None
+    final_checkpoint_path: Optional[str] = None
+    metrics: dict[str, Any] = Field(default_factory=dict)
+    metadata: dict[str, Any] = Field(default_factory=dict)
+    created_at: str
 
 
 class PredictionRecord(BaseModel):
@@ -50,6 +70,7 @@ class PredictionRecord(BaseModel):
     input_seq_len: int
     created_at: str
     source: str
+    payload: dict[str, Any] = Field(default_factory=dict)
 
 
 class AnomalyEventModel(BaseModel):
@@ -96,6 +117,8 @@ class BatteryHealth(BaseModel):
     rul_prediction: Optional[float] = None
     anomaly_count: int
     last_update: Optional[str] = None
+    source: Optional[str] = None
+    dataset_name: Optional[str] = None
 
 
 class DashboardSummary(BaseModel):
@@ -107,6 +130,7 @@ class DashboardSummary(BaseModel):
     recent_alerts: list[dict[str, Any]]
     health_distribution: list[dict[str, Any]]
     capacity_trend: list[dict[str, Any]]
+    batteries_by_source: list[dict[str, Any]] = Field(default_factory=list)
 
 
 class PaginatedBatteries(BaseModel):
@@ -129,6 +153,10 @@ class UploadSummary(BaseModel):
     file_name: str
     file_path: str
     validation_summary: dict[str, Any]
+    include_in_training: bool = False
+    source: str
+    dataset_name: Optional[str] = None
+    detected_source: Optional[str] = None
 
 
 class RULPredictionRequest(BaseModel):
@@ -154,6 +182,7 @@ class DiagnosisRequest(BaseModel):
 class DataImportRequest(BaseModel):
     battery_ids: Optional[list[str]] = None
     source: str = "nasa"
+    include_in_training: bool = False
 
 
 class BatteryCyclesResponse(BaseModel):

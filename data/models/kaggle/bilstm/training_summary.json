@@ -1,0 +1,147 @@
+{
+  "source": "kaggle",
+  "model_type": "bilstm",
+  "model_version": "kaggle-bilstm-v1",
+  "best_val_loss": 21.584999710321426,
+  "best_checkpoint": "data/models/kaggle/bilstm/bilstm_best.pt",
+  "final_checkpoint": "data/models/kaggle/bilstm/bilstm_final.pt",
+  "data_summary": {
+    "csv_path": "data/processed/kaggle/kaggle_cycle_summary.csv",
+    "source": "kaggle",
+    "seq_len": 24,
+    "batch_size": 8,
+    "feature_columns": [
+      "voltage_mean",
+      "voltage_std",
+      "voltage_min",
+      "voltage_max",
+      "current_mean",
+      "current_std",
+      "temperature_mean",
+      "temperature_std",
+      "temperature_rise_rate",
+      "capacity",
+      "cycle_number"
+    ],
+    "split": {
+      "train_batteries": [
+        "kaggle::kaggle_demo::KAGGLE_000",
+        "kaggle::kaggle_demo::KAGGLE_001",
+        "kaggle::kaggle_demo::KAGGLE_002"
+      ],
+      "val_batteries": [
+        "kaggle::kaggle_demo::KAGGLE_003"
+      ],
+      "test_batteries": [
+        "kaggle::kaggle_demo::KAGGLE_004",
+        "kaggle::kaggle_demo::KAGGLE_005"
+      ]
+    },
+    "normalization": {
+      "means": {
+        "voltage_mean": 3.701045833333333,
+        "voltage_std": 0.060064166666666675,
+        "voltage_min": 3.44822375,
+        "voltage_max": 4.119416666666667,
+        "current_mean": -1.7954837499999998,
+        "current_std": 0.12071041666666667,
+        "temperature_mean": 25.048025,
+        "temperature_std": 1.5003033333333335,
+        "temperature_rise_rate": 0.6338529166666667,
+        "capacity": 1.8749420416666667,
+        "cycle_number": 40.5
+      },
+      "stds": {
+        "voltage_mean": 0.029613383505416764,
+        "voltage_std": 0.005790463364206894,
+        "voltage_min": 0.028296885475333978,
+        "voltage_max": 0.027645488882556513,
+        "current_mean": 0.04686777707129031,
+        "current_std": 0.011259851974739967,
+        "temperature_mean": 1.1221658252942537,
+        "temperature_std": 0.11653721825618152,
+        "temperature_rise_rate": 0.26022648883519345,
+        "capacity": 0.09759091494386964,
+        "cycle_number": 23.092206477510977
+      }
+    },
+    "num_batteries": 6,
+    "num_samples": {
+      "train": 171,
+      "val": 57,
+      "test": 114
+    }
+  },
+  "history": {
+    "train": [
+      {
+        "loss": 27.190857020291414,
+        "rmse": 31.986946539445356,
+        "mae": 27.68148283524947,
+        "mape": 96.28678061745383,
+        "r2": -3.5057138963179155,
+        "lr": 0.0005
+      },
+      {
+        "loss": 26.198762113397773,
+        "rmse": 31.20379976792769,
+        "mae": 26.691570975563742,
+        "mape": 90.56135004216975,
+        "r2": -3.6069955825805664,
+        "lr": 0.00048778860081564085
+      },
+      {
+        "loss": 24.728795745156027,
+        "rmse": 29.528212547302246,
+        "mae": 25.220955501903187,
+        "mape": 89.82928102666682,
+        "r2": -4.1526823314753445,
+        "lr": 0.0004523497400965494
+      }
+    ],
+    "val": [
+      {
+        "loss": 23.914372637867928,
+        "rmse": 24.580422922968864,
+        "mae": 24.409484818577766,
+        "mape": 97.05513095855713,
+        "r2": -192904.74423712492,
+        "lr": 0.0005
+      },
+      {
+        "loss": 22.984785795211792,
+        "rmse": 23.63817635178566,
+        "mae": 23.48276749253273,
+        "mape": 113.92466735839844,
+        "r2": -1149249.2459813803,
+        "lr": 0.00048778860081564085
+      },
+      {
+        "loss": 21.584999710321426,
+        "rmse": 22.245441555976868,
+        "mae": 22.081564247608185,
+        "mape": 140.83743238449097,
+        "r2": -3683936.61764732,
+        "lr": 0.0004523497400965494
+      }
+    ],
+    "test": [
+      {
+        "loss": 22.46203187306722,
+        "rmse": 23.274049679438274,
+        "mae": 22.954842718442283,
+        "mape": 107.86174392700195,
+        "r2": -128.40412276585897,
+        "lr": 0.00039715242044697206
+      }
+    ]
+  },
+  "test_metrics": {
+    "loss": 22.46203187306722,
+    "rmse": 23.274049679438274,
+    "mae": 22.954842718442283,
+    "mape": 107.86174392700195,
+    "r2": -128.40412276585897,
+    "lr": 0.00039715242044697206
+  }
+}

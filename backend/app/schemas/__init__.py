@@ -16,6 +16,7 @@ from backend.app.schemas.domain import (
     PaginatedBatteries,
     PredictionRecord,
     RULPredictionRequest,
+    TrainingRun,
     UploadSummary,
 )
 
@@ -35,5 +36,6 @@ __all__ = [
     "PaginatedBatteries",
     "PredictionRecord",
     "RULPredictionRequest",
+    "TrainingRun",
     "UploadSummary",
 ]

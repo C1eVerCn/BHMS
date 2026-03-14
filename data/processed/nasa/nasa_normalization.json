@@ -1,0 +1,28 @@
+{
+  "means": {
+    "voltage_mean": 3.4490434007545896,
+    "voltage_std": 0.2856621214922971,
+    "voltage_min": 2.278302000462899,
+    "voltage_max": 4.1891723445875515,
+    "current_mean": -1.9369810700670818,
+    "current_std": 0.8965558669723087,
+    "temperature_mean": 34.83126882220932,
+    "temperature_std": 4.5285985699944575,
+    "temperature_rise_rate": 0.029748898257627485,
+    "capacity": 1.486937395913767,
+    "cycle_number": 69.69158878504673
+  },
+  "stds": {
+    "voltage_mean": 0.17241812892090466,
+    "voltage_std": 0.0726172173253251,
+    "voltage_min": 0.29655185179796595,
+    "voltage_max": 0.02427460508417007,
+    "current_mean": 0.8016763739829038,
+    "current_std": 0.7027114420174002,
+    "temperature_mean": 9.612766608193075,
+    "temperature_std": 2.3652712567628478,
+    "temperature_rise_rate": 0.020142694020245447,
+    "capacity": 0.4081315577475957,
+    "cycle_number": 53.631610384036144
+  }
+}

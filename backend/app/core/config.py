@@ -15,6 +15,8 @@ class Settings:
     project_root: Path
     data_dir: Path
     raw_nasa_dir: Path
+    raw_calce_dir: Path
+    raw_kaggle_dir: Path
     processed_dir: Path
     knowledge_path: Path
     model_dir: Path
@@ -35,6 +37,8 @@ def get_settings() -> Settings:
         project_root=project_root,
         data_dir=data_dir,
         raw_nasa_dir=data_dir / "raw" / "nasa",
+        raw_calce_dir=data_dir / "raw" / "calce",
+        raw_kaggle_dir=data_dir / "raw" / "kaggle",
         processed_dir=data_dir / "processed",
         knowledge_path=data_dir / "knowledge" / "battery_fault_knowledge.json",
         model_dir=data_dir / "models",

@@ -1,0 +1,31 @@
+{
+  "source": "calce",
+  "models": {
+    "bilstm": {
+      "best_val_loss": 21.085572943091393,
+      "test_metrics": {
+        "loss": 22.139265743891396,
+        "rmse": 22.9399986743927,
+        "mae": 22.632666889826456,
+        "mape": 107.31385955810546,
+        "r2": -124.03014284769694,
+        "lr": 0.00039715242044697206
+      },
+      "best_checkpoint": "data/models/calce/bilstm/bilstm_best.pt",
+      "final_checkpoint": "data/models/calce/bilstm/bilstm_final.pt"
+    },
+    "hybrid": {
+      "best_val_loss": 21.988803640007973,
+      "test_metrics": {
+        "loss": 23.25883139769236,
+        "rmse": 24.091077677408855,
+        "mae": 23.753161430358887,
+        "mape": 97.31750208536783,
+        "r2": -132.60446622371674,
+        "lr": 0.0002383738952177247
+      },
+      "best_checkpoint": "data/models/calce/hybrid/hybrid_best.pt",
+      "final_checkpoint": "data/models/calce/hybrid/hybrid_final.pt"
+    }
+  }
+}

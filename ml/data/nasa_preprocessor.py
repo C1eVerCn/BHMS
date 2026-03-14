@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable, Optional, Sequence
 
@@ -10,37 +9,16 @@ import numpy as np
 import pandas as pd
 from scipy.io import loadmat
 
+from ml.data.schema import BATTERY_SCHEMA_COLUMNS, DatasetSplit, TRAINING_FEATURE_COLUMNS, finalize_cycle_frame
 
-DEFAULT_FEATURE_COLUMNS = [
-    "voltage_mean",
-    "voltage_std",
-    "voltage_min",
-    "voltage_max",
-    "current_mean",
-    "current_std",
-    "temperature_mean",
-    "temperature_std",
-    "capacity",
-    "cycle_number",
-]
-
-
-@dataclass(slots=True)
-class DatasetSplit:
-    train_batteries: list[str]
-    val_batteries: list[str]
-    test_batteries: list[str]
-
-    def to_dict(self) -> dict[str, list[str]]:
-        return {
-            "train_batteries": self.train_batteries,
-            "val_batteries": self.val_batteries,
-            "test_batteries": self.test_batteries,
-        }
+DEFAULT_FEATURE_COLUMNS = TRAINING_FEATURE_COLUMNS
 
 
 class NASABatteryPreprocessor:
     """将 NASA MAT 文件转换为周期级结构化数据。"""
+
+    dataset_name = "nasa_pcoe"
+    source_name = "nasa"
 
     def __init__(self, eol_capacity_ratio: float = 0.8):
         self.eol_capacity_ratio = eol_capacity_ratio
@@ -75,8 +53,8 @@ class NASABatteryPreprocessor:
     def parse_battery_file(self, file_path: str | Path) -> pd.DataFrame:
         path = Path(file_path)
         mat = loadmat(path, squeeze_me=True, struct_as_record=False)
-        battery_id = path.stem
-        raw_battery = mat[battery_id]
+        source_battery_id = path.stem
+        raw_battery = mat[source_battery_id]
 
         rows: list[dict[str, object]] = []
         discharge_index = 0
@@ -103,7 +81,7 @@ class NASABatteryPreprocessor:
 
             rows.append(
                 {
-                    "battery_id": battery_id,
+                    "source_battery_id": source_battery_id,
                     "cycle_number": discharge_index,
                     "timestamp": self._format_timestamp(getattr(cycle, "time", None)),
                     "ambient_temperature": float(getattr(cycle, "ambient_temperature", 0.0)),
@@ -117,6 +95,7 @@ class NASABatteryPreprocessor:
                     "temperature_std": temperature_std,
                     "temperature_rise_rate": temperature_rise_rate,
                     "current_load_mean": current_load_mean,
+                    "internal_resistance": 0.0,
                     "capacity": self._safe_float(data.Capacity),
                     "source_type": "nasa_discharge",
                 }
@@ -125,25 +104,14 @@ class NASABatteryPreprocessor:
         if not rows:
             raise ValueError(f"未在 {path} 中解析到放电周期数据")
 
-        frame = pd.DataFrame(rows).sort_values(["battery_id", "cycle_number"]).reset_index(drop=True)
-        initial_capacity = float(frame["capacity"].iloc[0])
-        frame["initial_capacity"] = initial_capacity
-        frame["capacity_ratio"] = frame["capacity"] / max(initial_capacity, 1e-6)
-        eol_candidates = frame.loc[frame["capacity_ratio"] <= self.eol_capacity_ratio, "cycle_number"]
-        eol_cycle = int(eol_candidates.iloc[0]) if not eol_candidates.empty else int(frame["cycle_number"].max())
-        frame["eol_cycle"] = eol_cycle
-        frame["RUL"] = np.maximum(0, eol_cycle - frame["cycle_number"])
-        frame["health_score"] = (frame["capacity_ratio"] * 100).clip(lower=0, upper=100)
-        frame["status"] = frame["health_score"].map(self._health_status)
-        return frame
-
-    @staticmethod
-    def _health_status(score: float) -> str:
-        if score >= 85:
-            return "good"
-        if score >= 70:
-            return "warning"
-        return "critical"
+        frame = pd.DataFrame(rows)
+        result = finalize_cycle_frame(
+            frame,
+            source=self.source_name,
+            dataset_name=self.dataset_name,
+            eol_capacity_ratio=self.eol_capacity_ratio,
+        )
+        return result[BATTERY_SCHEMA_COLUMNS]
 
     def process_directory(
         self,

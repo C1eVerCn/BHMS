@@ -1,0 +1,201 @@
+{
+  "source": "calce",
+  "model_type": "bilstm",
+  "model_version": "calce-bilstm-v1",
+  "model_config": {
+    "input_dim": 11,
+    "hidden_dim": 48,
+    "num_layers": 1,
+    "dropout": 0.1,
+    "bidirectional": true,
+    "output_dim": 1
+  },
+  "training_config": {
+    "source": "calce",
+    "model_type": "bilstm",
+    "num_epochs": 3,
+    "batch_size": 8,
+    "learning_rate": 0.0005,
+    "weight_decay": 0.001,
+    "lr_scheduler": "cosine_warm_restarts",
+    "early_stopping": true,
+    "patience": 3,
+    "min_delta": 0.0001,
+    "loss_type": "huber",
+    "huber_delta": 1.0,
+    "checkpoint_dir": "data/models",
+    "log_dir": "data/models/logs",
+    "device": "auto",
+    "use_amp": false,
+    "max_grad_norm": 1.0,
+    "seed": 42,
+    "model_version": "calce-bilstm-v1",
+    "resume_from": null,
+    "run_name": null
+  },
+  "data_summary": {
+    "csv_path": "data/processed/calce/calce_cycle_summary.csv",
+    "source": "calce",
+    "seq_len": 24,
+    "batch_size": 8,
+    "feature_columns": [
+      "voltage_mean",
+      "voltage_std",
+      "voltage_min",
+      "voltage_max",
+      "current_mean",
+      "current_std",
+      "temperature_mean",
+      "temperature_std",
+      "temperature_rise_rate",
+      "capacity",
+      "cycle_number"
+    ],
+    "split": {
+      "train_batteries": [
+        "calce::calce_demo::CALCE_000",
+        "calce::calce_demo::CALCE_001",
+        "calce::calce_demo::CALCE_002"
+      ],
+      "val_batteries": [
+        "calce::calce_demo::CALCE_003"
+      ],
+      "test_batteries": [
+        "calce::calce_demo::CALCE_004",
+        "calce::calce_demo::CALCE_005"
+      ]
+    },
+    "normalization": {
+      "means": {
+        "voltage_mean": 3.6994695833333333,
+        "voltage_std": 0.060145,
+        "voltage_min": 3.450334583333334,
+        "voltage_max": 4.12242625,
+        "current_mean": -1.7993979166666667,
+        "current_std": 0.11952208333333333,
+        "temperature_mean": 25.04144416666667,
+        "temperature_std": 1.4979258333333334,
+        "temperature_rise_rate": 0.6557170833333333,
+        "capacity": 1.9523721666666665,
+        "cycle_number": 40.5
+      },
+      "stds": {
+        "voltage_mean": 0.027520046326748596,
+        "voltage_std": 0.005822418598257372,
+        "voltage_min": 0.02945718807002895,
+        "voltage_max": 0.03009455824459797,
+        "current_mean": 0.0458849407466806,
+        "current_std": 0.010882741106589626,
+        "temperature_mean": 1.139951297373111,
+        "temperature_std": 0.12137349312201116,
+        "temperature_rise_rate": 0.2696897261975195,
+        "capacity": 0.10944684389909205,
+        "cycle_number": 23.092206477510977
+      }
+    },
+    "num_batteries": 6,
+    "num_samples": {
+      "train": 171,
+      "val": 57,
+      "test": 114
+    }
+  },
+  "feature_columns": [
+    "voltage_mean",
+    "voltage_std",
+    "voltage_min",
+    "voltage_max",
+    "current_mean",
+    "current_std",
+    "temperature_mean",
+    "temperature_std",
+    "temperature_rise_rate",
+    "capacity",
+    "cycle_number"
+  ],
+  "normalization": {
+    "means": {
+      "voltage_mean": 3.6994695833333333,
+      "voltage_std": 0.060145,
+      "voltage_min": 3.450334583333334,
+      "voltage_max": 4.12242625,
+      "current_mean": -1.7993979166666667,
+      "current_std": 0.11952208333333333,
+      "temperature_mean": 25.04144416666667,
+      "temperature_std": 1.4979258333333334,
+      "temperature_rise_rate": 0.6557170833333333,
+      "capacity": 1.9523721666666665,
+      "cycle_number": 40.5
+    },
+    "stds": {
+      "voltage_mean": 0.027520046326748596,
+      "voltage_std": 0.005822418598257372,
+      "voltage_min": 0.02945718807002895,
+      "voltage_max": 0.03009455824459797,
+      "current_mean": 0.0458849407466806,
+      "current_std": 0.010882741106589626,
+      "temperature_mean": 1.139951297373111,
+      "temperature_std": 0.12137349312201116,
+      "temperature_rise_rate": 0.2696897261975195,
+      "capacity": 0.10944684389909205,
+      "cycle_number": 23.092206477510977
+    }
+  },
+  "best_val_loss": 21.085572943091393,
+  "test_metrics": {},
+  "history": {
+    "train": [
+      {
+        "loss": 26.81426932594993,
+        "rmse": 31.692299235950816,
+        "mae": 27.306493845852938,
+        "mape": 93.36645646528764,
+        "r2": -3.419583884152499,
+        "lr": 0.0005
+      },
+      {
+        "loss": 25.72000044042414,
+        "rmse": 30.750953934409402,
+        "mae": 26.212418989701703,
+        "mape": 89.2792836969549,
+        "r2": -3.4673734198917043,
+        "lr": 0.00048778860081564085
+      },
+      {
+        "loss": 24.384473020380195,
+        "rmse": 29.170354756441984,
+        "mae": 24.88186264038086,
+        "mape": 88.967811237682,
+        "r2": -4.061632795767351,
+        "lr": 0.0004523497400965494
+      }
+    ],
+    "val": [
+      {
+        "loss": 23.513681441545486,
+        "rmse": 24.17545849084854,
+        "mae": 24.010882049798965,
+        "mape": 95.4034423828125,
+        "r2": -210693.73184639215,
+        "lr": 0.0005
+      },
+      {
+        "loss": 22.410156816244125,
+        "rmse": 23.057521164417267,
+        "mae": 22.902107268571854,
+        "mape": 110.98855876922607,
+        "r2": -1081279.452281028,
+        "lr": 0.00048778860081564085
+      },
+      {
+        "loss": 21.085572943091393,
+        "rmse": 21.729109466075897,
+        "mae": 21.578414916992188,
+        "mape": 133.33136415481567,
+        "r2": -2999622.056792751,
+        "lr": 0.0004523497400965494
+      }
+    ],
+    "test": []
+  }
+}

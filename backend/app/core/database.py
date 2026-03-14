@@ -10,10 +10,13 @@ from typing import Iterator
 from backend.app.core.config import get_settings
 
 
-SCHEMA = """
+BASE_SCHEMA = """
 CREATE TABLE IF NOT EXISTS batteries (
     battery_id TEXT PRIMARY KEY,
+    canonical_battery_id TEXT,
     source TEXT NOT NULL,
+    dataset_name TEXT,
+    source_battery_id TEXT,
     chemistry TEXT,
     nominal_capacity REAL,
     cycle_count INTEGER DEFAULT 0,
@@ -23,12 +26,17 @@ CREATE TABLE IF NOT EXISTS batteries (
     status TEXT,
     last_update TEXT,
     dataset_path TEXT,
+    include_in_training INTEGER DEFAULT 0,
     metadata_json TEXT
 );
 
 CREATE TABLE IF NOT EXISTS cycle_points (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     battery_id TEXT NOT NULL,
+    canonical_battery_id TEXT,
+    source TEXT,
+    dataset_name TEXT,
+    source_battery_id TEXT,
     cycle_number INTEGER NOT NULL,
     timestamp TEXT,
     ambient_temperature REAL,
@@ -52,10 +60,13 @@ CREATE INDEX IF NOT EXISTS idx_cycle_points_battery_cycle ON cycle_points(batter
 CREATE TABLE IF NOT EXISTS dataset_files (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     battery_id TEXT,
+    source TEXT,
+    dataset_name TEXT,
     file_name TEXT NOT NULL,
     file_path TEXT NOT NULL,
     file_type TEXT NOT NULL,
     row_count INTEGER DEFAULT 0,
+    include_in_training INTEGER DEFAULT 0,
     created_at TEXT NOT NULL,
     validation_summary_json TEXT
 );
@@ -103,7 +114,40 @@ CREATE TABLE IF NOT EXISTS diagnosis_records (
     created_at TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_diagnosis_battery ON diagnosis_records(battery_id, created_at DESC);
+
+CREATE TABLE IF NOT EXISTS training_runs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    source TEXT NOT NULL,
+    model_type TEXT NOT NULL,
+    model_version TEXT,
+    best_checkpoint_path TEXT,
+    final_checkpoint_path TEXT,
+    metrics_json TEXT,
+    metadata_json TEXT,
+    created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_training_runs_source ON training_runs(source, model_type, created_at DESC);
 """
+
+MIGRATIONS = {
+    "batteries": {
+        "canonical_battery_id": "ALTER TABLE batteries ADD COLUMN canonical_battery_id TEXT",
+        "dataset_name": "ALTER TABLE batteries ADD COLUMN dataset_name TEXT",
+        "source_battery_id": "ALTER TABLE batteries ADD COLUMN source_battery_id TEXT",
+        "include_in_training": "ALTER TABLE batteries ADD COLUMN include_in_training INTEGER DEFAULT 0",
+    },
+    "cycle_points": {
+        "canonical_battery_id": "ALTER TABLE cycle_points ADD COLUMN canonical_battery_id TEXT",
+        "source": "ALTER TABLE cycle_points ADD COLUMN source TEXT",
+        "dataset_name": "ALTER TABLE cycle_points ADD COLUMN dataset_name TEXT",
+        "source_battery_id": "ALTER TABLE cycle_points ADD COLUMN source_battery_id TEXT",
+    },
+    "dataset_files": {
+        "source": "ALTER TABLE dataset_files ADD COLUMN source TEXT",
+        "dataset_name": "ALTER TABLE dataset_files ADD COLUMN dataset_name TEXT",
+        "include_in_training": "ALTER TABLE dataset_files ADD COLUMN include_in_training INTEGER DEFAULT 0",
+    },
+}
 
 
 class DatabaseManager:
@@ -127,7 +171,17 @@ class DatabaseManager:
 
     def initialize(self) -> None:
         with self.connection() as connection:
-            connection.executescript(SCHEMA)
+            connection.executescript(BASE_SCHEMA)
+            self._apply_migrations(connection)
+            connection.execute("CREATE INDEX IF NOT EXISTS idx_cycle_points_source ON cycle_points(source, dataset_name)")
+
+    @staticmethod
+    def _apply_migrations(connection: sqlite3.Connection) -> None:
+        for table, columns in MIGRATIONS.items():
+            existing = {row["name"] for row in connection.execute(f"PRAGMA table_info({table})").fetchall()}
+            for column, statement in columns.items():
+                if column not in existing:
+                    connection.execute(statement)
 
 
 _db_manager: DatabaseManager | None = None

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from datetime import datetime
-from pathlib import Path
 
 from fastapi import APIRouter, File, Form, UploadFile
 
@@ -16,17 +15,31 @@ settings = get_settings()
 
 
 @router.post("/data/upload")
-async def upload_battery_data(file: UploadFile = File(...), battery_id: str | None = Form(default=None)):
+async def upload_battery_data(
+    file: UploadFile = File(...),
+    battery_id: str | None = Form(default=None),
+    source: str | None = Form(default="auto"),
+    include_in_training: bool = Form(default=False),
+):
     settings.upload_dir.mkdir(parents=True, exist_ok=True)
     saved_name = f"{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}_{file.filename}"
     saved_path = settings.upload_dir / saved_name
     content = await file.read()
     saved_path.write_bytes(content)
-    summary = service.import_csv_file(saved_path, battery_id_hint=battery_id)
+    summary = service.import_uploaded_file(
+        saved_path,
+        source=source,
+        battery_id_hint=battery_id,
+        include_in_training=include_in_training,
+    )
     return success_response(summary, message="文件上传并导入成功")
 
 
-@router.post("/data/import-nasa")
-def import_nasa_dataset(request: DataImportRequest):
-    summary = service.import_nasa(battery_ids=request.battery_ids)
-    return success_response(summary, message="NASA 数据导入成功")
+@router.post("/data/import-source")
+def import_source_dataset(request: DataImportRequest):
+    summary = service.import_builtin_source(
+        source=request.source,
+        battery_ids=request.battery_ids,
+        include_in_training=request.include_in_training,
+    )
+    return success_response(summary, message=f"{request.source.upper()} 数据导入成功")

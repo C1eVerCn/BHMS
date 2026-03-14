@@ -26,11 +26,7 @@ export function getBattery(batteryId: string) {
 }
 
 export function getBatteryCycles(batteryId: string, limit = 120) {
-  return request<{ battery_id: string; items: CyclePoint[] }>({
-    method: 'GET',
-    url: `/battery/${batteryId}/cycles`,
-    params: { limit },
-  })
+  return request<{ battery_id: string; items: CyclePoint[] }>({ method: 'GET', url: `/battery/${batteryId}/cycles`, params: { limit } })
 }
 
 export function getBatteryHistory(batteryId: string) {
@@ -41,12 +37,14 @@ export function getBatteryHealth(batteryId: string) {
   return request<BatteryHealth>({ method: 'GET', url: `/battery/${batteryId}/health` })
 }
 
-export async function uploadBatteryData(file: File, batteryId?: string) {
+export async function uploadBatteryData(file: File, options?: { batteryId?: string; source?: string; includeInTraining?: boolean }) {
   const formData = new FormData()
   formData.append('file', file)
-  if (batteryId) {
-    formData.append('battery_id', batteryId)
+  if (options?.batteryId) {
+    formData.append('battery_id', options.batteryId)
   }
+  formData.append('source', options?.source ?? 'auto')
+  formData.append('include_in_training', String(Boolean(options?.includeInTraining)))
   return request<UploadSummary>({
     method: 'POST',
     url: '/data/upload',
@@ -55,8 +53,12 @@ export async function uploadBatteryData(file: File, batteryId?: string) {
   })
 }
 
-export function importNasaData(batteryIds?: string[]) {
-  return request<UploadSummary>({ method: 'POST', url: '/data/import-nasa', data: { battery_ids: batteryIds ?? null, source: 'nasa' } })
+export function importSourceData(source: 'nasa' | 'calce' | 'kaggle', batteryIds?: string[], includeInTraining = false) {
+  return request<UploadSummary>({
+    method: 'POST',
+    url: '/data/import-source',
+    data: { battery_ids: batteryIds ?? null, source, include_in_training: includeInTraining },
+  })
 }
 
 export function predictRul(payload: { battery_id: string; model_name: string; seq_len: number; historical_data?: CyclePoint[] }) {

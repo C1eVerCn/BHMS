@@ -2,6 +2,10 @@ export type BatteryStatus = 'good' | 'warning' | 'critical' | 'unknown'
 
 export interface CyclePoint {
   battery_id: string
+  canonical_battery_id?: string | null
+  source?: string | null
+  dataset_name?: string | null
+  source_battery_id?: string | null
   cycle_number: number
   timestamp?: string | null
   ambient_temperature?: number
@@ -22,7 +26,10 @@ export interface CyclePoint {
 
 export interface Battery {
   battery_id: string
+  canonical_battery_id?: string | null
   source: string
+  dataset_name?: string | null
+  source_battery_id?: string | null
   chemistry?: string | null
   nominal_capacity?: number | null
   initial_capacity?: number | null
@@ -32,6 +39,19 @@ export interface Battery {
   status: BatteryStatus
   last_update?: string | null
   dataset_path?: string | null
+  include_in_training?: boolean
+}
+
+export interface TrainingRun {
+  id: number
+  source: string
+  model_type: string
+  model_version?: string | null
+  best_checkpoint_path?: string | null
+  final_checkpoint_path?: string | null
+  metrics: Record<string, unknown>
+  metadata: Record<string, unknown>
+  created_at: string
 }
 
 export interface PredictionRecord {
@@ -43,10 +63,13 @@ export interface PredictionRecord {
   input_seq_len: number
   created_at: string
   source: string
+  payload?: Record<string, unknown>
 }
 
 export interface PredictionResult extends PredictionRecord {
   model_version: string
+  model_source: string
+  checkpoint_id?: string | null
   fallback_used: boolean
   prediction_time: string
 }
@@ -109,6 +132,8 @@ export interface BatteryHealth {
   rul_prediction?: number | null
   anomaly_count: number
   last_update?: string | null
+  source?: string | null
+  dataset_name?: string | null
 }
 
 export interface DashboardAlert {
@@ -127,6 +152,7 @@ export interface DashboardSummary {
   recent_alerts: DashboardAlert[]
   health_distribution: Array<{ name: string; value: number }>
   capacity_trend: Array<{ cycle_number: number; avg_capacity: number }>
+  batteries_by_source: Array<{ source: string; battery_count: number }>
 }
 
 export interface PaginatedBatteries {
@@ -149,4 +175,8 @@ export interface UploadSummary {
   file_name: string
   file_path: string
   validation_summary: Record<string, unknown>
+  include_in_training: boolean
+  source: string
+  dataset_name?: string | null
+  detected_source?: string | null
 }

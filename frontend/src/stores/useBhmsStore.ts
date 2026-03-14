@@ -7,7 +7,7 @@ import {
   getBatteryHealth,
   getBatteryHistory,
   getDashboardSummary,
-  importNasaData,
+  importSourceData,
   listBatteries,
   predictRul,
   uploadBatteryData,
@@ -23,6 +23,12 @@ import type {
   PredictionResult,
   UploadSummary,
 } from '../types/domain'
+
+interface UploadOptions {
+  batteryId?: string
+  source?: string
+  includeInTraining?: boolean
+}
 
 interface BhmsState {
   dashboard: DashboardSummary | null
@@ -44,8 +50,8 @@ interface BhmsState {
   loadBatteries: (page?: number, pageSize?: number) => Promise<void>
   selectBattery: (batteryId: string | null) => void
   loadBatteryContext: (batteryId: string) => Promise<void>
-  uploadFile: (file: File, batteryId?: string) => Promise<UploadSummary>
-  importSampleNasa: () => Promise<UploadSummary>
+  uploadFile: (file: File, options?: UploadOptions) => Promise<UploadSummary>
+  importSource: (source: 'nasa' | 'calce' | 'kaggle', includeInTraining?: boolean) => Promise<UploadSummary>
   runPrediction: (batteryId: string, modelName: string, seqLen: number) => Promise<PredictionResult>
   runDiagnosisWorkflow: (batteryId: string) => Promise<{ anomaly: AnomalyDetectionResult; diagnosis: DiagnosisResult }>
   clearError: () => void
@@ -114,10 +120,10 @@ export const useBhmsStore = create<BhmsState>((set, get) => ({
       set({ actionLoading: false })
     }
   },
-  uploadFile: async (file, batteryId) => {
+  uploadFile: async (file, options) => {
     set({ actionLoading: true, error: null })
     try {
-      const result = await uploadBatteryData(file, batteryId)
+      const result = await uploadBatteryData(file, options)
       set({ lastUpload: result })
       await Promise.all([get().loadDashboard(), get().loadBatteries(get().pagination.page, get().pagination.pageSize)])
       const target = result.battery_ids[0]
@@ -133,10 +139,10 @@ export const useBhmsStore = create<BhmsState>((set, get) => ({
       set({ actionLoading: false })
     }
   },
-  importSampleNasa: async () => {
+  importSource: async (source, includeInTraining = false) => {
     set({ actionLoading: true, error: null })
     try {
-      const result = await importNasaData()
+      const result = await importSourceData(source, undefined, includeInTraining)
       set({ lastUpload: result })
       await Promise.all([get().loadDashboard(), get().loadBatteries(1, get().pagination.pageSize)])
       const first = result.battery_ids[0]
@@ -145,7 +151,7 @@ export const useBhmsStore = create<BhmsState>((set, get) => ({
       }
       return result
     } catch (error) {
-      const message = error instanceof Error ? error.message : '导入 NASA 数据失败'
+      const message = error instanceof Error ? error.message : `导入 ${source} 数据失败`
       set({ error: message })
       throw error
     } finally {
