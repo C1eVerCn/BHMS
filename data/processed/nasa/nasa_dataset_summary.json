@@ -1,5 +1,5 @@
 {
-  "csv_path": "/Users/chris/Documents/trae_projects/BHMS/data/processed/nasa/nasa_cycle_summary.csv",
+  "csv_path": "data/processed/nasa/nasa_cycle_summary.csv",
   "source": "nasa",
   "seq_len": 30,
   "batch_size": 16,
@@ -91,5 +91,10 @@
     "train": 1243,
     "val": 338,
     "test": 247
+  },
+  "provenance": {
+    "kind": "repo_baseline",
+    "source_root": "data/raw/nasa",
+    "generated_by": "scripts/refresh_processed_baselines.py"
   }
 }

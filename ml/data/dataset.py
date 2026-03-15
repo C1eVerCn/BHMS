@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable, Optional, Sequence
@@ -84,6 +85,7 @@ class RULDataModule:
         feature_cols: Optional[Sequence[str]] = None,
         num_workers: int = 0,
         output_dir: str | Path | None = None,
+        reuse_existing_split: bool = True,
     ):
         self.csv_path = Path(csv_path)
         self.source = source.lower()
@@ -91,6 +93,7 @@ class RULDataModule:
         self.batch_size = batch_size
         self.feature_cols = list(feature_cols or DEFAULT_FEATURE_COLUMNS)
         self.num_workers = num_workers
+        self.reuse_existing_split = reuse_existing_split
         self.output_dir = Path(output_dir) if output_dir is not None else self.csv_path.parent
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self.data = pd.read_csv(self.csv_path)
@@ -125,7 +128,7 @@ class RULDataModule:
     def _resolve_split(self) -> DatasetSplit:
         battery_ids = list(self.data["canonical_battery_id"].unique())
         split_path = self.output_dir / f"{self.source}_split.json"
-        if split_path.exists():
+        if self.reuse_existing_split and split_path.exists():
             payload = json.loads(split_path.read_text(encoding="utf-8"))
             split = DatasetSplit.from_dict(payload)
             all_ids = set(split.train_batteries + split.val_batteries + split.test_batteries)
@@ -169,10 +172,15 @@ class RULDataModule:
             pin_memory=torch.cuda.is_available(),
         )
 
-    def summary(self) -> dict[str, object]:
+    def summary(
+        self,
+        *,
+        path_root: str | Path | None = None,
+        provenance: Optional[dict[str, object]] = None,
+    ) -> dict[str, object]:
         source_frame = self.data.copy()
-        return {
-            "csv_path": str(self.csv_path),
+        payload: dict[str, object] = {
+            "csv_path": _serialize_path(self.csv_path, path_root),
             "source": self.source,
             "seq_len": self.seq_len,
             "batch_size": self.batch_size,
@@ -186,9 +194,19 @@ class RULDataModule:
                 "test": len(self.test_dataset),
             },
         }
+        if provenance:
+            payload["provenance"] = dict(provenance)
+        return payload
 
-    def export_metadata(self, output_dir: str | Path | None = None, file_prefix: Optional[str] = None) -> dict[str, str]:
-        summary = self.summary()
+    def export_metadata(
+        self,
+        output_dir: str | Path | None = None,
+        file_prefix: Optional[str] = None,
+        *,
+        path_root: str | Path | None = None,
+        provenance: Optional[dict[str, object]] = None,
+    ) -> dict[str, str]:
+        summary = self.summary(path_root=path_root, provenance=provenance)
         target_dir = Path(output_dir) if output_dir is not None else self.output_dir
         target_dir.mkdir(parents=True, exist_ok=True)
         prefix = file_prefix or self.source
@@ -209,6 +227,17 @@ class RULDataModule:
             "feature_config": str(feature_path),
             "summary": str(summary_path),
         }
+
+
+def _serialize_path(path: Path, path_root: str | Path | None = None) -> str:
+    resolved = path.resolve()
+    if path_root is None:
+        return str(resolved)
+    root = Path(path_root).resolve()
+    try:
+        return str(resolved.relative_to(root))
+    except ValueError:
+        return os.path.relpath(resolved, root)
 
 
 def create_synthetic_data(

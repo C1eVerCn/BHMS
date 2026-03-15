@@ -1,5 +1,5 @@
 {
-  "csv_path": "/Users/chris/Documents/trae_projects/BHMS/data/processed/calce/calce_cycle_summary.csv",
+  "csv_path": "data/processed/calce/calce_cycle_summary.csv",
   "source": "calce",
   "seq_len": 30,
   "batch_size": 16,
@@ -63,5 +63,10 @@
     "train": 153,
     "val": 51,
     "test": 102
+  },
+  "provenance": {
+    "kind": "repo_baseline",
+    "source_root": "data/raw/calce",
+    "generated_by": "scripts/refresh_processed_baselines.py"
   }
 }

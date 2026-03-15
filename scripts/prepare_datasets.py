@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""按来源准备 BHMS 训练数据。"""
+"""从当前训练池导出 BHMS 本地训练数据。"""
 
 from __future__ import annotations
 
@@ -18,7 +18,7 @@ from backend.app.services.battery_service import BatteryService
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Prepare BHMS source datasets")
+    parser = argparse.ArgumentParser(description="Prepare BHMS local training-pool datasets")
     parser.add_argument("--source", choices=["nasa", "calce", "kaggle"], required=True)
     parser.add_argument("--include-in-training", action="store_true")
     parser.add_argument("--seq-len", type=int, default=30)
