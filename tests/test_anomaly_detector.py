@@ -51,3 +51,10 @@ def test_anomaly_detector_summary():
     assert result["is_anomaly"] is True
     assert result["max_severity"] in {"low", "medium", "high"}
     assert "检测到" in result["summary"]
+
+
+def test_statistical_detector_detects_internal_resistance_event():
+    detector = StatisticalDetector()
+    detector.set_baseline(capacity=2.0, resistance=0.02)
+    events = detector.detect({"capacity": 1.9, "internal_resistance": 0.029})
+    assert any(event.code == AnomalyType.INTERNAL_RESISTANCE.value for event in events)

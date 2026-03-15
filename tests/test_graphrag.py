@@ -63,3 +63,25 @@ def test_graphrag_engine_end_to_end():
     assert diagnosis.fault_type in {"热失控风险", "工况波动异常", "电压采样异常"}
     report = engine.generate_report(diagnosis)
     assert "电池故障诊断报告" in report
+
+
+def test_graphrag_engine_falls_back_to_memory_when_neo4j_is_unavailable(monkeypatch: pytest.MonkeyPatch):
+    engine = GraphRAGEngine(
+        graph_backend="neo4j",
+        neo4j_uri="bolt://localhost:7687",
+        neo4j_user="neo4j",
+        neo4j_password="bhmsneo4j",
+    )
+
+    def _raise_unavailable(*args, **kwargs):
+        raise RuntimeError("neo4j unavailable in test")
+
+    monkeypatch.setattr(engine.kg, "rank_faults", _raise_unavailable)
+    diagnosis = engine.diagnose(
+        anomalies=[{"symptom": "容量骤降", "severity": "high", "description": "容量快速下降"}],
+        battery_info={"battery_id": "B-NO-NEO4J"},
+    )
+
+    assert engine.active_backend == "memory"
+    assert diagnosis.fault_type == "容量衰减异常"
+    assert any("Neo4j 不可用" in item for item in diagnosis.evidence)

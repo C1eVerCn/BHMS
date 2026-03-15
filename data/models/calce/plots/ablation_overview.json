@@ -1,0 +1,7 @@
+{
+  "key": "ablation_overview",
+  "title": "CALCE ablation overview",
+  "description": "Aggregate RMSE for each hybrid ablation variant.",
+  "path": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/plots/ablation_overview.png",
+  "generated_at": "2026-03-15T08:29:25.041569"
+}

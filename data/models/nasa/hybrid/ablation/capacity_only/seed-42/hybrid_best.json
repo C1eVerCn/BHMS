@@ -1,0 +1,314 @@
+{
+  "source": "nasa",
+  "model_type": "hybrid",
+  "model_version": "nasa-capacity_only-seed-42",
+  "model_config": {
+    "input_dim": 2,
+    "d_model": 64,
+    "xlstm_layers": 1,
+    "xlstm_heads": 4,
+    "use_xlstm": true,
+    "use_mlstm": true,
+    "use_slstm": true,
+    "transformer_layers": 1,
+    "transformer_heads": 8,
+    "transformer_ff_mult": 4,
+    "use_transformer": true,
+    "fusion_dim": 64,
+    "output_dim": 1,
+    "max_rul": 2000.0,
+    "dropout": 0.1,
+    "max_seq_len": 5000
+  },
+  "training_config": {
+    "source": "nasa",
+    "model_type": "hybrid",
+    "num_epochs": 40,
+    "batch_size": 16,
+    "learning_rate": 0.0003,
+    "weight_decay": 0.001,
+    "lr_scheduler": "cosine_warm_restarts",
+    "early_stopping": true,
+    "patience": 20,
+    "min_delta": 0.0001,
+    "loss_type": "huber",
+    "huber_delta": 1.0,
+    "checkpoint_dir": "/Users/chris/Documents/trae_projects/BHMS/data/models",
+    "log_dir": "/Users/chris/Documents/trae_projects/BHMS/data/models/logs",
+    "device": "auto",
+    "use_amp": false,
+    "max_grad_norm": 1.0,
+    "seed": 42,
+    "model_version": "nasa-capacity_only-seed-42",
+    "resume_from": null,
+    "run_name": null,
+    "artifact_subdir": "ablation/capacity_only/seed-42"
+  },
+  "data_summary": {
+    "csv_path": "/Users/chris/Documents/trae_projects/BHMS/data/processed/nasa/nasa_cycle_summary.csv",
+    "source": "nasa",
+    "seq_len": 30,
+    "batch_size": 16,
+    "feature_columns": [
+      "capacity",
+      "cycle_number"
+    ],
+    "split": {
+      "train_batteries": [
+        "nasa::nasa_pcoe::B0005",
+        "nasa::nasa_pcoe::B0006",
+        "nasa::nasa_pcoe::B0007",
+        "nasa::nasa_pcoe::B0018",
+        "nasa::nasa_pcoe::B0025",
+        "nasa::nasa_pcoe::B0026",
+        "nasa::nasa_pcoe::B0027",
+        "nasa::nasa_pcoe::B0028",
+        "nasa::nasa_pcoe::B0029",
+        "nasa::nasa_pcoe::B0030",
+        "nasa::nasa_pcoe::B0031",
+        "nasa::nasa_pcoe::B0032",
+        "nasa::nasa_pcoe::B0033",
+        "nasa::nasa_pcoe::B0034",
+        "nasa::nasa_pcoe::B0036",
+        "nasa::nasa_pcoe::B0038",
+        "nasa::nasa_pcoe::B0039",
+        "nasa::nasa_pcoe::B0040",
+        "nasa::nasa_pcoe::B0041",
+        "nasa::nasa_pcoe::B0042"
+      ],
+      "val_batteries": [
+        "nasa::nasa_pcoe::B0043",
+        "nasa::nasa_pcoe::B0044",
+        "nasa::nasa_pcoe::B0045",
+        "nasa::nasa_pcoe::B0046",
+        "nasa::nasa_pcoe::B0047",
+        "nasa::nasa_pcoe::B0048",
+        "nasa::nasa_pcoe::B0049"
+      ],
+      "test_batteries": [
+        "nasa::nasa_pcoe::B0050",
+        "nasa::nasa_pcoe::B0051",
+        "nasa::nasa_pcoe::B0052",
+        "nasa::nasa_pcoe::B0053",
+        "nasa::nasa_pcoe::B0054",
+        "nasa::nasa_pcoe::B0055",
+        "nasa::nasa_pcoe::B0056"
+      ]
+    },
+    "normalization": {
+      "means": {
+        "capacity": 1.486937395913767,
+        "cycle_number": 69.69158878504673
+      },
+      "stds": {
+        "capacity": 0.4081315577475957,
+        "cycle_number": 53.631610384036144
+      }
+    },
+    "num_batteries": 34,
+    "num_samples": {
+      "train": 1243,
+      "val": 338,
+      "test": 247
+    }
+  },
+  "feature_columns": [
+    "capacity",
+    "cycle_number"
+  ],
+  "normalization": {
+    "means": {
+      "capacity": 1.486937395913767,
+      "cycle_number": 69.69158878504673
+    },
+    "stds": {
+      "capacity": 0.4081315577475957,
+      "cycle_number": 53.631610384036144
+    }
+  },
+  "best_val_loss": 4.144976787607778,
+  "test_metrics": {},
+  "history": {
+    "train": [
+      {
+        "loss": 38.42768029677562,
+        "rmse": 59.207786266620346,
+        "mae": 38.873266183412994,
+        "mape": 148.04620840610602,
+        "r2": -0.5747184004539099,
+        "lr": 0.0003
+      },
+      {
+        "loss": 37.160048313629936,
+        "rmse": 56.42283512995793,
+        "mae": 37.64006705161853,
+        "mape": 214.67367054865912,
+        "r2": -0.424754377358999,
+        "lr": 0.0002926829491861254
+      },
+      {
+        "loss": 36.40343492459028,
+        "rmse": 54.16537795922695,
+        "mae": 36.86878962394519,
+        "mape": 310.64213307698566,
+        "r2": -0.32884089992596555,
+        "lr": 0.0002714480406590546
+      },
+      {
+        "loss": 36.17123372738178,
+        "rmse": 53.99945358129648,
+        "mae": 36.61357517731496,
+        "mape": 270.59403473291644,
+        "r2": -0.31656066118142545,
+        "lr": 0.0002383738952177247
+      },
+      {
+        "loss": 35.3600044739552,
+        "rmse": 52.30975632789807,
+        "mae": 35.84219455718994,
+        "mape": 305.86608955187677,
+        "r2": -0.2784994657223041,
+        "lr": 0.0001966980406590546
+      },
+      {
+        "loss": 34.44515900734143,
+        "rmse": 51.60939972217266,
+        "mae": 34.909685844030136,
+        "mape": 233.25060174404047,
+        "r2": -0.216125182616405,
+        "lr": 0.00015049999999999997
+      },
+      {
+        "loss": 33.807265281677246,
+        "rmse": 50.841671479053986,
+        "mae": 34.27211054777488,
+        "mape": 224.75314732086963,
+        "r2": -0.16544808944066366,
+        "lr": 0.00010430195934094535
+      },
+      {
+        "loss": 33.70391041193253,
+        "rmse": 50.661198273683205,
+        "mae": 34.179625780154495,
+        "mape": 216.82027391286996,
+        "r2": -0.200538572592613,
+        "lr": 6.262610478227527e-05
+      },
+      {
+        "loss": 33.592016758062904,
+        "rmse": 50.78725775694236,
+        "mae": 34.06542998093825,
+        "mape": 225.96598649636294,
+        "r2": -0.16482258836428323,
+        "lr": 2.955195934094537e-05
+      },
+      {
+        "loss": 33.58308774997027,
+        "rmse": 50.14842740083352,
+        "mae": 34.060078657590424,
+        "mape": 222.79948073167068,
+        "r2": -0.16766280547166482,
+        "lr": 8.317050813874547e-06
+      },
+      {
+        "loss": 33.413259946382965,
+        "rmse": 49.477213688385795,
+        "mae": 33.898346436329376,
+        "mape": 275.4674003307636,
+        "r2": -0.09877779086430867,
+        "lr": 0.0003
+      }
+    ],
+    "val": [
+      {
+        "loss": 4.85351931236007,
+        "rmse": 5.695005357265472,
+        "mae": 5.353519304232164,
+        "mape": 535.3519328724254,
+        "r2": -820453415.625,
+        "lr": 0.0003
+      },
+      {
+        "loss": 7.768635955723849,
+        "rmse": 8.849301221695812,
+        "mae": 8.268563798882745,
+        "mape": 826.856373873624,
+        "r2": -2039326380.1136363,
+        "lr": 0.0002926829491861254
+      },
+      {
+        "loss": 8.339027715677565,
+        "rmse": 9.453059562227942,
+        "mae": 8.616016352041202,
+        "mape": 861.6016323783181,
+        "r2": -2667571981.3636365,
+        "lr": 0.0002714480406590546
+      },
+      {
+        "loss": 10.427277023142034,
+        "rmse": 11.630807919935746,
+        "mae": 10.927277023142034,
+        "mape": 1092.7277082963424,
+        "r2": -3162318803.818182,
+        "lr": 0.0002383738952177247
+      },
+      {
+        "loss": 5.907717047767206,
+        "rmse": 7.335761977867647,
+        "mae": 6.3892783929001205,
+        "mape": 638.9278349442916,
+        "r2": -1627027151.0170455,
+        "lr": 0.0001966980406590546
+      },
+      {
+        "loss": 8.027636057273908,
+        "rmse": 10.023018769242547,
+        "mae": 8.502315965565769,
+        "mape": 850.2315979003906,
+        "r2": -3352887119.502841,
+        "lr": 0.00015049999999999997
+      },
+      {
+        "loss": 6.76731478063051,
+        "rmse": 8.837663501162421,
+        "mae": 7.170321196317673,
+        "mape": 717.0321198376743,
+        "r2": -3130297134.6384945,
+        "lr": 0.00010430195934094535
+      },
+      {
+        "loss": 7.396988588977944,
+        "rmse": 9.541899087754162,
+        "mae": 7.853624278848821,
+        "mape": 785.3624345606023,
+        "r2": -3561205714.4375,
+        "lr": 6.262610478227527e-05
+      },
+      {
+        "loss": 6.929242733527314,
+        "rmse": 9.085420784625141,
+        "mae": 7.405489940534938,
+        "mape": 740.5490081093528,
+        "r2": -3286443578.465909,
+        "lr": 2.955195934094537e-05
+      },
+      {
+        "loss": 7.297284435142171,
+        "rmse": 9.49019412019036,
+        "mae": 7.777430374513973,
+        "mape": 777.7430406050248,
+        "r2": -3552967112.8636365,
+        "lr": 8.317050813874547e-06
+      },
+      {
+        "loss": 4.144976787607778,
+        "rmse": 6.641108004884287,
+        "mae": 4.553270984779704,
+        "mape": 455.32710196755147,
+        "r2": -2116626974.3977273,
+        "lr": 0.0003
+      }
+    ],
+    "test": []
+  }
+}

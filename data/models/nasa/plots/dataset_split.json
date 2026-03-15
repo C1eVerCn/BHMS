@@ -1,0 +1,49 @@
+{
+  "key": "dataset_split",
+  "title": "NASA dataset split",
+  "description": "Battery counts in the fixed train/validation/test split.",
+  "path": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/plots/dataset_split.png",
+  "generated_at": "2026-03-15T08:29:24.234834",
+  "split_snapshot": {
+    "train_batteries": [
+      "nasa::nasa_pcoe::B0005",
+      "nasa::nasa_pcoe::B0006",
+      "nasa::nasa_pcoe::B0007",
+      "nasa::nasa_pcoe::B0018",
+      "nasa::nasa_pcoe::B0025",
+      "nasa::nasa_pcoe::B0026",
+      "nasa::nasa_pcoe::B0027",
+      "nasa::nasa_pcoe::B0028",
+      "nasa::nasa_pcoe::B0029",
+      "nasa::nasa_pcoe::B0030",
+      "nasa::nasa_pcoe::B0031",
+      "nasa::nasa_pcoe::B0032",
+      "nasa::nasa_pcoe::B0033",
+      "nasa::nasa_pcoe::B0034",
+      "nasa::nasa_pcoe::B0036",
+      "nasa::nasa_pcoe::B0038",
+      "nasa::nasa_pcoe::B0039",
+      "nasa::nasa_pcoe::B0040",
+      "nasa::nasa_pcoe::B0041",
+      "nasa::nasa_pcoe::B0042"
+    ],
+    "val_batteries": [
+      "nasa::nasa_pcoe::B0043",
+      "nasa::nasa_pcoe::B0044",
+      "nasa::nasa_pcoe::B0045",
+      "nasa::nasa_pcoe::B0046",
+      "nasa::nasa_pcoe::B0047",
+      "nasa::nasa_pcoe::B0048",
+      "nasa::nasa_pcoe::B0049"
+    ],
+    "test_batteries": [
+      "nasa::nasa_pcoe::B0050",
+      "nasa::nasa_pcoe::B0051",
+      "nasa::nasa_pcoe::B0052",
+      "nasa::nasa_pcoe::B0053",
+      "nasa::nasa_pcoe::B0054",
+      "nasa::nasa_pcoe::B0055",
+      "nasa::nasa_pcoe::B0056"
+    ]
+  }
+}

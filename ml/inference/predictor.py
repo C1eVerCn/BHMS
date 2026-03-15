@@ -1,15 +1,61 @@
-"""RUL 推理服务，支持来源级训练权重与启发式 fallback。"""
+"""RUL 推理服务，支持来源级训练权重、可解释性输出与启发式 fallback。"""
 
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
+import math
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Iterable, Optional, Sequence
 
 import numpy as np
 
 from ml.data.nasa_preprocessor import DEFAULT_FEATURE_COLUMNS
+
+
+@dataclass
+class AttentionHeatmap:
+    x_labels: list[str] = field(default_factory=list)
+    y_labels: list[str] = field(default_factory=list)
+    values: list[list[float]] = field(default_factory=list)
+    disclaimer: str = "注意力热力图仅作为辅助参考，不直接等于因果解释。"
+
+
+@dataclass
+class FeatureContribution:
+    feature: str
+    impact: float
+    direction: str
+    description: str
+
+
+@dataclass
+class WindowContribution:
+    window_label: str
+    start_cycle: float
+    end_cycle: float
+    impact: float
+    description: str
+
+
+@dataclass
+class PredictionExplanation:
+    input_summary: dict[str, object]
+    model_info: dict[str, object]
+    feature_contributions: list[FeatureContribution]
+    window_contributions: list[WindowContribution]
+    confidence_summary: dict[str, object]
+    attention_heatmap: Optional[AttentionHeatmap] = None
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "input_summary": self.input_summary,
+            "model_info": self.model_info,
+            "feature_contributions": [asdict(item) for item in self.feature_contributions],
+            "window_contributions": [asdict(item) for item in self.window_contributions],
+            "confidence_summary": self.confidence_summary,
+            "attention_heatmap": asdict(self.attention_heatmap) if self.attention_heatmap else None,
+        }
 
 
 @dataclass
@@ -21,6 +67,7 @@ class PredictionOutput:
     model_source: str
     checkpoint_id: Optional[str] = None
     fallback_used: bool = False
+    explanation: Optional[PredictionExplanation] = None
 
 
 class RULInferenceService:
@@ -31,20 +78,28 @@ class RULInferenceService:
 
     def predict(
         self,
-        sequence: np.ndarray,
+        sequence: Optional[np.ndarray],
         source: str,
         model_name: str = "hybrid",
         feature_cols: Optional[Sequence[str]] = None,
+        points: Optional[Sequence[dict[str, float]]] = None,
     ) -> PredictionOutput:
         source = source.lower()
         for candidate in self._preferred_models(source, model_name):
             try:
-                return self._predict_with_checkpoint(sequence, source=source, model_name=candidate)
+                return self._predict_with_checkpoint(
+                    sequence=sequence,
+                    points=points,
+                    source=source,
+                    model_name=candidate,
+                    feature_cols=feature_cols,
+                )
             except Exception:
                 continue
-        return self._heuristic_predict(sequence, source=source, feature_cols=feature_cols)
+        return self._heuristic_predict(sequence=sequence, points=points, source=source, feature_cols=feature_cols)
 
     def _preferred_models(self, source: str, requested: str) -> list[str]:
+        _ = source
         if requested == "auto":
             return ["hybrid", "bilstm"]
         ordered = [requested]
@@ -54,7 +109,14 @@ class RULInferenceService:
             ordered.append("bilstm")
         return ordered
 
-    def _predict_with_checkpoint(self, sequence: np.ndarray, source: str, model_name: str) -> PredictionOutput:
+    def _predict_with_checkpoint(
+        self,
+        sequence: Optional[np.ndarray],
+        points: Optional[Sequence[dict[str, float]]],
+        source: str,
+        model_name: str,
+        feature_cols: Optional[Sequence[str]] = None,
+    ) -> PredictionOutput:
         import torch
         from ml.models.baseline import BiLSTMConfig, BiLSTMRULPredictor
         from ml.models.hybrid import RULPredictor, RULPredictorConfig
@@ -62,8 +124,8 @@ class RULInferenceService:
         checkpoint_path = self._resolve_checkpoint(source=source, model_name=model_name)
         checkpoint = torch.load(checkpoint_path, map_location="cpu")
         runtime_key = f"{source}:{model_name}:{checkpoint_path}"
-        model = self._cache.get(runtime_key)
-        if model is None:
+        runtime = self._cache.get(runtime_key)
+        if runtime is None:
             model_type = checkpoint["model_type"]
             config = checkpoint["model_config"]
             if model_type == "hybrid":
@@ -74,48 +136,125 @@ class RULInferenceService:
                 raise ValueError(f"未知模型类型: {model_type}")
             model.load_state_dict(checkpoint["model_state_dict"])
             model.eval()
-            self._cache[runtime_key] = model
+            runtime = model
+            self._cache[runtime_key] = runtime
+        model = runtime
 
-        tensor = torch.tensor(sequence[None, :, :], dtype=torch.float32)
+        feature_names = list(checkpoint.get("feature_columns") or feature_cols or DEFAULT_FEATURE_COLUMNS)
+        raw_sequence = self._build_sequence_from_inputs(points=points, sequence=sequence, feature_cols=feature_names)
+        normalized_sequence = self._normalize_sequence(raw_sequence, checkpoint.get("normalization", {}), feature_names)
+        tensor = torch.tensor(normalized_sequence[None, :, :], dtype=torch.float32)
+
         with torch.no_grad():
-            prediction = model.predict(tensor).item()
+            prediction, features = model.forward(tensor, return_features=True)
+            raw_prediction = max(0.0, float(prediction.squeeze().item()))
+
+        raw_cycles = self._extract_series(points, feature_names, raw_sequence, "cycle_number")
+        raw_capacities = self._extract_series(points, feature_names, raw_sequence, "capacity")
+        trend_proxy = self._heuristic_rul_from_sequence(raw_sequence, feature_names)
+        calibration = self._calibrate_rul_prediction(
+            raw_prediction=raw_prediction,
+            trend_proxy_rul=trend_proxy["predicted_rul"],
+            latest_capacity=trend_proxy["latest_capacity"],
+            eol_capacity=trend_proxy["eol_capacity"],
+            initial_capacity=trend_proxy["initial_capacity"],
+        )
+        predicted_rul = calibration["predicted_rul"]
+        confidence = self._estimate_confidence(
+            predicted_rul=predicted_rul,
+            model_name=model_name,
+            seq_len=raw_sequence.shape[0],
+            capacities=raw_capacities,
+            fallback_used=False,
+        )
+        explanation = self._build_explanation(
+            model=model,
+            tensor=tensor,
+            raw_sequence=raw_sequence,
+            feature_names=feature_names,
+            prediction=predicted_rul,
+            confidence=confidence,
+            source=source,
+            model_name=model_name,
+            checkpoint=checkpoint,
+            checkpoint_path=checkpoint_path,
+            features=features,
+            raw_cycles=raw_cycles,
+            raw_capacities=raw_capacities,
+            raw_model_prediction=raw_prediction,
+            trend_proxy=trend_proxy,
+            calibration=calibration,
+        )
         return PredictionOutput(
-            predicted_rul=max(0.0, float(prediction)),
-            confidence=0.9 if model_name == "hybrid" else 0.82,
+            predicted_rul=predicted_rul,
+            confidence=confidence,
             model_name=model_name,
             model_version=str(checkpoint.get("model_version", checkpoint.get("epoch", "trained"))),
             model_source=source.lower(),
             checkpoint_id=checkpoint_path.name,
             fallback_used=False,
+            explanation=explanation,
         )
 
     def _heuristic_predict(
         self,
-        sequence: np.ndarray,
+        sequence: Optional[np.ndarray],
+        points: Optional[Sequence[dict[str, float]]],
         source: str,
         feature_cols: Optional[Sequence[str]] = None,
     ) -> PredictionOutput:
         columns = list(feature_cols or DEFAULT_FEATURE_COLUMNS)
-        capacity_index = columns.index("capacity") if "capacity" in columns else -1
-        cycle_index = columns.index("cycle_number") if "cycle_number" in columns else -1
-        if capacity_index < 0 or cycle_index < 0:
-            return PredictionOutput(120.0, 0.55, "heuristic", "heuristic-v1", source, checkpoint_id=None, fallback_used=True)
-
-        capacities = sequence[:, capacity_index].astype(float)
-        cycles = sequence[:, cycle_index].astype(float)
-        initial_capacity = float(np.max(capacities[: max(3, len(capacities) // 4)]))
-        latest_capacity = float(capacities[-1])
-        eol_capacity = initial_capacity * 0.8
-        if latest_capacity <= eol_capacity:
-            predicted_rul = 0.0
-        else:
-            slope, intercept = np.polyfit(cycles, capacities, deg=1)
-            if slope >= -1e-6:
-                predicted_rul = max(20.0, (latest_capacity - eol_capacity) / max(0.002, initial_capacity * 0.002))
-            else:
-                eol_cycle = (eol_capacity - intercept) / slope
-                predicted_rul = max(0.0, eol_cycle - cycles[-1])
-        confidence = 0.72 if len(sequence) >= 20 else 0.6
+        raw_sequence = self._build_sequence_from_inputs(points=points, sequence=sequence, feature_cols=columns)
+        trend_proxy = self._heuristic_rul_from_sequence(raw_sequence, columns)
+        predicted_rul = trend_proxy["predicted_rul"]
+        raw_cycles = self._extract_series(points, columns, raw_sequence, "cycle_number")
+        raw_capacities = self._extract_series(points, columns, raw_sequence, "capacity")
+        confidence = self._estimate_confidence(
+            predicted_rul=float(predicted_rul),
+            model_name="heuristic",
+            seq_len=raw_sequence.shape[0],
+            capacities=raw_capacities,
+            fallback_used=True,
+        )
+        explanation = PredictionExplanation(
+            input_summary=self._build_input_summary(raw_sequence, columns, raw_cycles, raw_capacities),
+            model_info={
+                "model_name": "heuristic",
+                "model_source": source.lower(),
+                "checkpoint_id": None,
+                "fallback_used": True,
+                "trend_proxy_rul": round(float(predicted_rul), 2),
+                "note": "当前未找到可用训练权重，系统退回到基于容量衰减趋势的启发式估计。",
+            },
+            feature_contributions=[
+                FeatureContribution(
+                    feature="capacity",
+                    impact=0.82,
+                    direction="decrease",
+                    description="启发式预测主要依赖容量衰减趋势与当前容量水平。",
+                )
+            ],
+            window_contributions=[
+                WindowContribution(
+                    window_label="最近窗口",
+                    start_cycle=float(raw_cycles[max(0, len(raw_cycles) - 5)]) if len(raw_cycles) else 0.0,
+                    end_cycle=float(raw_cycles[-1]) if len(raw_cycles) else 0.0,
+                    impact=0.78,
+                    description="最近几个 cycle 的容量变化决定了启发式投影斜率。",
+                )
+            ]
+            if len(raw_cycles)
+            else [],
+            confidence_summary={
+                "score": confidence,
+                "factors": [
+                    "输入窗口越长，启发式估计越稳定",
+                    "当前结果未使用训练模型，因此置信度低于 Hybrid/Bi-LSTM",
+                    "容量曲线若波动较大，可信度会下降",
+                ],
+            },
+            attention_heatmap=None,
+        )
         return PredictionOutput(
             predicted_rul=float(predicted_rul),
             confidence=confidence,
@@ -124,7 +263,304 @@ class RULInferenceService:
             model_source=source.lower(),
             checkpoint_id=None,
             fallback_used=True,
+            explanation=explanation,
         )
+
+    def _build_explanation(
+        self,
+        *,
+        model,
+        tensor,
+        raw_sequence: np.ndarray,
+        feature_names: list[str],
+        prediction: float,
+        confidence: float,
+        source: str,
+        model_name: str,
+        checkpoint: dict,
+        checkpoint_path: Path,
+        features: Optional[dict],
+        raw_cycles: np.ndarray,
+        raw_capacities: np.ndarray,
+        raw_model_prediction: float,
+        trend_proxy: dict[str, float | str],
+        calibration: dict[str, object],
+    ) -> PredictionExplanation:
+        feature_contributions = self._feature_importance(model, tensor, feature_names, prediction)
+        window_contributions = self._window_importance(model, tensor, raw_cycles, prediction)
+        attention_heatmap = self._attention_heatmap(features, raw_cycles)
+        confidence_factors = [
+            f"输入窗口长度为 {tensor.shape[1]} 个 cycle",
+            f"当前模型为 {model_name}，来源 {source}",
+            "本次预测直接使用训练权重推理",
+            f"轨迹稳定度评分为 {self._trajectory_stability(raw_capacities):.3f}",
+        ]
+        if calibration.get("applied"):
+            confidence_factors.append(
+                f"模型原始 RUL 为 {raw_model_prediction:.2f}，趋势代理为 {float(trend_proxy['predicted_rul']):.2f}，已执行一致性校准。"
+            )
+        confidence_summary = {
+            "score": confidence,
+            "factors": confidence_factors,
+        }
+        return PredictionExplanation(
+            input_summary=self._build_input_summary(raw_sequence, feature_names, raw_cycles, raw_capacities),
+            model_info={
+                "model_name": model_name,
+                "model_source": source.lower(),
+                "checkpoint_id": checkpoint_path.name,
+                "model_version": str(checkpoint.get("model_version", checkpoint.get("epoch", "trained"))),
+                "fallback_used": False,
+                "raw_model_rul": round(float(raw_model_prediction), 2),
+                "trend_proxy_rul": round(float(trend_proxy["predicted_rul"]), 2),
+                "trend_proxy_method": str(trend_proxy["method"]),
+                "calibration_applied": bool(calibration.get("applied")),
+                "calibrated_rul": round(float(prediction), 2),
+            },
+            feature_contributions=feature_contributions,
+            window_contributions=window_contributions,
+            confidence_summary=confidence_summary,
+            attention_heatmap=attention_heatmap,
+        )
+
+    def _build_input_summary(
+        self,
+        raw_sequence: np.ndarray,
+        feature_names: list[str],
+        raw_cycles: np.ndarray,
+        raw_capacities: np.ndarray,
+    ) -> dict[str, object]:
+        voltage_series = self._safe_column(raw_sequence, feature_names, "voltage_mean")
+        temp_series = self._safe_column(raw_sequence, feature_names, "temperature_mean")
+        resistance_series = self._safe_column(raw_sequence, feature_names, "internal_resistance")
+        recent_delta = 0.0
+        if raw_capacities.size >= 2:
+            recent_delta = float(raw_capacities[-1] - raw_capacities[max(0, raw_capacities.size - 5)])
+        return {
+            "seq_len": int(raw_sequence.shape[0]),
+            "cycle_range": [float(raw_cycles[0]) if raw_cycles.size else 0.0, float(raw_cycles[-1]) if raw_cycles.size else 0.0],
+            "capacity_range": [float(np.min(raw_capacities)) if raw_capacities.size else 0.0, float(np.max(raw_capacities)) if raw_capacities.size else 0.0],
+            "recent_capacity_delta": recent_delta,
+            "temperature_mean": float(np.mean(temp_series)) if temp_series.size else 0.0,
+            "voltage_mean": float(np.mean(voltage_series)) if voltage_series.size else 0.0,
+            "internal_resistance_latest": float(resistance_series[-1]) if resistance_series.size else None,
+        }
+
+    def _feature_importance(self, model, tensor, feature_names: list[str], base_prediction: float) -> list[FeatureContribution]:
+        import torch
+
+        impacts: list[FeatureContribution] = []
+        baseline = tensor.clone()
+        feature_means = baseline.mean(dim=1, keepdim=True)
+        with torch.no_grad():
+            for index, feature_name in enumerate(feature_names):
+                perturbed = baseline.clone()
+                perturbed[:, :, index] = feature_means[:, :, index]
+                prediction = float(model.predict(perturbed).item())
+                delta = base_prediction - prediction
+                impacts.append(
+                    FeatureContribution(
+                        feature=feature_name,
+                        impact=round(abs(delta), 4),
+                        direction="increase" if delta < 0 else "decrease",
+                        description=self._feature_description(feature_name, delta),
+                    )
+                )
+        impacts.sort(key=lambda item: item.impact, reverse=True)
+        return impacts[:5]
+
+    def _window_importance(self, model, tensor, raw_cycles: np.ndarray, base_prediction: float) -> list[WindowContribution]:
+        import torch
+
+        seq_len = tensor.shape[1]
+        window_count = min(4, max(1, seq_len // 4))
+        edges = np.linspace(0, seq_len, num=window_count + 1, dtype=int)
+        baseline = tensor.clone()
+        fill_value = baseline.mean(dim=1, keepdim=True)
+        contributions: list[WindowContribution] = []
+        with torch.no_grad():
+            for start, end in zip(edges[:-1], edges[1:]):
+                if start == end:
+                    continue
+                perturbed = baseline.clone()
+                perturbed[:, start:end, :] = fill_value.expand(-1, end - start, -1)
+                prediction = float(model.predict(perturbed).item())
+                impact = abs(base_prediction - prediction)
+                start_cycle = float(raw_cycles[start]) if raw_cycles.size else float(start)
+                end_cycle = float(raw_cycles[min(end - 1, raw_cycles.size - 1)]) if raw_cycles.size else float(end)
+                contributions.append(
+                    WindowContribution(
+                        window_label=f"cycles {int(start_cycle)}-{int(end_cycle)}",
+                        start_cycle=start_cycle,
+                        end_cycle=end_cycle,
+                        impact=round(float(impact), 4),
+                        description=f"遮挡该时间窗口后，预测 RUL 变化 {impact:.3f}。",
+                    )
+                )
+        contributions.sort(key=lambda item: item.impact, reverse=True)
+        return contributions[:4]
+
+    def _attention_heatmap(self, features: Optional[dict], raw_cycles: np.ndarray) -> Optional[AttentionHeatmap]:
+        if not features:
+            return None
+        attn_weights = features.get("attn_weights")
+        if not attn_weights:
+            return None
+        last_layer = attn_weights[-1]
+        if last_layer is None:
+            return None
+        weights = last_layer.detach().cpu().numpy()
+        if weights.ndim != 4:
+            return None
+        matrix = weights.mean(axis=1)[0]
+        labels = [str(int(cycle)) for cycle in raw_cycles.tolist()] if raw_cycles.size else [str(index + 1) for index in range(matrix.shape[0])]
+        return AttentionHeatmap(
+            x_labels=labels,
+            y_labels=labels,
+            values=np.round(matrix, 4).tolist(),
+        )
+
+    def _estimate_confidence(
+        self,
+        *,
+        predicted_rul: float,
+        model_name: str,
+        seq_len: int,
+        capacities: np.ndarray,
+        fallback_used: bool,
+    ) -> float:
+        base = 0.88 if model_name == "hybrid" else 0.8 if model_name == "bilstm" else 0.68
+        if fallback_used:
+            base -= 0.08
+        length_bonus = min(0.08, max(0.0, (seq_len - 10) * 0.003))
+        stability = self._trajectory_stability(capacities)
+        stability_bonus = min(0.08, stability * 0.12)
+        long_horizon_penalty = min(0.1, predicted_rul / 4000.0)
+        score = base + length_bonus + stability_bonus - long_horizon_penalty
+        return round(float(np.clip(score, 0.35, 0.97)), 3)
+
+    @staticmethod
+    def _heuristic_rul_from_sequence(sequence: np.ndarray, feature_names: Sequence[str]) -> dict[str, float | str]:
+        columns = list(feature_names)
+        capacity_index = columns.index("capacity") if "capacity" in columns else -1
+        cycle_index = columns.index("cycle_number") if "cycle_number" in columns else -1
+        if capacity_index < 0 or cycle_index < 0:
+            return {
+                "predicted_rul": 120.0,
+                "method": "fallback_default",
+                "initial_capacity": 0.0,
+                "latest_capacity": 0.0,
+                "eol_capacity": 0.0,
+            }
+
+        capacities = sequence[:, capacity_index].astype(float)
+        cycles = sequence[:, cycle_index].astype(float)
+        initial_capacity = float(np.max(capacities[: max(3, len(capacities) // 4)]))
+        latest_capacity = float(capacities[-1])
+        eol_capacity = initial_capacity * 0.8
+        if latest_capacity <= eol_capacity:
+            return {
+                "predicted_rul": 0.0,
+                "method": "already_below_eol",
+                "initial_capacity": initial_capacity,
+                "latest_capacity": latest_capacity,
+                "eol_capacity": eol_capacity,
+            }
+
+        slope, intercept = np.polyfit(cycles, capacities, deg=1)
+        if slope >= -1e-6:
+            predicted_rul = max(20.0, (latest_capacity - eol_capacity) / max(0.002, initial_capacity * 0.002))
+            method = "flat_trend_proxy"
+        else:
+            eol_cycle = (eol_capacity - intercept) / slope
+            predicted_rul = max(0.0, eol_cycle - cycles[-1])
+            method = "linear_trend_proxy"
+        return {
+            "predicted_rul": float(predicted_rul),
+            "method": method,
+            "initial_capacity": initial_capacity,
+            "latest_capacity": latest_capacity,
+            "eol_capacity": eol_capacity,
+        }
+
+    @staticmethod
+    def _calibrate_rul_prediction(
+        *,
+        raw_prediction: float,
+        trend_proxy_rul: float,
+        latest_capacity: float,
+        eol_capacity: float,
+        initial_capacity: float,
+    ) -> dict[str, object]:
+        margin = max(0.0, latest_capacity - eol_capacity)
+        healthy_margin = margin >= max(initial_capacity * 0.03, 0.05)
+        strong_gap = trend_proxy_rul >= max(12.0, raw_prediction * 3.0)
+        if not healthy_margin or not strong_gap:
+            return {"predicted_rul": round(float(raw_prediction), 2), "applied": False}
+
+        calibrated = max(raw_prediction, min(trend_proxy_rul, max(12.0, trend_proxy_rul * 0.45)))
+        return {
+            "predicted_rul": round(float(calibrated), 2),
+            "applied": True,
+            "raw_model_rul": round(float(raw_prediction), 2),
+            "trend_proxy_rul": round(float(trend_proxy_rul), 2),
+        }
+
+    @staticmethod
+    def _trajectory_stability(capacities: np.ndarray) -> float:
+        if capacities.size < 3:
+            return 0.25
+        deltas = np.diff(capacities)
+        spread = float(np.std(deltas))
+        mean_magnitude = float(np.mean(np.abs(deltas))) or 1e-6
+        score = 1.0 / (1.0 + spread / mean_magnitude)
+        return float(np.clip(score, 0.0, 1.0))
+
+    def _normalize_sequence(self, sequence: np.ndarray, normalization: dict, feature_names: list[str]) -> np.ndarray:
+        means = normalization.get("means", {}) if isinstance(normalization, dict) else {}
+        stds = normalization.get("stds", {}) if isinstance(normalization, dict) else {}
+        normalized = sequence.astype(float).copy()
+        for index, feature_name in enumerate(feature_names):
+            mean = float(means.get(feature_name, 0.0))
+            std = float(stds.get(feature_name, 1.0)) or 1.0
+            normalized[:, index] = (normalized[:, index] - mean) / max(std, 1e-6)
+        return normalized
+
+    @staticmethod
+    def _build_sequence_from_inputs(
+        *,
+        points: Optional[Sequence[dict[str, float]]],
+        sequence: Optional[np.ndarray],
+        feature_cols: Sequence[str],
+    ) -> np.ndarray:
+        if points is not None:
+            return RULInferenceService.sequence_from_cycle_points(points, feature_cols=feature_cols)
+        if sequence is None:
+            raise ValueError("缺少可用于预测的输入序列")
+        return np.asarray(sequence, dtype=float)
+
+    @staticmethod
+    def _safe_column(sequence: np.ndarray, feature_names: list[str], feature_name: str) -> np.ndarray:
+        if feature_name not in feature_names:
+            return np.asarray([], dtype=float)
+        index = feature_names.index(feature_name)
+        return sequence[:, index].astype(float)
+
+    def _extract_series(
+        self,
+        points: Optional[Sequence[dict[str, float]]],
+        feature_names: list[str],
+        sequence: np.ndarray,
+        feature_name: str,
+    ) -> np.ndarray:
+        if points is not None:
+            return np.asarray([float(item.get(feature_name, 0.0) or 0.0) for item in points], dtype=float)
+        return self._safe_column(sequence, feature_names, feature_name)
+
+    @staticmethod
+    def _feature_description(feature_name: str, delta: float) -> str:
+        effect = "提升" if delta < 0 else "压低"
+        return f"遮挡 {feature_name} 后，模型输出相对基线{effect}了 RUL 估计。"
 
     def _resolve_checkpoint(self, source: str, model_name: str) -> Path:
         candidates = [
@@ -153,4 +589,11 @@ class RULInferenceService:
         destination.write_text(json.dumps(metadata, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
-__all__ = ["PredictionOutput", "RULInferenceService"]
+__all__ = [
+    "AttentionHeatmap",
+    "FeatureContribution",
+    "PredictionExplanation",
+    "PredictionOutput",
+    "RULInferenceService",
+    "WindowContribution",
+]

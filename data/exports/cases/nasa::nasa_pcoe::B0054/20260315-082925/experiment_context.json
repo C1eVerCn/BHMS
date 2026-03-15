@@ -1,0 +1,111 @@
+{
+  "comparison": {
+    "source": "nasa",
+    "models": {
+      "bilstm": {
+        "best_val_loss": 0.6047635511918501,
+        "test_metrics": {
+          "loss": 32.068589225411415,
+          "rmse": 35.06854870915413,
+          "mae": 32.55826556682587,
+          "mape": 97.93481206893921,
+          "r2": -55.922711223363876,
+          "lr": 0.00039715242044697206
+        },
+        "best_checkpoint": "data/models/nasa/bilstm/bilstm_best.pt",
+        "final_checkpoint": "data/models/nasa/bilstm/bilstm_final.pt"
+      },
+      "hybrid": {
+        "best_val_loss": 0.0,
+        "test_metrics": {
+          "loss": 32.06891740858555,
+          "rmse": 35.06944790482521,
+          "mae": 32.55859375,
+          "mape": 97.93526792526245,
+          "r2": -55.92281038314104,
+          "lr": 0.00015049999999999997
+        },
+        "best_checkpoint": "data/models/nasa/hybrid/hybrid_best.pt",
+        "final_checkpoint": "data/models/nasa/hybrid/hybrid_final.pt"
+      }
+    }
+  },
+  "detail_headline": "Hybrid 当前在该来源上相对基线 提升 13.420%（按 RMSE 口径）。",
+  "warnings": [
+    "bilstm 的 R2 为负，说明当前泛化效果仍不足。",
+    "hybrid 的 R2 为负，说明当前泛化效果仍不足。",
+    "hybrid 的 MAPE 偏高，建议补充误差分布图和多随机种子实验。"
+  ],
+  "plots": [
+    {
+      "key": "ablation_overview",
+      "title": "NASA ablation overview",
+      "description": "Aggregate RMSE for each hybrid ablation variant.",
+      "path": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/plots/ablation_overview.png",
+      "generated_at": "2026-03-15T08:29:24.158737"
+    },
+    {
+      "key": "dataset_split",
+      "title": "NASA dataset split",
+      "description": "Battery counts in the fixed train/validation/test split.",
+      "path": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/plots/dataset_split.png",
+      "generated_at": "2026-03-15T08:29:24.234834",
+      "split_snapshot": {
+        "train_batteries": [
+          "nasa::nasa_pcoe::B0005",
+          "nasa::nasa_pcoe::B0006",
+          "nasa::nasa_pcoe::B0007",
+          "nasa::nasa_pcoe::B0018",
+          "nasa::nasa_pcoe::B0025",
+          "nasa::nasa_pcoe::B0026",
+          "nasa::nasa_pcoe::B0027",
+          "nasa::nasa_pcoe::B0028",
+          "nasa::nasa_pcoe::B0029",
+          "nasa::nasa_pcoe::B0030",
+          "nasa::nasa_pcoe::B0031",
+          "nasa::nasa_pcoe::B0032",
+          "nasa::nasa_pcoe::B0033",
+          "nasa::nasa_pcoe::B0034",
+          "nasa::nasa_pcoe::B0036",
+          "nasa::nasa_pcoe::B0038",
+          "nasa::nasa_pcoe::B0039",
+          "nasa::nasa_pcoe::B0040",
+          "nasa::nasa_pcoe::B0041",
+          "nasa::nasa_pcoe::B0042"
+        ],
+        "val_batteries": [
+          "nasa::nasa_pcoe::B0043",
+          "nasa::nasa_pcoe::B0044",
+          "nasa::nasa_pcoe::B0045",
+          "nasa::nasa_pcoe::B0046",
+          "nasa::nasa_pcoe::B0047",
+          "nasa::nasa_pcoe::B0048",
+          "nasa::nasa_pcoe::B0049"
+        ],
+        "test_batteries": [
+          "nasa::nasa_pcoe::B0050",
+          "nasa::nasa_pcoe::B0051",
+          "nasa::nasa_pcoe::B0052",
+          "nasa::nasa_pcoe::B0053",
+          "nasa::nasa_pcoe::B0054",
+          "nasa::nasa_pcoe::B0055",
+          "nasa::nasa_pcoe::B0056"
+        ]
+      }
+    },
+    {
+      "key": "experiment_ablations",
+      "title": "NASA ablation summary",
+      "description": "Aggregate RMSE comparison for the configured ablation variants.",
+      "path": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/plots/experiment_ablations.png",
+      "generated_at": "2026-03-15T08:29:24.270084"
+    },
+    {
+      "key": "experiment_summary",
+      "title": "NASA model comparison",
+      "description": "Aggregate multi-seed metric comparison between Bi-LSTM and Hybrid.",
+      "path": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/plots/experiment_summary.png",
+      "generated_at": "2026-03-15T08:29:24.202838"
+    }
+  ]
+}

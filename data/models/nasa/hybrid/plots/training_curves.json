@@ -1,0 +1,7 @@
+{
+  "key": "training_curves",
+  "title": "NASA hybrid training curves",
+  "description": "Train/validation loss curves for the configured seed runs.",
+  "path": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/plots/training_curves.png",
+  "generated_at": "2026-03-15T08:29:23.655929"
+}

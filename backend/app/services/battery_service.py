@@ -11,6 +11,8 @@ from backend.app.core.config import Settings, get_settings
 from backend.app.core.exceptions import BHMSException
 from backend.app.services.repository import BHMSRepository
 from ml.data.adapters import CALCEAdapter, KaggleAdapter, NASAAdapter
+from ml.data.dataset import RULDataModule
+from ml.data.schema import BATTERY_SCHEMA_COLUMNS, enrich_existing_cycle_frame
 
 
 class BatteryService:
@@ -43,7 +45,6 @@ class BatteryService:
     ) -> dict[str, Any]:
         source = source.lower()
         adapter = self._get_adapter(source)
-        self.repository.delete_batteries_by_source(source)
         output_dir = self.settings.processed_dir / source
         output_dir.mkdir(parents=True, exist_ok=True)
         processed_csv = output_dir / f"{source}_cycle_summary.csv"
@@ -56,6 +57,7 @@ class BatteryService:
         )
         summary["file_name"] = processed_csv.name
         summary["file_path"] = str(processed_csv)
+        summary["validation_summary"]["ingestion_mode"] = "builtin_source"
         return summary
 
     def import_uploaded_file(
@@ -78,6 +80,8 @@ class BatteryService:
         summary["file_name"] = path.name
         summary["file_path"] = str(path)
         summary["detected_source"] = resolved_source
+        summary["validation_summary"]["ingestion_mode"] = "uploaded_file"
+        summary["validation_summary"]["ready_for_immediate_analysis"] = bool(summary["battery_ids"])
         return summary
 
     def import_frame(
@@ -130,6 +134,7 @@ class BatteryService:
             "dataset_name": dataset_name,
             "include_in_training": include_in_training,
             "source_distribution": source_distribution,
+            "file_type": Path(dataset_path).suffix.lower() or source.lower(),
         }
         self.repository.insert_dataset_file(
             {
@@ -156,6 +161,12 @@ class BatteryService:
     def list_batteries(self, page: int, page_size: int) -> dict[str, Any]:
         items, total = self.repository.list_batteries(page=page, page_size=page_size)
         return {"items": items, "page": page, "page_size": page_size, "total": total}
+
+    def update_training_candidate(self, battery_id: str, include_in_training: bool) -> dict[str, Any]:
+        battery = self.get_battery(battery_id)
+        self.repository.set_battery_training_flag(battery_id, include_in_training)
+        battery["include_in_training"] = include_in_training
+        return battery
 
     def get_battery(self, battery_id: str) -> dict[str, Any]:
         battery = self.repository.get_battery(battery_id)
@@ -200,6 +211,50 @@ class BatteryService:
             {"name": "故障", "value": summary["critical_batteries"]},
         ]
         return summary
+
+    def prepare_training_dataset(self, source: str, seq_len: int = 30, batch_size: int = 16) -> dict[str, Any]:
+        source = source.lower()
+        rows = self.repository.query_training_cycle_points(source)
+        if not rows:
+            raise BHMSException(
+                f"来源 {source} 当前没有被标记为训练候选的样本",
+                status_code=400,
+                code="missing_training_candidates",
+            )
+        frame = pd.DataFrame(rows)
+        enriched = enrich_existing_cycle_frame(frame, eol_capacity_ratio=self.settings.battery_eol_ratio)
+        enriched = enriched[BATTERY_SCHEMA_COLUMNS]
+        output_dir = self.settings.processed_dir / source
+        output_dir.mkdir(parents=True, exist_ok=True)
+        source_csv = output_dir / f"{source}_cycle_summary.csv"
+        enriched.to_csv(source_csv, index=False)
+        data_module = RULDataModule(
+            csv_path=source_csv,
+            source=source,
+            seq_len=seq_len,
+            batch_size=batch_size,
+            output_dir=output_dir,
+        )
+        metadata_paths = data_module.export_metadata()
+        return {
+            "import_summary": {
+                "source": source,
+                "battery_ids": sorted(enriched["battery_id"].unique().tolist()),
+                "imported_cycles": int(len(enriched)),
+                "include_in_training": True,
+                "validation_summary": {
+                    "battery_count": int(enriched["battery_id"].nunique()),
+                    "imported_cycles": int(len(enriched)),
+                    "source": source,
+                    "dataset_name": "training_pool",
+                    "include_in_training": True,
+                    "ingestion_mode": "training_pool",
+                },
+            },
+            "data_summary": data_module.summary(),
+            "metadata_paths": metadata_paths,
+            "csv_path": str(source_csv),
+        }
 
     def _resolve_source(self, source: str | None, file_path: Path) -> str:
         if source and source.lower() != "auto":

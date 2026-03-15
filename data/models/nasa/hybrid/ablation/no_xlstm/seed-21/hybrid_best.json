@@ -1,0 +1,368 @@
+{
+  "source": "nasa",
+  "model_type": "hybrid",
+  "model_version": "nasa-no_xlstm-seed-21",
+  "model_config": {
+    "input_dim": 11,
+    "d_model": 64,
+    "xlstm_layers": 1,
+    "xlstm_heads": 4,
+    "use_xlstm": false,
+    "use_mlstm": true,
+    "use_slstm": true,
+    "transformer_layers": 1,
+    "transformer_heads": 8,
+    "transformer_ff_mult": 4,
+    "use_transformer": true,
+    "fusion_dim": 64,
+    "output_dim": 1,
+    "max_rul": 2000.0,
+    "dropout": 0.1,
+    "max_seq_len": 5000
+  },
+  "training_config": {
+    "source": "nasa",
+    "model_type": "hybrid",
+    "num_epochs": 40,
+    "batch_size": 16,
+    "learning_rate": 0.0003,
+    "weight_decay": 0.001,
+    "lr_scheduler": "cosine_warm_restarts",
+    "early_stopping": true,
+    "patience": 20,
+    "min_delta": 0.0001,
+    "loss_type": "huber",
+    "huber_delta": 1.0,
+    "checkpoint_dir": "/Users/chris/Documents/trae_projects/BHMS/data/models",
+    "log_dir": "/Users/chris/Documents/trae_projects/BHMS/data/models/logs",
+    "device": "auto",
+    "use_amp": false,
+    "max_grad_norm": 1.0,
+    "seed": 21,
+    "model_version": "nasa-no_xlstm-seed-21",
+    "resume_from": null,
+    "run_name": null,
+    "artifact_subdir": "ablation/no_xlstm/seed-21"
+  },
+  "data_summary": {
+    "csv_path": "/Users/chris/Documents/trae_projects/BHMS/data/processed/nasa/nasa_cycle_summary.csv",
+    "source": "nasa",
+    "seq_len": 30,
+    "batch_size": 16,
+    "feature_columns": [
+      "voltage_mean",
+      "voltage_std",
+      "voltage_min",
+      "voltage_max",
+      "current_mean",
+      "current_std",
+      "temperature_mean",
+      "temperature_std",
+      "temperature_rise_rate",
+      "capacity",
+      "cycle_number"
+    ],
+    "split": {
+      "train_batteries": [
+        "nasa::nasa_pcoe::B0005",
+        "nasa::nasa_pcoe::B0006",
+        "nasa::nasa_pcoe::B0007",
+        "nasa::nasa_pcoe::B0018",
+        "nasa::nasa_pcoe::B0025",
+        "nasa::nasa_pcoe::B0026",
+        "nasa::nasa_pcoe::B0027",
+        "nasa::nasa_pcoe::B0028",
+        "nasa::nasa_pcoe::B0029",
+        "nasa::nasa_pcoe::B0030",
+        "nasa::nasa_pcoe::B0031",
+        "nasa::nasa_pcoe::B0032",
+        "nasa::nasa_pcoe::B0033",
+        "nasa::nasa_pcoe::B0034",
+        "nasa::nasa_pcoe::B0036",
+        "nasa::nasa_pcoe::B0038",
+        "nasa::nasa_pcoe::B0039",
+        "nasa::nasa_pcoe::B0040",
+        "nasa::nasa_pcoe::B0041",
+        "nasa::nasa_pcoe::B0042"
+      ],
+      "val_batteries": [
+        "nasa::nasa_pcoe::B0043",
+        "nasa::nasa_pcoe::B0044",
+        "nasa::nasa_pcoe::B0045",
+        "nasa::nasa_pcoe::B0046",
+        "nasa::nasa_pcoe::B0047",
+        "nasa::nasa_pcoe::B0048",
+        "nasa::nasa_pcoe::B0049"
+      ],
+      "test_batteries": [
+        "nasa::nasa_pcoe::B0050",
+        "nasa::nasa_pcoe::B0051",
+        "nasa::nasa_pcoe::B0052",
+        "nasa::nasa_pcoe::B0053",
+        "nasa::nasa_pcoe::B0054",
+        "nasa::nasa_pcoe::B0055",
+        "nasa::nasa_pcoe::B0056"
+      ]
+    },
+    "normalization": {
+      "means": {
+        "voltage_mean": 3.4490434007545896,
+        "voltage_std": 0.2856621214922971,
+        "voltage_min": 2.278302000462899,
+        "voltage_max": 4.1891723445875515,
+        "current_mean": -1.9369810700670818,
+        "current_std": 0.8965558669723087,
+        "temperature_mean": 34.83126882220932,
+        "temperature_std": 4.5285985699944575,
+        "temperature_rise_rate": 0.029748898257627485,
+        "capacity": 1.486937395913767,
+        "cycle_number": 69.69158878504673
+      },
+      "stds": {
+        "voltage_mean": 0.17241812892090466,
+        "voltage_std": 0.0726172173253251,
+        "voltage_min": 0.29655185179796595,
+        "voltage_max": 0.02427460508417007,
+        "current_mean": 0.8016763739829038,
+        "current_std": 0.7027114420174002,
+        "temperature_mean": 9.612766608193075,
+        "temperature_std": 2.3652712567628478,
+        "temperature_rise_rate": 0.020142694020245447,
+        "capacity": 0.4081315577475957,
+        "cycle_number": 53.631610384036144
+      }
+    },
+    "num_batteries": 34,
+    "num_samples": {
+      "train": 1243,
+      "val": 338,
+      "test": 247
+    }
+  },
+  "feature_columns": [
+    "voltage_mean",
+    "voltage_std",
+    "voltage_min",
+    "voltage_max",
+    "current_mean",
+    "current_std",
+    "temperature_mean",
+    "temperature_std",
+    "temperature_rise_rate",
+    "capacity",
+    "cycle_number"
+  ],
+  "normalization": {
+    "means": {
+      "voltage_mean": 3.4490434007545896,
+      "voltage_std": 0.2856621214922971,
+      "voltage_min": 2.278302000462899,
+      "voltage_max": 4.1891723445875515,
+      "current_mean": -1.9369810700670818,
+      "current_std": 0.8965558669723087,
+      "temperature_mean": 34.83126882220932,
+      "temperature_std": 4.5285985699944575,
+      "temperature_rise_rate": 0.029748898257627485,
+      "capacity": 1.486937395913767,
+      "cycle_number": 69.69158878504673
+    },
+    "stds": {
+      "voltage_mean": 0.17241812892090466,
+      "voltage_std": 0.0726172173253251,
+      "voltage_min": 0.29655185179796595,
+      "voltage_max": 0.02427460508417007,
+      "current_mean": 0.8016763739829038,
+      "current_std": 0.7027114420174002,
+      "temperature_mean": 9.612766608193075,
+      "temperature_std": 2.3652712567628478,
+      "temperature_rise_rate": 0.020142694020245447,
+      "capacity": 0.4081315577475957,
+      "cycle_number": 53.631610384036144
+    }
+  },
+  "best_val_loss": 0.24212865395979447,
+  "test_metrics": {},
+  "history": {
+    "train": [
+      {
+        "loss": 39.62363351919712,
+        "rmse": 61.320459488110664,
+        "mae": 40.04847289354373,
+        "mape": 99.21087289467836,
+        "r2": -0.6909677141751999,
+        "lr": 0.0003
+      },
+      {
+        "loss": 36.513093263675,
+        "rmse": 57.76744979467147,
+        "mae": 36.91767257299178,
+        "mape": 119.79275899055676,
+        "r2": -0.49015037830059344,
+        "lr": 0.0002926829491861254
+      },
+      {
+        "loss": 33.4196343544202,
+        "rmse": 53.504431308844154,
+        "mae": 33.790749427599785,
+        "mape": 113.86715238522261,
+        "r2": -0.29881523587764836,
+        "lr": 0.0002714480406590546
+      },
+      {
+        "loss": 30.37306038538615,
+        "rmse": 50.32987660628099,
+        "mae": 30.729977130889893,
+        "mape": 100.65768963251358,
+        "r2": -0.11428667566715142,
+        "lr": 0.0002383738952177247
+      },
+      {
+        "loss": 27.840703572982395,
+        "rmse": 46.41556563744178,
+        "mae": 28.189298605307556,
+        "mape": 90.3608234601143,
+        "r2": 0.04065736516928061,
+        "lr": 0.0001966980406590546
+      },
+      {
+        "loss": 25.61051159638625,
+        "rmse": 43.77013690655048,
+        "mae": 25.95247780971038,
+        "mape": 70.10124054933206,
+        "r2": 0.1452095600274893,
+        "lr": 0.00015049999999999997
+      },
+      {
+        "loss": 23.619142012718395,
+        "rmse": 41.10454131395389,
+        "mae": 23.958988923292893,
+        "mape": 63.79381874280098,
+        "r2": 0.24737194715402064,
+        "lr": 0.00010430195934094535
+      },
+      {
+        "loss": 22.264087713681736,
+        "rmse": 39.22716590685722,
+        "mae": 22.60458130102891,
+        "mape": 52.36527034563896,
+        "r2": 0.3303717573483785,
+        "lr": 6.262610478227527e-05
+      },
+      {
+        "loss": 21.756358525691887,
+        "rmse": 38.645960367642914,
+        "mae": 22.095278373131386,
+        "mape": 49.04156748453776,
+        "r2": 0.3308167916077834,
+        "lr": 2.955195934094537e-05
+      },
+      {
+        "loss": 21.377979260224564,
+        "rmse": 38.52642218271891,
+        "mae": 21.716645161310833,
+        "mape": 44.48719107799041,
+        "r2": 0.3397004589056357,
+        "lr": 8.317050813874547e-06
+      },
+      {
+        "loss": 19.958511334199173,
+        "rmse": 35.829179152464256,
+        "mae": 20.300880536054954,
+        "mape": 47.30544402049138,
+        "r2": 0.4316168412184104,
+        "lr": 0.0003
+      }
+    ],
+    "val": [
+      {
+        "loss": 0.8388415321850599,
+        "rmse": 1.1127295470373197,
+        "mae": 1.014197914183817,
+        "mape": 101.41979196938601,
+        "r2": -77542483.62246981,
+        "lr": 0.0003
+      },
+      {
+        "loss": 0.7995836179364811,
+        "rmse": 0.9890032356435602,
+        "mae": 0.8587704680182717,
+        "mape": 85.87704467773438,
+        "r2": -115762089.18181819,
+        "lr": 0.0002926829491861254
+      },
+      {
+        "loss": 0.6593420607122508,
+        "rmse": 0.8222258416089144,
+        "mae": 0.6988776691935279,
+        "mape": 69.88776484402743,
+        "r2": -110564666.22727273,
+        "lr": 0.0002714480406590546
+      },
+      {
+        "loss": 1.1914327171715824,
+        "rmse": 1.410114212469621,
+        "mae": 1.2348437512462789,
+        "mape": 123.4843762137673,
+        "r2": -328147217.1363636,
+        "lr": 0.0002383738952177247
+      },
+      {
+        "loss": 1.1052677848122336,
+        "rmse": 1.2993803891268643,
+        "mae": 1.1436200575395064,
+        "mape": 114.36200783469461,
+        "r2": -337813788.1818182,
+        "lr": 0.0001966980406590546
+      },
+      {
+        "loss": 0.9835102341391824,
+        "rmse": 1.1713185743852095,
+        "mae": 1.0192330533807927,
+        "mape": 101.92330793900923,
+        "r2": -323974182.3636364,
+        "lr": 0.00015049999999999997
+      },
+      {
+        "loss": 1.0702779509804465,
+        "rmse": 1.2773483016274192,
+        "mae": 1.1070803295482288,
+        "mape": 110.70803278142756,
+        "r2": -347210323.45454544,
+        "lr": 0.00010430195934094535
+      },
+      {
+        "loss": 1.1131573156876997,
+        "rmse": 1.323566350069913,
+        "mae": 1.1499375213276257,
+        "mape": 114.99375221946023,
+        "r2": -380991266.0,
+        "lr": 6.262610478227527e-05
+      },
+      {
+        "loss": 0.9429812864823774,
+        "rmse": 1.134938651865179,
+        "mae": 0.9784926501187411,
+        "mape": 97.84926674582742,
+        "r2": -293884407.8181818,
+        "lr": 2.955195934094537e-05
+      },
+      {
+        "loss": 1.0301872383464465,
+        "rmse": 1.2330066941001199,
+        "mae": 1.0667335336858577,
+        "mape": 106.67335371537642,
+        "r2": -325753779.45454544,
+        "lr": 8.317050813874547e-06
+      },
+      {
+        "loss": 0.24212865395979447,
+        "rmse": 0.30556993051008746,
+        "mae": 0.259174108505249,
+        "mape": 25.9174111106179,
+        "r2": -32867289.227272727,
+        "lr": 0.0003
+      }
+    ],
+    "test": []
+  }
+}

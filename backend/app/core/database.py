@@ -111,6 +111,7 @@ CREATE TABLE IF NOT EXISTS diagnosis_records (
     recommendations_json TEXT,
     related_symptoms_json TEXT,
     evidence_json TEXT,
+    payload_json TEXT,
     created_at TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_diagnosis_battery ON diagnosis_records(battery_id, created_at DESC);
@@ -127,6 +128,24 @@ CREATE TABLE IF NOT EXISTS training_runs (
     created_at TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_training_runs_source ON training_runs(source, model_type, created_at DESC);
+
+CREATE TABLE IF NOT EXISTS training_jobs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    source TEXT NOT NULL,
+    model_scope TEXT NOT NULL,
+    status TEXT NOT NULL,
+    current_stage TEXT,
+    force_run INTEGER DEFAULT 0,
+    baseline_json TEXT,
+    result_json TEXT,
+    log_excerpt TEXT,
+    error_message TEXT,
+    metadata_json TEXT,
+    created_at TEXT NOT NULL,
+    started_at TEXT,
+    finished_at TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_training_jobs_source ON training_jobs(source, created_at DESC);
 """
 
 MIGRATIONS = {
@@ -147,6 +166,10 @@ MIGRATIONS = {
         "dataset_name": "ALTER TABLE dataset_files ADD COLUMN dataset_name TEXT",
         "include_in_training": "ALTER TABLE dataset_files ADD COLUMN include_in_training INTEGER DEFAULT 0",
     },
+    "diagnosis_records": {
+        "payload_json": "ALTER TABLE diagnosis_records ADD COLUMN payload_json TEXT",
+    },
+    "training_jobs": {},
 }
 
 

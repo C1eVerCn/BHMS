@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any, Literal, Optional
 
 from pydantic import BaseModel, Field
 
@@ -61,6 +61,56 @@ class TrainingRun(BaseModel):
     created_at: str
 
 
+class PredictionPoint(BaseModel):
+    cycle: float
+    capacity: float
+
+
+class ConfidenceBandPoint(BaseModel):
+    cycle: float
+    lower: float
+    upper: float
+
+
+class AttentionHeatmap(BaseModel):
+    x_labels: list[str] = Field(default_factory=list)
+    y_labels: list[str] = Field(default_factory=list)
+    values: list[list[float]] = Field(default_factory=list)
+    disclaimer: str = "注意力热力图仅作为辅助参考，不直接等于因果解释。"
+
+
+class FeatureContribution(BaseModel):
+    feature: str
+    impact: float
+    direction: str
+    description: str
+
+
+class WindowContribution(BaseModel):
+    window_label: str
+    start_cycle: float
+    end_cycle: float
+    impact: float
+    description: str
+
+
+class PredictionExplanation(BaseModel):
+    input_summary: dict[str, Any] = Field(default_factory=dict)
+    model_info: dict[str, Any] = Field(default_factory=dict)
+    feature_contributions: list[FeatureContribution] = Field(default_factory=list)
+    window_contributions: list[WindowContribution] = Field(default_factory=list)
+    confidence_summary: dict[str, Any] = Field(default_factory=dict)
+    attention_heatmap: Optional[AttentionHeatmap] = None
+
+
+class PredictionProjection(BaseModel):
+    actual_points: list[PredictionPoint] = Field(default_factory=list)
+    forecast_points: list[PredictionPoint] = Field(default_factory=list)
+    eol_capacity: float
+    predicted_eol_cycle: float
+    confidence_band: list[ConfidenceBandPoint] = Field(default_factory=list)
+
+
 class PredictionRecord(BaseModel):
     id: int
     battery_id: str
@@ -71,6 +121,24 @@ class PredictionRecord(BaseModel):
     created_at: str
     source: str
     payload: dict[str, Any] = Field(default_factory=dict)
+    model_version: Optional[str] = None
+    model_source: Optional[str] = None
+    checkpoint_id: Optional[str] = None
+    fallback_used: Optional[bool] = None
+    prediction_time: Optional[str] = None
+    projection: Optional[PredictionProjection] = None
+    explanation: Optional[PredictionExplanation] = None
+    report_markdown: Optional[str] = None
+
+
+class PredictionResult(PredictionRecord):
+    model_version: str
+    model_source: str
+    fallback_used: bool
+    prediction_time: str
+    projection: PredictionProjection
+    explanation: PredictionExplanation
+    report_markdown: str
 
 
 class AnomalyEventModel(BaseModel):
@@ -85,6 +153,37 @@ class AnomalyEventModel(BaseModel):
     evidence: list[str] = Field(default_factory=list)
 
 
+class CandidateFault(BaseModel):
+    name: str
+    score: float
+    severity: str
+    description: str
+    category: Optional[str] = None
+    matched_symptoms: list[str] = Field(default_factory=list)
+    root_causes: list[str] = Field(default_factory=list)
+    recommendations: list[str] = Field(default_factory=list)
+
+
+class GraphTraceNode(BaseModel):
+    id: str
+    label: str
+    node_type: str
+    properties: dict[str, Any] = Field(default_factory=dict)
+
+
+class GraphTraceEdge(BaseModel):
+    source: str
+    target: str
+    relation: str
+
+
+class GraphTrace(BaseModel):
+    matched_symptoms: list[str] = Field(default_factory=list)
+    nodes: list[GraphTraceNode] = Field(default_factory=list)
+    edges: list[GraphTraceEdge] = Field(default_factory=list)
+    ranking_basis: list[str] = Field(default_factory=list)
+
+
 class DiagnosisRecord(BaseModel):
     id: int
     battery_id: str
@@ -97,6 +196,27 @@ class DiagnosisRecord(BaseModel):
     related_symptoms: list[str]
     evidence: list[str]
     created_at: str
+    payload: dict[str, Any] = Field(default_factory=dict)
+    candidate_faults: list[CandidateFault] = Field(default_factory=list)
+    graph_trace: Optional[GraphTrace] = None
+    report_markdown: Optional[str] = None
+
+
+class DiagnosisResult(BaseModel):
+    id: int
+    battery_id: str
+    fault_type: str
+    confidence: float
+    severity: str
+    description: str
+    root_causes: list[str]
+    recommendations: list[str]
+    related_symptoms: list[str]
+    evidence: list[str]
+    diagnosis_time: str
+    candidate_faults: list[CandidateFault] = Field(default_factory=list)
+    graph_trace: GraphTrace
+    report_markdown: str
 
 
 class KnowledgeEntry(BaseModel):
@@ -159,6 +279,33 @@ class UploadSummary(BaseModel):
     detected_source: Optional[str] = None
 
 
+class TrainingJob(BaseModel):
+    id: int
+    source: str
+    model_scope: Literal["bilstm", "hybrid", "all"]
+    job_kind: Optional[Literal["baseline", "multi_seed", "ablation", "full_suite"]] = None
+    seed_count: Optional[int] = None
+    status: str
+    current_stage: Optional[str] = None
+    force_run: bool = False
+    baseline: Optional[dict[str, Any]] = None
+    result: Optional[dict[str, Any]] = None
+    log_excerpt: Optional[str] = None
+    error_message: Optional[str] = None
+    metadata: dict[str, Any] = Field(default_factory=dict)
+    created_at: str
+    started_at: Optional[str] = None
+    finished_at: Optional[str] = None
+
+
+class TrainingComparison(BaseModel):
+    source: str
+    previous: Optional[dict[str, Any]] = None
+    current: Optional[dict[str, Any]] = None
+    latest_job: Optional[TrainingJob] = None
+    runs: list[TrainingRun] = Field(default_factory=list)
+
+
 class RULPredictionRequest(BaseModel):
     battery_id: str
     model_name: str = "hybrid"
@@ -183,6 +330,18 @@ class DataImportRequest(BaseModel):
     battery_ids: Optional[list[str]] = None
     source: str = "nasa"
     include_in_training: bool = False
+
+
+class UpdateTrainingCandidateRequest(BaseModel):
+    include_in_training: bool = True
+
+
+class CreateTrainingJobRequest(BaseModel):
+    source: Literal["nasa", "calce", "kaggle"]
+    model_scope: Literal["bilstm", "hybrid", "all"] = "all"
+    force_run: bool = False
+    job_kind: Literal["baseline", "multi_seed", "ablation", "full_suite"] = "baseline"
+    seed_count: int = Field(default=3, ge=1, le=5)
 
 
 class BatteryCyclesResponse(BaseModel):

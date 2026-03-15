@@ -12,7 +12,6 @@ if str(PROJECT_ROOT) not in sys.path:
 
 import argparse
 import json
-from dataclasses import asdict
 from pathlib import Path
 from typing import Any
 
@@ -21,6 +20,7 @@ import yaml
 from backend.app.core.database import get_database
 from backend.app.services.repository import BHMSRepository
 from ml.data import RULDataModule
+from ml.training.experiment_runner import run_training_experiment
 from ml.training.trainer import RULTrainer, TrainingConfig, build_model
 
 
@@ -49,6 +49,18 @@ def main() -> None:
     args = parser.parse_args()
 
     get_database().initialize()
+    if not args.validate_only and not args.test_only:
+        result = run_training_experiment(
+            args.source,
+            args.model,
+            config_path=args.config,
+            repository=BHMSRepository(),
+            persist_training_run=True,
+        )
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+        print(f"Saved summary to: {result['summary_path']}")
+        return
+
     config = load_yaml(args.config)
     data_cfg = config.get("data", {})
     model_cfg = config.get("model", {})
@@ -85,29 +97,8 @@ def main() -> None:
         result = {"val": trainer._run_epoch(trainer.val_loader, training=False)}
     elif args.test_only:
         result = {"test": trainer.test()}
-    else:
-        result = trainer.train()
 
-    repo = BHMSRepository()
-    if not args.validate_only:
-        repo.insert_training_run(
-            {
-                "source": args.source,
-                "model_type": args.model,
-                "model_version": trainer.config.model_version,
-                "best_checkpoint_path": str(trainer.best_checkpoint_path) if trainer.best_checkpoint_path else None,
-                "final_checkpoint_path": str(trainer.final_checkpoint_path) if trainer.final_checkpoint_path else None,
-                "metrics": result.get("test_metrics") or result.get("history", {}),
-                "metadata": {
-                    "config_path": args.config,
-                    "data_summary": data_summary,
-                    "model_config": model_config,
-                    "training_config": asdict(trainer.config),
-                },
-            }
-        )
-
-    summary_path = Path(trainer.checkpoint_dir if not args.validate_only else Path(data_cfg["csv_path"]).parent) / f"{args.model}_experiment_summary.json"
+    summary_path = Path(Path(data_cfg["csv_path"]).parent) / f"{args.model}_experiment_summary.json"
     summary_path.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
     print(json.dumps(result, ensure_ascii=False, indent=2))
     print(f"Saved summary to: {summary_path}")

@@ -1,0 +1,166 @@
+{
+  "source": "calce",
+  "battery_count": 8,
+  "training_candidate_count": 8,
+  "cycle_point_count": 570,
+  "dataset_names": [
+    "calce_demo"
+  ],
+  "dataset_breakdown": [
+    {
+      "dataset_name": "calce_demo",
+      "battery_count": 8
+    }
+  ],
+  "cycle_window": {
+    "min_cycle": 1,
+    "max_cycle": 80
+  },
+  "feature_ranges": {
+    "capacity": {
+      "min": 1.59,
+      "max": 2.13697,
+      "avg": 1.912101
+    },
+    "voltage_mean": {
+      "min": 3.642,
+      "max": 3.7782,
+      "avg": 3.703136
+    },
+    "current_mean": {
+      "min": -1.91,
+      "max": -1.7203,
+      "avg": -1.810655
+    },
+    "temperature_mean": {
+      "min": 23.0043,
+      "max": 47.3,
+      "avg": 25.369514
+    },
+    "internal_resistance": {
+      "min": 0.015,
+      "max": 0.0388,
+      "avg": 0.022746
+    }
+  },
+  "missing_stats": {
+    "timestamp": 90,
+    "internal_resistance": 0
+  },
+  "top_batteries_by_cycles": [
+    {
+      "battery_id": "calce::calce_demo::CALCE_000",
+      "first_cycle": 1,
+      "last_cycle": 80,
+      "cycle_points": 80
+    },
+    {
+      "battery_id": "calce::calce_demo::CALCE_001",
+      "first_cycle": 1,
+      "last_cycle": 80,
+      "cycle_points": 80
+    },
+    {
+      "battery_id": "calce::calce_demo::CALCE_002",
+      "first_cycle": 1,
+      "last_cycle": 80,
+      "cycle_points": 80
+    },
+    {
+      "battery_id": "calce::calce_demo::CALCE_003",
+      "first_cycle": 1,
+      "last_cycle": 80,
+      "cycle_points": 80
+    },
+    {
+      "battery_id": "calce::calce_demo::CALCE_004",
+      "first_cycle": 1,
+      "last_cycle": 80,
+      "cycle_points": 80
+    }
+  ],
+  "available_feature_columns": [
+    "capacity",
+    "cycle_number"
+  ],
+  "split": {
+    "train_batteries": [
+      "calce::calce_demo::CALCE_000",
+      "calce::calce_demo::CALCE_001",
+      "calce::calce_demo::CALCE_002",
+      "calce::calce_demo::CALCE_003"
+    ],
+    "val_batteries": [
+      "calce::calce_demo::CALCE_004",
+      "calce::calce_demo::CALCE_005"
+    ],
+    "test_batteries": [
+      "calce::calce_demo::CALCE_UNSEEN_101",
+      "calce::calce_demo::CALCE_UNSEEN_FAULT_301"
+    ]
+  },
+  "num_samples": {
+    "train": 228,
+    "val": 114,
+    "test": 44
+  },
+  "processed_summary_path": "/Users/chris/Documents/trae_projects/BHMS/data/processed/calce/calce_dataset_summary.json",
+  "comparison_summary_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/comparison_summary.json",
+  "comparison_available": true,
+  "dataset_files": [
+    {
+      "file_name": "20260315_030158_calce_unseen_fault_demo.csv",
+      "file_path": "/Users/chris/Documents/trae_projects/BHMS/data/uploads/20260315_030158_calce_unseen_fault_demo.csv",
+      "row_count": 60,
+      "include_in_training": true,
+      "created_at": "2026-03-15T03:01:58.814158"
+    },
+    {
+      "file_name": "20260315_025546_calce_unseen_fault_demo.csv",
+      "file_path": "/Users/chris/Documents/trae_projects/BHMS/data/uploads/20260315_025546_calce_unseen_fault_demo.csv",
+      "row_count": 60,
+      "include_in_training": true,
+      "created_at": "2026-03-15T02:55:46.269010"
+    },
+    {
+      "file_name": "20260315_024938_calce_unseen_demo.csv",
+      "file_path": "/Users/chris/Documents/trae_projects/BHMS/data/uploads/20260315_024938_calce_unseen_demo.csv",
+      "row_count": 30,
+      "include_in_training": true,
+      "created_at": "2026-03-15T02:49:38.600389"
+    },
+    {
+      "file_name": "calce_cycle_summary.csv",
+      "file_path": "/Users/chris/Documents/trae_projects/BHMS/data/processed/calce/calce_cycle_summary.csv",
+      "row_count": 480,
+      "include_in_training": true,
+      "created_at": "2026-03-14T13:48:38.370158"
+    },
+    {
+      "file_name": "20260314_134555_demo_calce_cycles.csv",
+      "file_path": "/Users/chris/Documents/trae_projects/BHMS/data/uploads/20260314_134555_demo_calce_cycles.csv",
+      "row_count": 480,
+      "include_in_training": true,
+      "created_at": "2026-03-14T13:45:55.576295"
+    }
+  ],
+  "demo_files": [
+    {
+      "name": "calce_unseen_demo",
+      "path": "/Users/chris/Documents/trae_projects/BHMS/data/demo_uploads/calce/calce_unseen_demo.csv",
+      "source": "calce",
+      "scenario": "unseen_sample",
+      "recommended": false,
+      "description": "推荐用于展示 CALCE 未见样本的导入与预测闭环。"
+    },
+    {
+      "name": "calce_unseen_fault_demo",
+      "path": "/Users/chris/Documents/trae_projects/BHMS/data/demo_uploads/calce/calce_unseen_fault_demo.csv",
+      "source": "calce",
+      "scenario": "fault_case",
+      "recommended": true,
+      "description": "推荐用于展示 CALCE 新样本的异常检测、GraphRAG 检索与完整案例导出。"
+    }
+  ],
+  "generated_at": "2026-03-15T08:29:26.091724"
+}

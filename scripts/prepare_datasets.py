@@ -12,12 +12,9 @@ if str(PROJECT_ROOT) not in sys.path:
 
 import argparse
 import json
-from pathlib import Path
 
-from backend.app.core.config import get_settings
 from backend.app.core.database import get_database
 from backend.app.services.battery_service import BatteryService
-from ml.data.dataset import RULDataModule
 
 
 def main() -> None:
@@ -29,23 +26,10 @@ def main() -> None:
     args = parser.parse_args()
 
     get_database().initialize()
-    settings = get_settings()
-    service = BatteryService(settings=settings)
-    summary = service.import_builtin_source(args.source, include_in_training=args.include_in_training)
-    source_csv = settings.processed_dir / args.source / f"{args.source}_cycle_summary.csv"
-    data_module = RULDataModule(
-        csv_path=source_csv,
-        source=args.source,
-        seq_len=args.seq_len,
-        batch_size=args.batch_size,
-        output_dir=settings.processed_dir / args.source,
-    )
-    metadata_paths = data_module.export_metadata()
-    payload = {
-        "import_summary": summary,
-        "data_summary": data_module.summary(),
-        "metadata_paths": metadata_paths,
-    }
+    service = BatteryService()
+    if args.include_in_training:
+        service.import_builtin_source(args.source, include_in_training=True)
+    payload = service.prepare_training_dataset(args.source, seq_len=args.seq_len, batch_size=args.batch_size)
     print(json.dumps(payload, ensure_ascii=False, indent=2))
 
 

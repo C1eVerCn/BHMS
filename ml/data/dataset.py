@@ -98,7 +98,7 @@ class RULDataModule:
         if self.data.empty:
             raise ValueError(f"数据文件 {self.csv_path} 中不存在来源 {self.source} 的样本")
         self.data.sort_values(["canonical_battery_id", "cycle_number"], inplace=True)
-        self.split = NASABatteryPreprocessor.split_batteries(self.data["canonical_battery_id"].unique())
+        self.split = self._resolve_split()
         self.normalization = self._compute_normalization(self.split.train_batteries)
         self.train_dataset = BatterySequenceDataset(
             self.data,
@@ -121,6 +121,17 @@ class RULDataModule:
             feature_cols=self.feature_cols,
             normalization=self.normalization,
         )
+
+    def _resolve_split(self) -> DatasetSplit:
+        battery_ids = list(self.data["canonical_battery_id"].unique())
+        split_path = self.output_dir / f"{self.source}_split.json"
+        if split_path.exists():
+            payload = json.loads(split_path.read_text(encoding="utf-8"))
+            split = DatasetSplit.from_dict(payload)
+            all_ids = set(split.train_batteries + split.val_batteries + split.test_batteries)
+            if all_ids == set(battery_ids) and split.val_batteries and split.test_batteries:
+                return split
+        return NASABatteryPreprocessor.split_batteries(battery_ids)
 
     def _compute_normalization(self, train_batteries: Iterable[str]) -> NormalizationStats:
         train_frame = self.data[self.data["canonical_battery_id"].isin(train_batteries)]

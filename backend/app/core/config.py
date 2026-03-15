@@ -21,10 +21,16 @@ class Settings:
     knowledge_path: Path
     model_dir: Path
     upload_dir: Path
+    demo_upload_dir: Path
     database_path: Path
     default_seq_len: int
     default_page_size: int
     battery_eol_ratio: float
+    graph_backend: str
+    neo4j_uri: str
+    neo4j_user: str
+    neo4j_password: str
+    neo4j_database: str
 
 
 @lru_cache(maxsize=1)
@@ -43,8 +49,14 @@ def get_settings() -> Settings:
         knowledge_path=data_dir / "knowledge" / "battery_fault_knowledge.json",
         model_dir=data_dir / "models",
         upload_dir=data_dir / "uploads",
+        demo_upload_dir=data_dir / "demo_uploads",
         database_path=project_root / os.getenv("BHMS_DB_PATH", "data/bhms.db"),
         default_seq_len=int(os.getenv("BHMS_DEFAULT_SEQ_LEN", "30")),
         default_page_size=int(os.getenv("BHMS_DEFAULT_PAGE_SIZE", "10")),
         battery_eol_ratio=float(os.getenv("BHMS_EOL_RATIO", "0.8")),
+        graph_backend=os.getenv("BHMS_GRAPH_BACKEND", "neo4j").lower(),
+        neo4j_uri=os.getenv("BHMS_NEO4J_URI", "bolt://localhost:7687"),
+        neo4j_user=os.getenv("BHMS_NEO4J_USER", "neo4j"),
+        neo4j_password=os.getenv("BHMS_NEO4J_PASSWORD", "bhmsneo4j"),
+        neo4j_database=os.getenv("BHMS_NEO4J_DATABASE", "neo4j"),
     )

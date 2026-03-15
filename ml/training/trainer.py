@@ -41,6 +41,7 @@ class TrainingConfig:
     model_version: str = "mvp-v2"
     resume_from: Optional[str] = None
     run_name: Optional[str] = None
+    artifact_subdir: Optional[str] = None
 
 
 class EarlyStopping:
@@ -86,14 +87,19 @@ class RULTrainer:
         self.early_stopping = EarlyStopping(training_config.patience, training_config.min_delta) if training_config.early_stopping else None
         self.run_name = training_config.run_name or f"{training_config.source}_{training_config.model_type}"
         self.checkpoint_dir = Path(training_config.checkpoint_dir) / training_config.source / training_config.model_type
+        if training_config.artifact_subdir:
+            self.checkpoint_dir = self.checkpoint_dir / training_config.artifact_subdir
         self.checkpoint_dir.mkdir(parents=True, exist_ok=True)
         self.log_dir = Path(training_config.log_dir) / training_config.source / training_config.model_type
+        if training_config.artifact_subdir:
+            self.log_dir = self.log_dir / training_config.artifact_subdir
         self.log_dir.mkdir(parents=True, exist_ok=True)
         self.writer = SummaryWriter(str(self.log_dir))
         self.best_val_loss = float("inf")
         self.best_checkpoint_path: Optional[Path] = None
         self.final_checkpoint_path: Optional[Path] = None
         self.history: dict[str, list[dict[str, float]]] = {"train": [], "val": [], "test": []}
+        self.test_outputs: dict[str, list[float]] = {"predictions": [], "targets": [], "errors": []}
         self.start_epoch = 0
         torch.manual_seed(self.config.seed)
         np.random.seed(self.config.seed)
@@ -254,6 +260,7 @@ class RULTrainer:
             "data_summary": self.data_summary,
             "history": self.history,
             "test_metrics": test_metrics,
+            "test_details": self.test_outputs,
         }
         (self.checkpoint_dir / "training_summary.json").write_text(
             json.dumps(comparison_summary, ensure_ascii=False, indent=2), encoding="utf-8"
@@ -264,7 +271,35 @@ class RULTrainer:
     def test(self) -> dict[str, float]:
         if self.test_loader is None:
             return {}
-        return self._run_epoch(self.test_loader, training=False)
+        self.model.eval()
+        total_loss = 0.0
+        aggregate = {"rmse": 0.0, "mae": 0.0, "mape": 0.0, "r2": 0.0}
+        batch_count = 0
+        predictions_all: list[float] = []
+        targets_all: list[float] = []
+        with torch.no_grad():
+            for features, targets in self.test_loader:
+                features = features.to(self.device)
+                targets = targets.to(self.device)
+                predictions, _ = self.model(features)
+                loss = self.criterion(predictions, targets)
+                metrics = self._calculate_metrics(predictions, targets)
+                total_loss += float(loss.item())
+                for key, value in metrics.items():
+                    aggregate[key] += value
+                batch_count += 1
+                predictions_all.extend(predictions.detach().cpu().view(-1).tolist())
+                targets_all.extend(targets.detach().cpu().view(-1).tolist())
+        self.test_outputs = {
+            "predictions": [float(item) for item in predictions_all],
+            "targets": [float(item) for item in targets_all],
+            "errors": [float(pred - target) for pred, target in zip(predictions_all, targets_all)],
+        }
+        result = {"loss": total_loss / max(batch_count, 1)}
+        for key, value in aggregate.items():
+            result[key] = value / max(batch_count, 1)
+        result["lr"] = float(self.optimizer.param_groups[0]["lr"])
+        return result
 
 
 def _dataclass_from_overrides(dataclass_type, overrides: Optional[dict[str, Any]] = None):

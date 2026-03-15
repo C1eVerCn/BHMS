@@ -1,12 +1,15 @@
 import React, { useEffect, useState } from 'react'
-import { Alert, Button, Card, List, Select, Space, Steps, Tag, Typography } from 'antd'
-import { AlertOutlined, CheckCircleOutlined, FileTextOutlined } from '@ant-design/icons'
+import { Alert, Button, List, Select, Space, Steps, Typography } from 'antd'
+import { AlertOutlined, FileTextOutlined, RightOutlined } from '@ant-design/icons'
+import { useNavigate } from 'react-router-dom'
 
+import { EmptyStateBlock, InsightCard, PageHero, PanelCard, SignalList, StatusTag, type StatusTone } from '../components/ui'
 import { useBhmsStore } from '../stores/useBhmsStore'
 
-const { Title, Text } = Typography
+const { Text, Title } = Typography
 
 const Diagnosis: React.FC = () => {
+  const navigate = useNavigate()
   const batteries = useBhmsStore((state) => state.batteries)
   const selectedBatteryId = useBhmsStore((state) => state.selectedBatteryId)
   const selectBattery = useBhmsStore((state) => state.selectBattery)
@@ -27,16 +30,43 @@ const Diagnosis: React.FC = () => {
   }, [batteries, loadBatteryContext, selectBattery, selectedBatteryId])
 
   const currentDiagnosis = latestDiagnosis ?? batteryHistory?.diagnoses?.[0]
+  const anomalyEvents = latestAnomaly?.events ?? []
+  const diagnosisAlertType =
+    currentDiagnosis?.severity === 'critical' || currentDiagnosis?.severity === 'high'
+      ? 'error'
+      : currentDiagnosis?.severity === 'info' || currentDiagnosis?.fault_type === '未发现明显故障'
+        ? 'success'
+        : 'warning'
 
   return (
-    <div>
-      <Title level={2} className="page-title">
-        故障诊断
-      </Title>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 16 }}>
+    <div className="page-shell">
+      <PageHero
+        kicker="Fault Diagnosis"
+        title="让诊断结果，更值得信任"
+        description="把异常、依据与建议放进同一条清晰路径里。"
+        pills={[
+          { label: '当前电池', value: selectedBatteryId ?? '未选择', tone: 'teal' },
+          { label: '异常事件', value: anomalyEvents.length, tone: anomalyEvents.length ? 'amber' : 'slate' },
+          { label: '诊断级别', value: currentDiagnosis?.severity ?? '待生成', tone: diagnosisPillTone(currentDiagnosis?.severity) },
+        ]}
+        aside={
+          <InsightCard
+            compact
+            label="当前诊断"
+            value={currentDiagnosis?.fault_type ?? '--'}
+            description={
+              currentDiagnosis
+                ? `置信度 ${(currentDiagnosis.confidence * 100).toFixed(1)}%，可继续查看根因和建议。`
+                : '选择电池后即可生成诊断结果。'
+            }
+          />
+        }
+      />
+
+      <div className="diagnosis-grid">
         <div>
-          <Card title="诊断配置" style={{ marginBottom: 16 }}>
-            <Space direction="vertical" style={{ width: '100%' }}>
+          <PanelCard title="诊断配置" style={{ marginBottom: 18 }}>
+            <Space direction="vertical" size="middle" style={{ width: '100%' }}>
               <Select
                 value={selectedBatteryId ?? undefined}
                 placeholder="选择电池"
@@ -44,6 +74,7 @@ const Diagnosis: React.FC = () => {
                 onChange={(value) => {
                   selectBattery(value)
                   void loadBatteryContext(value)
+                  setCurrentStep(0)
                 }}
               />
               <Button
@@ -61,10 +92,19 @@ const Diagnosis: React.FC = () => {
               >
                 开始检测与诊断
               </Button>
+              <Alert
+                className="inline-feedback"
+                type="info"
+                showIcon
+                message="建议按“选电池 -> 跑诊断 -> 看证据”的顺序演示"
+              />
+              <Button icon={<RightOutlined />} block onClick={() => navigate('/analysis')}>
+                查看 GraphRAG 证据链
+              </Button>
             </Space>
-          </Card>
+          </PanelCard>
 
-          <Card title="诊断链路">
+          <PanelCard title="诊断链路">
             <Steps
               direction="vertical"
               current={currentStep}
@@ -76,24 +116,22 @@ const Diagnosis: React.FC = () => {
                 { title: '诊断生成', description: '输出故障报告与建议' },
               ]}
             />
-          </Card>
+          </PanelCard>
         </div>
 
         <div>
           {currentDiagnosis ? (
             <>
               <Alert
-                style={{ marginBottom: 16 }}
-                type={currentDiagnosis.severity === 'critical' || currentDiagnosis.severity === 'high' ? 'error' : 'warning'}
+                className="diagnosis-banner"
+                type={diagnosisAlertType}
                 showIcon
                 message={
-                  <Space>
-                    <Text strong style={{ fontSize: 16 }}>
+                  <Space size={10} wrap>
+                    <Text strong className="diagnosis-banner__title">
                       {currentDiagnosis.fault_type}
                     </Text>
-                    <Tag color={currentDiagnosis.severity === 'critical' ? 'red' : currentDiagnosis.severity === 'high' ? 'orange' : 'blue'}>
-                      {currentDiagnosis.severity}
-                    </Tag>
+                    <StatusTag tone={diagnosisTone(currentDiagnosis.severity)}>{currentDiagnosis.severity}</StatusTag>
                   </Space>
                 }
                 description={
@@ -105,44 +143,55 @@ const Diagnosis: React.FC = () => {
                 }
               />
 
-              <Card title="最新异常事件" style={{ marginBottom: 16 }}>
-                {latestAnomaly?.events.length ? (
-                  <List
-                    dataSource={latestAnomaly.events}
-                    renderItem={(event) => (
-                      <List.Item>
-                        <List.Item.Meta
-                          avatar={<CheckCircleOutlined style={{ color: event.severity === 'high' ? '#ff4d4f' : '#faad14' }} />}
-                          title={`${event.symptom} · ${event.severity}`}
-                          description={event.description}
-                        />
-                      </List.Item>
-                    )}
+              <PanelCard title="最新异常事件" style={{ marginBottom: 18 }}>
+                {anomalyEvents.length ? (
+                  <SignalList
+                    items={anomalyEvents.map((event, index) => ({
+                      key: `${event.code}-${event.symptom}-${index}`,
+                      title: <Text strong>{event.symptom}</Text>,
+                      tag: event.severity,
+                      description: event.description,
+                      tone: diagnosisTone(event.severity),
+                    }))}
                   />
                 ) : (
-                  <Text type="secondary">暂无新异常事件</Text>
+                  <Alert
+                    type="success"
+                    showIcon
+                    message="本次未检测到异常事件"
+                    description="系统已按“健康状态说明”生成诊断结果，因此不会再因为缺少异常而报错。"
+                  />
                 )}
-              </Card>
+              </PanelCard>
 
-              <Card title="根因与建议" style={{ marginBottom: 16 }}>
-                <Title level={5}>根本原因</Title>
-                <List dataSource={currentDiagnosis.root_causes} renderItem={(item) => <List.Item>{item}</List.Item>} />
-                <Title level={5}>处理建议</Title>
-                <List dataSource={currentDiagnosis.recommendations} renderItem={(item) => <List.Item>{item}</List.Item>} />
-              </Card>
+              <div className="detail-grid detail-grid--two">
+                <PanelCard title="根因与建议">
+                  <Title level={5}>根本原因</Title>
+                  <List dataSource={currentDiagnosis.root_causes} renderItem={(item) => <List.Item>{item}</List.Item>} />
+                  <Title level={5}>处理建议</Title>
+                  <List dataSource={currentDiagnosis.recommendations} renderItem={(item) => <List.Item>{item}</List.Item>} />
+                </PanelCard>
 
-              <Card title="诊断依据">
-                <List dataSource={currentDiagnosis.evidence} renderItem={(item) => <List.Item>{item}</List.Item>} />
-              </Card>
+                <PanelCard title="诊断依据">
+                  <Space direction="vertical" size={14} style={{ width: '100%' }}>
+                    <List dataSource={currentDiagnosis.evidence} renderItem={(item) => <List.Item>{item}</List.Item>} />
+                    <Alert
+                      type="info"
+                      showIcon
+                      message={`候选故障 ${currentDiagnosis.candidate_faults?.length ?? 0} 个，可进入分析中心查看完整子图与排序依据。`}
+                    />
+                  </Space>
+                </PanelCard>
+              </div>
             </>
           ) : (
-            <Card style={{ textAlign: 'center', padding: '60px 0' }}>
-              <FileTextOutlined style={{ fontSize: 56, color: '#d9d9d9' }} />
-              <Title level={4} style={{ marginTop: 24 }}>
-                暂无诊断结果
-              </Title>
-              <Text type="secondary">选择电池后即可执行“异常检测 → GraphRAG 诊断”流程。</Text>
-            </Card>
+            <PanelCard className="empty-state-card">
+              <EmptyStateBlock
+                title="暂无诊断结果"
+                description="选择电池后即可执行“异常检测 -&gt; GraphRAG 诊断”流程。"
+                icon={<FileTextOutlined className="empty-state-block__icon" />}
+              />
+            </PanelCard>
           )}
         </div>
       </div>
@@ -150,4 +199,18 @@ const Diagnosis: React.FC = () => {
   )
 }
 
+function diagnosisTone(severity?: string): StatusTone {
+  if (severity === 'critical' || severity === 'high') return 'critical'
+  if (severity === 'medium' || severity === 'warning') return 'warning'
+  if (severity === 'info' || severity === 'low' || severity === 'success') return 'good'
+  return 'neutral'
+}
+
 export default Diagnosis
+
+function diagnosisPillTone(severity?: string) {
+  if (severity === 'critical' || severity === 'high') return 'rose'
+  if (severity === 'medium' || severity === 'warning') return 'amber'
+  if (severity === 'info' || severity === 'low' || severity === 'success') return 'teal'
+  return 'slate'
+}

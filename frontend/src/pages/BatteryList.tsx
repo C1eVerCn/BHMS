@@ -1,18 +1,19 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { Button, Card, Input, Space, Table, Tag, Typography } from 'antd'
+import { Button, Input, Space, Table, Typography } from 'antd'
 import { EyeOutlined, LineChartOutlined, SearchOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 
-import type { Battery, BatteryStatus } from '../types/domain'
+import { InsightCard, PageHero, PanelCard, StatusTag, type StatusTone } from '../components/ui'
 import { useBhmsStore } from '../stores/useBhmsStore'
+import type { Battery, BatteryStatus } from '../types/domain'
 
-const { Title } = Typography
+const { Text } = Typography
 
-const statusMap: Record<BatteryStatus, { color: string; text: string }> = {
-  good: { color: 'success', text: '健康' },
-  warning: { color: 'warning', text: '预警' },
-  critical: { color: 'error', text: '故障' },
-  unknown: { color: 'default', text: '未知' },
+const statusMap: Record<BatteryStatus, { tone: StatusTone; text: string }> = {
+  good: { tone: 'good', text: '健康' },
+  warning: { tone: 'warning', text: '预警' },
+  critical: { tone: 'critical', text: '故障' },
+  unknown: { tone: 'neutral', text: '未知' },
 }
 
 const BatteryList: React.FC = () => {
@@ -39,17 +40,39 @@ const BatteryList: React.FC = () => {
     [batteries, searchText],
   )
 
+  const quickStats = useMemo(
+    () => ({
+      critical: batteries.filter((item) => item.status === 'critical').length,
+      training: batteries.filter((item) => item.include_in_training).length,
+      bestHealth: batteries.reduce((best, item) => Math.max(best, item.health_score), 0),
+    }),
+    [batteries],
+  )
+
   const columns = [
     {
       title: '电池 ID',
       dataIndex: 'battery_id',
       key: 'battery_id',
-      render: (value: string) => <a>{value}</a>,
+      render: (value: string, record: Battery) => (
+        <button
+          type="button"
+          className="table-link-button"
+          onClick={() => {
+            selectBattery(record.battery_id)
+            void loadBatteryContext(record.battery_id)
+            navigate('/diagnosis')
+          }}
+        >
+          {value}
+        </button>
+      ),
     },
     {
       title: '来源',
       dataIndex: 'source',
       key: 'source',
+      render: (value: string) => <Text strong>{value.toUpperCase()}</Text>,
     },
     {
       title: '类型',
@@ -74,13 +97,13 @@ const BatteryList: React.FC = () => {
       dataIndex: 'health_score',
       key: 'health_score',
       sorter: (a: Battery, b: Battery) => a.health_score - b.health_score,
-      render: (value: number) => <span style={{ fontWeight: 700 }}>{value.toFixed(1)}</span>,
+      render: (value: number) => <span className="health-score-pill">{value.toFixed(1)}</span>,
     },
     {
       title: '状态',
       dataIndex: 'status',
       key: 'status',
-      render: (value: BatteryStatus) => <Tag color={statusMap[value]?.color}>{statusMap[value]?.text ?? value}</Tag>,
+      render: (value: BatteryStatus) => <StatusTag tone={statusMap[value]?.tone}>{statusMap[value]?.text ?? value}</StatusTag>,
     },
     {
       title: '操作',
@@ -114,27 +137,50 @@ const BatteryList: React.FC = () => {
   ]
 
   return (
-    <div>
-      <Title level={2} className="page-title">
-        电池管理
-      </Title>
-
-      <Card>
-        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, marginBottom: 16, flexWrap: 'wrap' }}>
-          <Input
-            placeholder="搜索电池 ID 或电池类型"
-            prefix={<SearchOutlined />}
-            value={searchText}
-            onChange={(event) => setSearchText(event.target.value)}
-            style={{ width: 320 }}
+    <div className="page-shell">
+      <PageHero
+        kicker="Batteries"
+        title="电池"
+        description="浏览、筛选并定位目标电池。"
+        pills={[
+          { label: '当前页电池', value: batteries.length, tone: 'teal' },
+          { label: '高风险样本', value: quickStats.critical, tone: 'rose' },
+          { label: '训练池候选', value: quickStats.training, tone: 'amber' },
+        ]}
+        aside={
+          <InsightCard
+            compact
+            label="概况"
+            value={pagination.total}
+            description={`条可浏览记录，当前页最高健康分 ${quickStats.bestHealth.toFixed(1)}。`}
           />
-          <Tag color="blue">共 {pagination.total} 条记录</Tag>
+        }
+      />
+
+      <PanelCard>
+        <div className="toolbar-row">
+          <div>
+            <Text className="toolbar-row__label">快速检索</Text>
+            <Input
+              placeholder="搜索电池 ID 或电池类型"
+              prefix={<SearchOutlined />}
+              value={searchText}
+              onChange={(event) => setSearchText(event.target.value)}
+              className="filter-input"
+            />
+          </div>
+          <div className="toolbar-row__summary">
+            <StatusTag tone="info">共 {pagination.total} 条记录</StatusTag>
+            <StatusTag tone="neutral">筛选后 {filteredData.length} 条</StatusTag>
+          </div>
         </div>
 
         <Table
           rowKey="battery_id"
+          className="data-table"
           columns={columns}
           dataSource={filteredData}
+          scroll={{ x: 1100 }}
           pagination={{
             current: pagination.page,
             pageSize: pagination.pageSize,
@@ -145,7 +191,7 @@ const BatteryList: React.FC = () => {
             },
           }}
         />
-      </Card>
+      </PanelCard>
     </div>
   )
 }

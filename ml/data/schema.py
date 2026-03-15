@@ -95,6 +95,14 @@ class DatasetSplit:
             "test_batteries": self.test_batteries,
         }
 
+    @classmethod
+    def from_dict(cls, payload: dict[str, list[str]]) -> "DatasetSplit":
+        return cls(
+            train_batteries=list(payload.get("train_batteries", [])),
+            val_batteries=list(payload.get("val_batteries", [])),
+            test_batteries=list(payload.get("test_batteries", [])),
+        )
+
 
 def build_canonical_battery_id(source: str, dataset_name: str, source_battery_id: str) -> str:
     return f"{source.lower()}::{dataset_name.lower()}::{source_battery_id}"
@@ -152,6 +160,17 @@ def finalize_cycle_frame(
         if column not in normalized.columns:
             normalized[column] = default
 
+    result = enrich_existing_cycle_frame(normalized, eol_capacity_ratio=eol_capacity_ratio)
+    for column in BATTERY_SCHEMA_COLUMNS:
+        if column not in result.columns:
+            result[column] = 0.0 if column in NUMERIC_COLUMNS else None
+    result = result[BATTERY_SCHEMA_COLUMNS]
+    return result
+
+
+def enrich_existing_cycle_frame(frame: pd.DataFrame, *, eol_capacity_ratio: float) -> pd.DataFrame:
+    normalized = frame.copy()
+    normalized.columns = [str(column).strip() for column in normalized.columns]
     for column in NUMERIC_COLUMNS:
         if column in normalized.columns:
             normalized[column] = pd.to_numeric(normalized[column], errors="coerce")
@@ -174,12 +193,7 @@ def finalize_cycle_frame(
         group["battery_id"] = canonical_battery_id
         frames.append(group)
 
-    result = pd.concat(frames, ignore_index=True)
-    for column in BATTERY_SCHEMA_COLUMNS:
-        if column not in result.columns:
-            result[column] = 0.0 if column in NUMERIC_COLUMNS else None
-    result = result[BATTERY_SCHEMA_COLUMNS]
-    return result
+    return pd.concat(frames, ignore_index=True)
 
 
 def write_json(path: str | Path, payload: dict) -> None:
@@ -198,6 +212,7 @@ __all__ = [
     "TRAINING_FEATURE_COLUMNS",
     "BATTERY_TARGET_COLUMNS",
     "build_canonical_battery_id",
+    "enrich_existing_cycle_frame",
     "finalize_cycle_frame",
     "health_status",
 ]

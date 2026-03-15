@@ -1,0 +1,371 @@
+"""Shared training runners for baseline, multi-seed, and ablation experiments."""
+
+from __future__ import annotations
+
+import json
+from dataclasses import asdict
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Optional
+
+import yaml
+
+from backend.app.core.database import get_database
+from backend.app.services.repository import BHMSRepository
+from ml.data import RULDataModule
+from ml.training.experiment_constants import (
+    ABLATION_VARIANTS,
+    DEFAULT_CONFIGS,
+    DEFAULT_SEEDS,
+    PROJECT_ROOT,
+)
+from ml.training.experiment_artifacts import (
+    aggregate_metrics,
+    plot_ablation_overview,
+    plot_error_distribution,
+    plot_metric_summary,
+    plot_source_comparison,
+    plot_split_overview,
+    plot_training_curves,
+    select_best_run,
+    write_json,
+    write_plot_manifest,
+)
+from ml.training.trainer import RULTrainer, TrainingConfig, build_model
+
+
+def load_yaml(path: str | Path) -> dict[str, Any]:
+    resolved = resolve_path(path)
+    return yaml.safe_load(resolved.read_text(encoding="utf-8")) or {}
+
+
+def merge_configs(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any]:
+    result = dict(base)
+    for key, value in override.items():
+        if isinstance(value, dict) and isinstance(result.get(key), dict):
+            result[key] = merge_configs(result[key], value)
+        else:
+            result[key] = value
+    return result
+
+
+def resolve_path(path: str | Path) -> Path:
+    candidate = Path(path)
+    return candidate if candidate.is_absolute() else PROJECT_ROOT / candidate
+
+
+def default_config_for(source: str, model_type: str) -> Path:
+    return DEFAULT_CONFIGS[(source.lower(), model_type.lower())]
+
+
+def _history_summary(history: dict[str, Any]) -> dict[str, Any]:
+    train_history = history.get("train", []) or []
+    val_history = history.get("val", []) or []
+    return {
+        "epochs_ran": len(train_history),
+        "last_train_loss": train_history[-1].get("loss") if train_history else None,
+        "last_val_loss": val_history[-1].get("loss") if val_history else None,
+    }
+
+
+def _run_record(summary: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "seed": summary.get("seed"),
+        "suite_kind": summary.get("suite_kind"),
+        "variant_key": summary.get("variant_key"),
+        "metrics": summary.get("test_metrics", {}),
+        "best_checkpoint": summary.get("best_checkpoint"),
+        "final_checkpoint": summary.get("final_checkpoint"),
+        "artifact_dir": summary.get("artifact_dir"),
+        "summary_path": summary.get("summary_path"),
+        "history": summary.get("history", {}),
+        "history_summary": summary.get("history_summary", {}),
+        "test_details": summary.get("test_details", {}),
+        "test_details_path": summary.get("test_details_path"),
+    }
+
+
+def run_training_experiment(
+    source: str,
+    model_type: str,
+    *,
+    config_path: str | Path | None = None,
+    config_overrides: Optional[dict[str, Any]] = None,
+    training_overrides: Optional[dict[str, Any]] = None,
+    artifact_subdir: str | None = None,
+    suite_kind: str = "baseline",
+    variant_key: str = "baseline",
+    repository: Optional[BHMSRepository] = None,
+    persist_training_run: bool = True,
+) -> dict[str, Any]:
+    source = source.lower()
+    model_type = model_type.lower()
+    resolved_config = resolve_path(config_path or default_config_for(source, model_type))
+    config = load_yaml(resolved_config)
+    merged = merge_configs(config, config_overrides or {})
+    data_cfg = dict(merged.get("data", {}))
+    model_cfg = dict(merged.get("model", {}))
+    training_cfg = merge_configs(dict(merged.get("training", {})), training_overrides or {})
+    csv_path = resolve_path(data_cfg["csv_path"])
+    checkpoint_dir = resolve_path(training_cfg.get("checkpoint_dir", "data/models"))
+    log_dir = resolve_path(training_cfg.get("log_dir", "data/models/logs"))
+    training_cfg.pop("checkpoint_dir", None)
+    training_cfg.pop("log_dir", None)
+
+    if persist_training_run and repository is None:
+        get_database().initialize()
+    repo = repository or BHMSRepository()
+
+    data_module = RULDataModule(
+        csv_path=csv_path,
+        source=source,
+        seq_len=int(data_cfg.get("seq_len", 30)),
+        batch_size=int(training_cfg.get("batch_size", 16)),
+        feature_cols=data_cfg.get("feature_columns"),
+        output_dir=csv_path.parent,
+    )
+    data_summary = data_module.summary()
+    data_module.export_metadata()
+
+    model, model_config = build_model(model_type, input_dim=len(data_summary["feature_columns"]), overrides=model_cfg)
+    trainer = RULTrainer(
+        model=model,
+        model_config=model_config,
+        training_config=TrainingConfig(
+            source=source,
+            model_type=model_type,
+            checkpoint_dir=str(checkpoint_dir),
+            log_dir=str(log_dir),
+            artifact_subdir=artifact_subdir,
+            **training_cfg,
+        ),
+        train_loader=data_module.train_loader(),
+        val_loader=data_module.val_loader(),
+        test_loader=data_module.test_loader(),
+        data_summary=data_summary,
+    )
+    result = trainer.train()
+    test_details = result.get("test_details", trainer.test_outputs)
+    test_details_path = trainer.checkpoint_dir / "test_details.json"
+    write_json(test_details_path, test_details)
+    summary = {
+        **result,
+        "source": source,
+        "model_type": model_type,
+        "suite_kind": suite_kind,
+        "variant_key": variant_key,
+        "seed": trainer.config.seed,
+        "artifact_dir": str(trainer.checkpoint_dir),
+        "log_dir": str(trainer.log_dir),
+        "config_path": str(resolved_config),
+        "config_snapshot": merged,
+        "split_snapshot": data_summary.get("split", {}),
+        "feature_columns": data_summary.get("feature_columns", []),
+        "model_config": model_config,
+        "training_config": asdict(trainer.config),
+        "history_summary": _history_summary(result.get("history", {})),
+        "test_details": test_details,
+        "test_details_path": str(test_details_path),
+    }
+    summary_path = trainer.checkpoint_dir / f"{model_type}_experiment_summary.json"
+    write_json(summary_path, summary)
+    summary["summary_path"] = str(summary_path)
+
+    if persist_training_run:
+        repo.insert_training_run(
+            {
+                "source": source,
+                "model_type": model_type,
+                "model_version": trainer.config.model_version,
+                "best_checkpoint_path": summary.get("best_checkpoint"),
+                "final_checkpoint_path": summary.get("final_checkpoint"),
+                "metrics": summary.get("test_metrics", {}),
+                "metadata": {
+                    "seed": trainer.config.seed,
+                    "suite_kind": suite_kind,
+                    "variant_key": variant_key,
+                    "artifact_dir": str(trainer.checkpoint_dir),
+                    "config_path": str(resolved_config),
+                    "config_snapshot": merged,
+                    "split_snapshot": data_summary.get("split", {}),
+                    "feature_columns": data_summary.get("feature_columns", []),
+                    "summary_path": str(summary_path),
+                    "test_details_path": str(test_details_path),
+                },
+            }
+        )
+    return summary
+
+
+def create_multi_seed_summary(
+    source: str,
+    model_type: str,
+    *,
+    seeds: list[int],
+    per_seed_summaries: list[dict[str, Any]],
+    config_path: str | Path,
+    model_dir: str | Path = "data/models",
+) -> dict[str, Any]:
+    artifact_root = resolve_path(model_dir) / source / model_type
+    plots_dir = artifact_root / "plots"
+    per_seed_runs = [_run_record(summary) for summary in per_seed_summaries]
+    aggregate = aggregate_metrics([run.get("metrics", {}) for run in per_seed_runs])
+    best_run = select_best_run(per_seed_runs)
+    summary = {
+        "source": source,
+        "model_type": model_type,
+        "suite_kind": "multi_seed",
+        "available": True,
+        "seeds": seeds,
+        "config_path": str(resolve_path(config_path)),
+        "config_snapshot": per_seed_summaries[0].get("config_snapshot", {}) if per_seed_summaries else {},
+        "split_snapshot": per_seed_summaries[0].get("split_snapshot", {}) if per_seed_summaries else {},
+        "feature_columns": per_seed_summaries[0].get("feature_columns", []) if per_seed_summaries else [],
+        "per_seed_runs": per_seed_runs,
+        "aggregate_metrics": aggregate,
+        "best_checkpoint": {
+            "seed": best_run.get("seed") if best_run else None,
+            "path": best_run.get("best_checkpoint") if best_run else None,
+        },
+        "artifact_paths": {
+            "summary": str(artifact_root / f"{model_type}_multi_seed_summary.json"),
+            "plots_dir": str(plots_dir),
+        },
+        "generated_at": datetime.utcnow().isoformat(),
+    }
+    plots = [
+        plot_metric_summary(
+            summary,
+            plots_dir / "metrics_overview.png",
+            title=f"{source.upper()} {model_type} multi-seed metrics",
+            description="Mean and std across the configured random seeds.",
+        ),
+        plot_error_distribution(
+            per_seed_runs,
+            plots_dir / "error_distribution.png",
+            title=f"{source.upper()} {model_type} error distribution",
+            description="Prediction error histogram for every configured seed.",
+        ),
+        plot_training_curves(
+            per_seed_runs,
+            plots_dir / "training_curves.png",
+            title=f"{source.upper()} {model_type} training curves",
+            description="Train/validation loss curves for the configured seed runs.",
+        ),
+    ]
+    summary["plots"] = plots
+    write_plot_manifest(plots_dir)
+    write_json(artifact_root / f"{model_type}_multi_seed_summary.json", summary)
+    return summary
+
+
+def create_ablation_summary(
+    source: str,
+    *,
+    variants: list[dict[str, Any]],
+    model_dir: str | Path = "data/models",
+) -> dict[str, Any]:
+    artifact_root = resolve_path(model_dir) / source
+    plots_dir = artifact_root / "plots"
+    full_variant = next((item for item in variants if item.get("key") == "full_hybrid"), None)
+    full_rmse = (((full_variant or {}).get("aggregate_metrics") or {}).get("mean") or {}).get("rmse")
+    for variant in variants:
+        current_rmse = (((variant.get("aggregate_metrics") or {}).get("mean")) or {}).get("rmse")
+        delta = None
+        if isinstance(current_rmse, (int, float)) and isinstance(full_rmse, (int, float)):
+            delta = round(float(current_rmse) - float(full_rmse), 6)
+        variant["delta_vs_full"] = {"rmse": delta}
+    summary = {
+        "source": source,
+        "available": True,
+        "variants": variants,
+        "notes": [
+            "Ablation summaries reuse the same fixed battery split and the same seed set as the main multi-seed experiment.",
+            "Delta is computed against full_hybrid using aggregate RMSE.",
+        ],
+        "artifact_paths": {
+            "summary": str(artifact_root / "ablation_summary.json"),
+            "plots_dir": str(plots_dir),
+        },
+        "generated_at": datetime.utcnow().isoformat(),
+    }
+    summary["plots"] = [
+        plot_ablation_overview(
+            variants,
+            plots_dir / "ablation_overview.png",
+            title=f"{source.upper()} ablation overview",
+            description="Aggregate RMSE for each hybrid ablation variant.",
+        )
+    ]
+    write_plot_manifest(plots_dir)
+    write_json(artifact_root / "ablation_summary.json", summary)
+    return summary
+
+
+def load_json(path: str | Path) -> dict[str, Any] | None:
+    candidate = Path(path)
+    if not candidate.exists():
+        return None
+    return json.loads(candidate.read_text(encoding="utf-8"))
+
+
+def generate_source_plot_bundle(
+    source: str,
+    *,
+    model_dir: str | Path = "data/models",
+    processed_dir: str | Path = "data/processed",
+) -> list[dict[str, Any]]:
+    source = source.lower()
+    model_root = resolve_path(model_dir) / source
+    processed_root = resolve_path(processed_dir) / source
+    plots_dir = model_root / "plots"
+    plots: list[dict[str, Any]] = []
+    bilstm_summary = load_json(model_root / "bilstm" / "bilstm_multi_seed_summary.json")
+    hybrid_summary = load_json(model_root / "hybrid" / "hybrid_multi_seed_summary.json")
+    if bilstm_summary and hybrid_summary:
+        plots.append(
+            plot_source_comparison(
+                source,
+                {"bilstm": bilstm_summary, "hybrid": hybrid_summary},
+                plots_dir / "experiment_summary.png",
+                title=f"{source.upper()} model comparison",
+                description="Aggregate multi-seed metric comparison between Bi-LSTM and Hybrid.",
+            )
+        )
+    split_payload = load_json(processed_root / f"{source}_split.json")
+    if split_payload:
+        plots.append(
+            plot_split_overview(
+                split_payload,
+                plots_dir / "dataset_split.png",
+                title=f"{source.upper()} dataset split",
+                description="Battery counts in the fixed train/validation/test split.",
+            )
+        )
+    ablation_summary = load_json(model_root / "ablation_summary.json")
+    if ablation_summary:
+        plots.append(
+            plot_ablation_overview(
+                ablation_summary.get("variants", []),
+                plots_dir / "experiment_ablations.png",
+                title=f"{source.upper()} ablation summary",
+                description="Aggregate RMSE comparison for the configured ablation variants.",
+            )
+        )
+    write_plot_manifest(plots_dir)
+    return plots
+
+
+__all__ = [
+    "ABLATION_VARIANTS",
+    "DEFAULT_SEEDS",
+    "create_ablation_summary",
+    "create_multi_seed_summary",
+    "default_config_for",
+    "generate_source_plot_bundle",
+    "load_json",
+    "load_yaml",
+    "merge_configs",
+    "resolve_path",
+    "run_training_experiment",
+]

@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import json
-import subprocess
 import sys
 from pathlib import Path
 
@@ -14,34 +13,19 @@ if str(PROJECT_ROOT) not in sys.path:
 
 import argparse
 
-CONFIGS = {
-    ("nasa", "bilstm"): "configs/nasa_bilstm.yaml",
-    ("nasa", "hybrid"): "configs/nasa_hybrid.yaml",
-    ("calce", "bilstm"): "configs/calce_bilstm.yaml",
-    ("calce", "hybrid"): "configs/calce_hybrid.yaml",
-    ("kaggle", "bilstm"): "configs/kaggle_bilstm.yaml",
-    ("kaggle", "hybrid"): "configs/kaggle_hybrid.yaml",
-}
+from ml.training.experiment_runner import default_config_for, run_training_experiment
 
 
 def load_or_train(source: str, model_type: str, force: bool) -> dict:
     summary_path = Path("data/models") / source / model_type / f"{model_type}_experiment_summary.json"
     if summary_path.exists() and not force:
         return json.loads(summary_path.read_text(encoding="utf-8"))
-    cmd = [
-        sys.executable,
-        str(Path(__file__).with_name("train_models.py")),
-        "--source",
+    return run_training_experiment(
         source,
-        "--model",
         model_type,
-        "--config",
-        CONFIGS[(source, model_type)],
-    ]
-    completed = subprocess.run(cmd, check=True, capture_output=True, text=True)
-    output_lines = [line for line in completed.stdout.splitlines() if line.strip()]
-    json_blob = "\n".join(output_lines[:-1]) if len(output_lines) > 1 else output_lines[0]
-    return json.loads(json_blob)
+        config_path=default_config_for(source, model_type),
+        persist_training_run=True,
+    )
 
 
 def main() -> None:

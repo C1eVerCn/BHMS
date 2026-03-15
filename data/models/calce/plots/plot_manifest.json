@@ -1,0 +1,49 @@
+{
+  "plots": [
+    {
+      "key": "ablation_overview",
+      "title": "CALCE ablation overview",
+      "description": "Aggregate RMSE for each hybrid ablation variant.",
+      "path": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/plots/ablation_overview.png",
+      "generated_at": "2026-03-15T08:29:25.041569"
+    },
+    {
+      "key": "dataset_split",
+      "title": "CALCE dataset split",
+      "description": "Battery counts in the fixed train/validation/test split.",
+      "path": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/plots/dataset_split.png",
+      "generated_at": "2026-03-15T08:29:25.112921",
+      "split_snapshot": {
+        "train_batteries": [
+          "calce::calce_demo::CALCE_000",
+          "calce::calce_demo::CALCE_001",
+          "calce::calce_demo::CALCE_002",
+          "calce::calce_demo::CALCE_003"
+        ],
+        "val_batteries": [
+          "calce::calce_demo::CALCE_004",
+          "calce::calce_demo::CALCE_005"
+        ],
+        "test_batteries": [
+          "calce::calce_demo::CALCE_UNSEEN_101",
+          "calce::calce_demo::CALCE_UNSEEN_FAULT_301"
+        ]
+      }
+    },
+    {
+      "key": "experiment_ablations",
+      "title": "CALCE ablation summary",
+      "description": "Aggregate RMSE comparison for the configured ablation variants.",
+      "path": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/plots/experiment_ablations.png",
+      "generated_at": "2026-03-15T08:29:25.145204"
+    },
+    {
+      "key": "experiment_summary",
+      "title": "CALCE model comparison",
+      "description": "Aggregate multi-seed metric comparison between Bi-LSTM and Hybrid.",
+      "path": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/plots/experiment_summary.png",
+      "generated_at": "2026-03-15T08:29:25.083712"
+    }
+  ],
+  "generated_at": "2026-03-15T08:29:25.145543"
+}

@@ -1,11 +1,25 @@
 import React, { useMemo, useState } from 'react'
-import { Alert, Button, Card, Checkbox, Col, Input, List, message, Progress, Row, Select, Space, Table, Tag, Typography, Upload } from 'antd'
+import {
+  Alert,
+  Button,
+  Checkbox,
+  Col,
+  Input,
+  List,
+  Progress,
+  Row,
+  Select,
+  Space,
+  Table,
+  Upload,
+  message,
+} from 'antd'
 import type { UploadFile } from 'antd/es/upload/interface'
-import { CloudDownloadOutlined, InboxOutlined, UploadOutlined } from '@ant-design/icons'
+import { CloudDownloadOutlined, InboxOutlined, RocketOutlined, UploadOutlined } from '@ant-design/icons'
+import { useNavigate } from 'react-router-dom'
 
+import { EmptyStateBlock, InsightCard, PageHero, PanelCard, StatusTag } from '../components/ui'
 import { useBhmsStore } from '../stores/useBhmsStore'
-
-const { Title, Text } = Typography
 const { Dragger } = Upload
 
 const sourceOptions = [
@@ -16,6 +30,7 @@ const sourceOptions = [
 ] as const
 
 const DataUpload: React.FC = () => {
+  const navigate = useNavigate()
   const [batteryId, setBatteryId] = useState('')
   const [selectedSource, setSelectedSource] = useState<string>('auto')
   const [includeInTraining, setIncludeInTraining] = useState(false)
@@ -25,6 +40,11 @@ const DataUpload: React.FC = () => {
   const lastUpload = useBhmsStore((state) => state.lastUpload)
   const importSource = useBhmsStore((state) => state.importSource)
   const uploadFile = useBhmsStore((state) => state.uploadFile)
+  const runPrediction = useBhmsStore((state) => state.runPrediction)
+  const runDiagnosisWorkflow = useBhmsStore((state) => state.runDiagnosisWorkflow)
+  const selectBattery = useBhmsStore((state) => state.selectBattery)
+  const loadBatteryContext = useBhmsStore((state) => state.loadBatteryContext)
+  const markTrainingCandidate = useBhmsStore((state) => state.markTrainingCandidate)
 
   const sampleColumns = useMemo(
     () => [
@@ -90,22 +110,44 @@ const DataUpload: React.FC = () => {
   }
 
   const validationSummary = lastUpload?.validation_summary ?? {}
+  const latestUploadedBattery = lastUpload?.battery_ids?.[0]
 
   return (
-    <div>
-      <Title level={2} className="page-title">
-        数据导入
-      </Title>
-      <Row gutter={[16, 16]}>
+    <div className="page-shell">
+      <PageHero
+        kicker="Data Ingestion"
+        title="把数据接入，变得简单"
+        description="上传文件、导入样例，并立即查看识别与校验反馈。"
+        pills={[
+          { label: '支持格式', value: 'CSV / MAT', tone: 'teal' },
+          { label: '可选来源', value: sourceOptions.length - 1, tone: 'slate' },
+          { label: '最近导入周期点', value: lastUpload?.imported_cycles ?? 0, tone: 'amber' },
+        ]}
+        aside={
+          <InsightCard
+            compact
+            label="训练池标记"
+            value={includeInTraining ? 'ON' : 'OFF'}
+            description="打开后，新导入数据会被标记为训练候选。"
+          />
+        }
+      />
+
+      <Row gutter={[18, 18]}>
         <Col xs={24} lg={16}>
-          <Card title="上传新数据并导入演示系统" style={{ marginBottom: 16 }}>
+          <PanelCard className="upload-panel" title="上传新数据并导入演示系统" style={{ marginBottom: 18 }}>
             <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+              <Alert
+                type="info"
+                showIcon
+                message="导入顺序建议：选来源 -> 选择文件 -> 决定是否入训练池 -> 上传"
+              />
               <Select value={selectedSource} onChange={setSelectedSource} options={sourceOptions as unknown as { label: string; value: string }[]} />
               <Input value={batteryId} onChange={(event) => setBatteryId(event.target.value)} placeholder="可选：若文件不包含 battery_id/source_battery_id，可在此填写" />
               <Checkbox checked={includeInTraining} onChange={(event) => setIncludeInTraining(event.target.checked)}>
                 将该文件标记为后续训练数据池候选
               </Checkbox>
-              <Dragger {...uploadProps} disabled={actionLoading}>
+              <Dragger {...uploadProps} disabled={actionLoading} className="upload-dragger">
                 <p className="ant-upload-drag-icon">
                   <InboxOutlined />
                 </p>
@@ -115,11 +157,11 @@ const DataUpload: React.FC = () => {
               <Button type="primary" icon={<UploadOutlined />} loading={actionLoading} onClick={() => void handleUpload()}>
                 上传并入库
               </Button>
-              {localProgress > 0 && <Progress percent={localProgress} />}
+              {localProgress > 0 && <Progress percent={localProgress} strokeColor="#0071e3" />}
             </Space>
-          </Card>
+          </PanelCard>
 
-          <Card title="导入仓库内置数据源样例">
+          <PanelCard title="导入仓库内置数据源样例">
             <Space direction="vertical" style={{ width: '100%' }}>
               <Alert
                 type="info"
@@ -139,46 +181,86 @@ const DataUpload: React.FC = () => {
                 </Button>
               </Space>
             </Space>
-          </Card>
+          </PanelCard>
         </Col>
 
         <Col xs={24} lg={8}>
-          <Card title="最新导入结果" style={{ marginBottom: 16 }}>
+          <PanelCard title="最新导入结果" style={{ marginBottom: 18 }}>
             {lastUpload ? (
-              <List
-                dataSource={[
-                  `来源: ${lastUpload.detected_source ?? lastUpload.source}`,
-                  `数据集: ${lastUpload.dataset_name ?? '-'}`,
-                  `文件: ${lastUpload.file_name}`,
-                  `导入电池: ${lastUpload.battery_ids.join(', ')}`,
-                  `导入周期点: ${lastUpload.imported_cycles}`,
-                ]}
-                renderItem={(item) => <List.Item>{item}</List.Item>}
-              />
+              <Space direction="vertical" size={14} style={{ width: '100%' }}>
+                <List
+                  dataSource={[
+                    `来源: ${lastUpload.detected_source ?? lastUpload.source}`,
+                    `数据集: ${lastUpload.dataset_name ?? '-'}`,
+                    `文件: ${lastUpload.file_name}`,
+                    `导入电池: ${lastUpload.battery_ids.join(', ')}`,
+                    `导入周期点: ${lastUpload.imported_cycles}`,
+                  ]}
+                  renderItem={(item) => <List.Item>{item}</List.Item>}
+                />
+                {latestUploadedBattery && (
+                  <Space direction="vertical" style={{ width: '100%' }}>
+                    <Button
+                      type="primary"
+                      icon={<RocketOutlined />}
+                      onClick={() => {
+                        selectBattery(latestUploadedBattery)
+                        void loadBatteryContext(latestUploadedBattery)
+                        void runPrediction(latestUploadedBattery, 'hybrid', 30)
+                          .then(() => runDiagnosisWorkflow(latestUploadedBattery))
+                          .then(() => navigate('/analysis'))
+                          .catch((error: Error) => message.error(error.message))
+                      }}
+                    >
+                      立即预测与诊断
+                    </Button>
+                    {!lastUpload.include_in_training && (
+                      <Button
+                        onClick={() => {
+                          void markTrainingCandidate(latestUploadedBattery, true)
+                            .then(() => message.success('已将新样本加入训练池'))
+                            .catch((error: Error) => message.error(error.message))
+                        }}
+                      >
+                        加入训练池并稍后训练
+                      </Button>
+                    )}
+                  </Space>
+                )}
+              </Space>
             ) : (
-              <Text type="secondary">暂无导入记录</Text>
+              <EmptyStateBlock compact title="暂无导入记录" description="导入一次数据后，这里会展示来源识别和校验摘要。" className="panel-empty-state" />
             )}
             {lastUpload && (
               <Space wrap style={{ marginTop: 12 }}>
-                <Tag color="blue">source={lastUpload.detected_source ?? lastUpload.source}</Tag>
-                <Tag color={lastUpload.include_in_training ? 'green' : 'default'}>
+                <StatusTag tone="info">source={lastUpload.detected_source ?? lastUpload.source}</StatusTag>
+                <StatusTag tone={lastUpload.include_in_training ? 'good' : 'neutral'}>
                   {lastUpload.include_in_training ? '已标记入训练池' : '仅演示入库'}
-                </Tag>
+                </StatusTag>
               </Space>
             )}
             {Object.keys(validationSummary).length > 0 && (
               <List
+                className="validation-list"
                 style={{ marginTop: 12 }}
                 size="small"
                 dataSource={Object.entries(validationSummary).map(([key, value]) => `${key}: ${typeof value === 'object' ? JSON.stringify(value) : String(value)}`)}
                 renderItem={(item) => <List.Item>{item}</List.Item>}
               />
             )}
-          </Card>
+          </PanelCard>
 
-          <Card title="CSV 模板示例">
-            <Table columns={sampleColumns} dataSource={sampleData} pagination={false} size="small" />
-          </Card>
+          <PanelCard title="CSV 模板示例">
+            <Space direction="vertical" size={12} style={{ width: '100%' }}>
+              <Alert
+                type="info"
+                showIcon
+                message="推荐演示未见样本路径"
+                description="可优先使用 data/demo_uploads/calce/calce_unseen_demo.csv 或 data/demo_uploads/kaggle/kaggle_unseen_demo.csv 做上传演示。"
+              />
+              <Table className="data-table" columns={sampleColumns} dataSource={sampleData} pagination={false} size="small" scroll={{ x: 720 }} />
+            </Space>
+          </PanelCard>
         </Col>
       </Row>
     </div>

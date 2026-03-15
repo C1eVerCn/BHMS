@@ -1,0 +1,73 @@
+{
+  "battery_id": "nasa::nasa_pcoe::B0054",
+  "source": "nasa",
+  "generated_at": "2026-03-15T08:29:25.972695",
+  "generated_artifacts": {
+    "prediction_generated": false,
+    "diagnosis_generated": false,
+    "anomaly_generated": false
+  },
+  "export_dir": "/Users/chris/Documents/trae_projects/BHMS/data/exports/cases/nasa::nasa_pcoe::B0054/20260315-082925",
+  "charts": [
+    {
+      "path": "/Users/chris/Documents/trae_projects/BHMS/data/exports/cases/nasa::nasa_pcoe::B0054/20260315-082925/charts/rul_projection.png",
+      "kind": "chart",
+      "key": "rul_projection"
+    },
+    {
+      "path": "/Users/chris/Documents/trae_projects/BHMS/data/exports/cases/nasa::nasa_pcoe::B0054/20260315-082925/charts/diagnosis_graph.png",
+      "kind": "chart",
+      "key": "diagnosis_graph"
+    },
+    {
+      "path": "/Users/chris/Documents/trae_projects/BHMS/data/exports/cases/nasa::nasa_pcoe::B0054/20260315-082925/charts/experiment_summary.png",
+      "kind": "chart",
+      "key": "experiment_summary"
+    }
+  ],
+  "files": [
+    {
+      "path": "/Users/chris/Documents/trae_projects/BHMS/data/exports/cases/nasa::nasa_pcoe::B0054/20260315-082925/manifest.json",
+      "kind": "manifest"
+    },
+    {
+      "path": "/Users/chris/Documents/trae_projects/BHMS/data/exports/cases/nasa::nasa_pcoe::B0054/20260315-082925/case_bundle.md",
+      "kind": "case_bundle"
+    },
+    {
+      "path": "/Users/chris/Documents/trae_projects/BHMS/data/exports/cases/nasa::nasa_pcoe::B0054/20260315-082925/prediction_report.md",
+      "kind": "prediction_report"
+    },
+    {
+      "path": "/Users/chris/Documents/trae_projects/BHMS/data/exports/cases/nasa::nasa_pcoe::B0054/20260315-082925/diagnosis_report.md",
+      "kind": "diagnosis_report"
+    },
+    {
+      "path": "/Users/chris/Documents/trae_projects/BHMS/data/exports/cases/nasa::nasa_pcoe::B0054/20260315-082925/sample_profile.json",
+      "kind": "sample_profile"
+    },
+    {
+      "path": "/Users/chris/Documents/trae_projects/BHMS/data/exports/cases/nasa::nasa_pcoe::B0054/20260315-082925/dataset_profile.json",
+      "kind": "dataset_profile"
+    },
+    {
+      "path": "/Users/chris/Documents/trae_projects/BHMS/data/exports/cases/nasa::nasa_pcoe::B0054/20260315-082925/experiment_context.json",
+      "kind": "experiment_context"
+    },
+    {
+      "path": "/Users/chris/Documents/trae_projects/BHMS/data/exports/cases/nasa::nasa_pcoe::B0054/20260315-082925/charts/rul_projection.png",
+      "kind": "chart",
+      "key": "rul_projection"
+    },
+    {
+      "path": "/Users/chris/Documents/trae_projects/BHMS/data/exports/cases/nasa::nasa_pcoe::B0054/20260315-082925/charts/diagnosis_graph.png",
+      "kind": "chart",
+      "key": "diagnosis_graph"
+    },
+    {
+      "path": "/Users/chris/Documents/trae_projects/BHMS/data/exports/cases/nasa::nasa_pcoe::B0054/20260315-082925/charts/experiment_summary.png",
+      "kind": "chart",
+      "key": "experiment_summary"
+    }
+  ]
+}
