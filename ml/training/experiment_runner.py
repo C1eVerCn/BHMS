@@ -125,7 +125,10 @@ def run_training_experiment(
         output_dir=csv_path.parent,
     )
     data_summary = data_module.summary()
-    data_module.export_metadata()
+    if suite_kind == "ablation":
+        data_module.export_metadata(output_dir=checkpoint_dir / source / model_type / artifact_subdir / "data_profile", file_prefix=variant_key)
+    else:
+        data_module.export_metadata()
 
     model, model_config = build_model(model_type, input_dim=len(data_summary["feature_columns"]), overrides=model_cfg)
     trainer = RULTrainer(

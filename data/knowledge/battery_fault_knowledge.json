@@ -1,12 +1,23 @@
 {
   "symptom_aliases": {
     "温度过高": "温度异常",
+    "持续高温": "温度异常",
     "温升过快": "温度异常",
+    "热斑": "温度异常",
     "过压": "电压异常",
+    "过压波动": "电压异常",
     "欠压": "电压异常",
+    "欠压波动": "电压异常",
     "电流尖峰": "电流异常",
+    "电流冲击": "电流异常",
+    "负载突变": "电流异常",
     "内阻增大": "内阻异常",
-    "容量衰减过快": "容量骤降"
+    "内阻抬升": "内阻异常",
+    "容量衰减过快": "容量骤降",
+    "容量恢复受限": "容量骤降",
+    "自放电过快": "容量骤降",
+    "采样漂移": "电压异常",
+    "连接电阻上升": "内阻异常"
   },
   "faults": [
     {
@@ -14,12 +25,47 @@
       "category": "老化故障",
       "severity": "high",
       "description": "电池容量衰减速度超出正常老化范围，剩余寿命快速下降。",
-      "symptoms": ["容量骤降", "温度异常", "电流异常"],
-      "causes": ["过充", "高温环境", "快充", "深度充放电"],
-      "recommendations": ["降低充电倍率", "控制使用温度", "避免满充满放"],
+      "symptoms": [
+        "容量骤降",
+        "温度异常",
+        "电流异常"
+      ],
+      "causes": [
+        "过充",
+        "高温环境",
+        "快充",
+        "深度充放电"
+      ],
+      "recommendations": [
+        "降低充电倍率",
+        "控制使用温度",
+        "避免满充满放"
+      ],
       "evidence_templates": [
         "检测到{symptom}，说明容量保持率已经偏离健康区间。",
         "结合最近循环数据，容量曲线下降斜率明显增大。"
+      ],
+      "evidence_source": [
+        "公开退化机理规则",
+        "BMS 阈值经验"
+      ],
+      "rule_id": "RULE-AGE-001",
+      "confidence_basis": [
+        "症状覆盖率",
+        "容量保持率阈值命中",
+        "异常严重度加权"
+      ],
+      "source_scope": [
+        "generic"
+      ],
+      "symptom_weights": {
+        "容量骤降": 1.4,
+        "温度异常": 1.0,
+        "电流异常": 0.9
+      },
+      "threshold_hints": [
+        "capacity_ratio < 0.85 持续多个循环",
+        "容量斜率明显变陡"
       ]
     },
     {
@@ -27,24 +73,89 @@
       "category": "安全故障",
       "severity": "critical",
       "description": "电池出现持续高温或温升异常，存在热失控风险。",
-      "symptoms": ["温度异常", "电流异常", "电压异常"],
-      "causes": ["散热不足", "过充", "内部短路", "机械损伤"],
-      "recommendations": ["立即停用电池", "检查散热系统", "安排安全检修"],
+      "symptoms": [
+        "温度异常",
+        "电流异常",
+        "电压异常"
+      ],
+      "causes": [
+        "散热不足",
+        "过充",
+        "内部短路",
+        "机械损伤"
+      ],
+      "recommendations": [
+        "立即停用电池",
+        "检查散热系统",
+        "安排安全检修"
+      ],
       "evidence_templates": [
         "{symptom}与安全类故障高度相关，应优先排查热失控链路。",
         "异常温升通常伴随电化学副反应增强，需要尽快隔离电池。"
+      ],
+      "evidence_source": [
+        "热安全经验规则",
+        "BMS 安全阈值"
+      ],
+      "rule_id": "RULE-SAFE-001",
+      "confidence_basis": [
+        "温度/温升规则命中",
+        "异常严重度加权",
+        "安全优先级加权"
+      ],
+      "source_scope": [
+        "generic"
+      ],
+      "symptom_weights": {
+        "温度异常": 1.5,
+        "电流异常": 1.0,
+        "电压异常": 1.0
+      },
+      "threshold_hints": [
+        "temperature_mean > 45C",
+        "temperature_rise_rate > source threshold"
       ]
     },
     {
       "name": "电压采样异常",
       "category": "电气故障",
       "severity": "medium",
-      "description": "电压采样或单体电压行为异常，可能影响SOC/SOH估计。",
-      "symptoms": ["电压异常", "电流异常"],
-      "causes": ["采样线路噪声", "连接松动", "BMS校准偏差"],
-      "recommendations": ["检查采样回路", "重新标定BMS", "复核传感器连接"],
+      "description": "电压采样或单体电压行为异常，可能影响 SOC/SOH 估计。",
+      "symptoms": [
+        "电压异常",
+        "电流异常"
+      ],
+      "causes": [
+        "采样线路噪声",
+        "连接松动",
+        "BMS 校准偏差"
+      ],
+      "recommendations": [
+        "检查采样回路",
+        "重新标定 BMS",
+        "复核传感器连接"
+      ],
       "evidence_templates": [
         "{symptom}提示电池电气行为偏离标称工作区间。"
+      ],
+      "evidence_source": [
+        "电气采样经验规则"
+      ],
+      "rule_id": "RULE-ELEC-001",
+      "confidence_basis": [
+        "电压区间越界",
+        "症状覆盖率"
+      ],
+      "source_scope": [
+        "generic"
+      ],
+      "symptom_weights": {
+        "电压异常": 1.4,
+        "电流异常": 0.7
+      },
+      "threshold_hints": [
+        "voltage_mean 超出工作区间",
+        "欠压/过压异常反复出现"
       ]
     },
     {
@@ -52,11 +163,42 @@
       "category": "老化故障",
       "severity": "medium",
       "description": "电池内阻上升导致发热增加和功率性能下降。",
-      "symptoms": ["内阻异常", "温度异常", "容量骤降"],
-      "causes": ["SEI膜增厚", "长期存储", "低温循环"],
-      "recommendations": ["进行容量校准", "优化工作温度", "降低峰值电流"],
+      "symptoms": [
+        "内阻异常",
+        "温度异常",
+        "容量骤降"
+      ],
+      "causes": [
+        "SEI 膜增厚",
+        "长期存储",
+        "低温循环"
+      ],
+      "recommendations": [
+        "进行容量校准",
+        "优化工作温度",
+        "降低峰值电流"
+      ],
       "evidence_templates": [
         "{symptom}通常伴随极化加剧和功率衰退。"
+      ],
+      "evidence_source": [
+        "老化机理规则"
+      ],
+      "rule_id": "RULE-AGE-002",
+      "confidence_basis": [
+        "内阻相对基线升高",
+        "症状覆盖率"
+      ],
+      "source_scope": [
+        "generic"
+      ],
+      "symptom_weights": {
+        "内阻异常": 1.5,
+        "温度异常": 0.8,
+        "容量骤降": 0.8
+      },
+      "threshold_hints": [
+        "internal_resistance > baseline * 1.25"
       ]
     },
     {
@@ -64,11 +206,348 @@
       "category": "运行故障",
       "severity": "low",
       "description": "外部负载或环境波动造成指标短时异常，需要持续观察。",
-      "symptoms": ["电流异常", "温度异常", "电压异常"],
-      "causes": ["负载突变", "环境温度波动", "采样频率不稳定"],
-      "recommendations": ["继续观察后续循环", "增加采样频率", "记录异常工况"],
+      "symptoms": [
+        "电流异常",
+        "温度异常",
+        "电压异常"
+      ],
+      "causes": [
+        "负载突变",
+        "环境温度波动",
+        "采样频率不稳定"
+      ],
+      "recommendations": [
+        "继续观察后续循环",
+        "增加采样频率",
+        "记录异常工况"
+      ],
       "evidence_templates": [
         "{symptom}更像短时工况扰动，建议结合后续记录再确认。"
+      ],
+      "evidence_source": [
+        "运行工况经验规则"
+      ],
+      "rule_id": "RULE-OPS-001",
+      "confidence_basis": [
+        "症状覆盖率",
+        "异常持续时间偏短"
+      ],
+      "source_scope": [
+        "generic"
+      ],
+      "symptom_weights": {
+        "电流异常": 1.2,
+        "温度异常": 0.8,
+        "电压异常": 0.8
+      },
+      "threshold_hints": [
+        "异常出现但容量/内阻未同步恶化"
+      ]
+    },
+    {
+      "name": "锂析出风险",
+      "category": "机理故障",
+      "severity": "high",
+      "description": "低温高倍率或过充工况下可能出现锂析出，后续会加速容量衰减和安全风险。",
+      "symptoms": [
+        "电压异常",
+        "温度异常",
+        "容量骤降"
+      ],
+      "causes": [
+        "低温快充",
+        "高 SOC 长时间停留",
+        "过充"
+      ],
+      "recommendations": [
+        "降低低温充电倍率",
+        "缩短高 SOC 停留时间",
+        "复查充电策略"
+      ],
+      "evidence_templates": [
+        "{symptom}与锂析出前兆存在耦合，应结合充电策略进一步排查。"
+      ],
+      "evidence_source": [
+        "锂析出机理文献",
+        "快充经验规则"
+      ],
+      "rule_id": "RULE-MECH-001",
+      "confidence_basis": [
+        "温度/电压联合症状",
+        "容量衰减前兆"
+      ],
+      "source_scope": [
+        "nasa",
+        "calce",
+        "kaggle"
+      ],
+      "symptom_weights": {
+        "电压异常": 1.1,
+        "温度异常": 1.0,
+        "容量骤降": 1.2
+      },
+      "threshold_hints": [
+        "低温环境下出现异常电压平台",
+        "容量恢复受限"
+      ]
+    },
+    {
+      "name": "过充应力累积",
+      "category": "充电故障",
+      "severity": "high",
+      "description": "长期高截止电压或过充会引发副反应积累，带来容量与安全风险。",
+      "symptoms": [
+        "电压异常",
+        "温度异常",
+        "容量骤降"
+      ],
+      "causes": [
+        "截止电压设置过高",
+        "充电控制漂移",
+        "均衡策略异常"
+      ],
+      "recommendations": [
+        "复查充电上限",
+        "校准充电控制器",
+        "审查均衡策略"
+      ],
+      "evidence_templates": [
+        "{symptom}可能意味着充电端存在过充应力，需要优先核查充电链路。"
+      ],
+      "evidence_source": [
+        "充电控制经验规则"
+      ],
+      "rule_id": "RULE-CHG-001",
+      "confidence_basis": [
+        "过压症状权重",
+        "温度联动异常"
+      ],
+      "source_scope": [
+        "generic"
+      ],
+      "symptom_weights": {
+        "电压异常": 1.5,
+        "温度异常": 1.0,
+        "容量骤降": 1.0
+      },
+      "threshold_hints": [
+        "过压波动频繁",
+        "伴随温升异常"
+      ]
+    },
+    {
+      "name": "过放损伤",
+      "category": "放电故障",
+      "severity": "high",
+      "description": "欠压或深度放电会损伤活性材料，导致容量损失和内阻抬升。",
+      "symptoms": [
+        "电压异常",
+        "容量骤降",
+        "内阻异常"
+      ],
+      "causes": [
+        "截止电压过低",
+        "长时间低电量存放",
+        "负载策略不合理"
+      ],
+      "recommendations": [
+        "提高欠压保护阈值",
+        "避免深度放电",
+        "检查低电量停放策略"
+      ],
+      "evidence_templates": [
+        "{symptom}与深度放电损伤模式一致，应核查欠压保护链路。"
+      ],
+      "evidence_source": [
+        "放电保护经验规则"
+      ],
+      "rule_id": "RULE-DIS-001",
+      "confidence_basis": [
+        "欠压症状权重",
+        "容量/内阻双重异常"
+      ],
+      "source_scope": [
+        "generic"
+      ],
+      "symptom_weights": {
+        "电压异常": 1.3,
+        "容量骤降": 1.1,
+        "内阻异常": 1.1
+      },
+      "threshold_hints": [
+        "欠压异常反复出现",
+        "容量恢复明显受限"
+      ]
+    },
+    {
+      "name": "连接松动或接触不良",
+      "category": "结构故障",
+      "severity": "medium",
+      "description": "连接器、汇流排或采样线接触不良，会造成电压和内阻异常跳变。",
+      "symptoms": [
+        "电压异常",
+        "内阻异常",
+        "电流异常"
+      ],
+      "causes": [
+        "连接件松动",
+        "接插件氧化",
+        "机械振动"
+      ],
+      "recommendations": [
+        "检查连接器",
+        "复紧关键接点",
+        "排查振动工况"
+      ],
+      "evidence_templates": [
+        "{symptom}表现为突发跳变，更符合连接接触类问题。"
+      ],
+      "evidence_source": [
+        "结构件维护规则"
+      ],
+      "rule_id": "RULE-STR-001",
+      "confidence_basis": [
+        "电压/内阻同步跳变",
+        "工况扰动不充分解释"
+      ],
+      "source_scope": [
+        "generic"
+      ],
+      "symptom_weights": {
+        "电压异常": 1.2,
+        "内阻异常": 1.2,
+        "电流异常": 0.8
+      },
+      "threshold_hints": [
+        "压差与内阻同步异常",
+        "异常具有突发性"
+      ]
+    },
+    {
+      "name": "冷却系统失效",
+      "category": "热管理故障",
+      "severity": "high",
+      "description": "热管理效率下降会导致持续高温和温升异常，进一步带来退化加速。",
+      "symptoms": [
+        "温度异常",
+        "电流异常"
+      ],
+      "causes": [
+        "风冷/液冷失效",
+        "散热通道堵塞",
+        "热界面老化"
+      ],
+      "recommendations": [
+        "检查冷却回路",
+        "清理散热通道",
+        "复核热管理策略"
+      ],
+      "evidence_templates": [
+        "{symptom}说明热管理能力下降，建议优先排查冷却链路。"
+      ],
+      "evidence_source": [
+        "热管理维护规则"
+      ],
+      "rule_id": "RULE-THERM-001",
+      "confidence_basis": [
+        "持续高温",
+        "温升速率异常"
+      ],
+      "source_scope": [
+        "generic"
+      ],
+      "symptom_weights": {
+        "温度异常": 1.5,
+        "电流异常": 0.8
+      },
+      "threshold_hints": [
+        "temperature_mean 持续高于安全阈值",
+        "温升速率持续偏高"
+      ]
+    },
+    {
+      "name": "传感器漂移",
+      "category": "传感故障",
+      "severity": "medium",
+      "description": "传感器零漂或增益漂移会导致观测值系统性偏离，影响诊断准确性。",
+      "symptoms": [
+        "电压异常",
+        "温度异常"
+      ],
+      "causes": [
+        "传感器老化",
+        "标定失准",
+        "采样模块偏移"
+      ],
+      "recommendations": [
+        "重新标定传感器",
+        "交叉校验采样值",
+        "检查采样模块"
+      ],
+      "evidence_templates": [
+        "{symptom}缺少容量或内阻协同变化时，需考虑传感器漂移。"
+      ],
+      "evidence_source": [
+        "采样系统维护规则"
+      ],
+      "rule_id": "RULE-SENS-001",
+      "confidence_basis": [
+        "观测值偏移",
+        "缺少退化协同证据"
+      ],
+      "source_scope": [
+        "generic"
+      ],
+      "symptom_weights": {
+        "电压异常": 1.1,
+        "温度异常": 1.0
+      },
+      "threshold_hints": [
+        "异常值缺少容量/内阻联动"
+      ]
+    },
+    {
+      "name": "自放电异常",
+      "category": "储存故障",
+      "severity": "medium",
+      "description": "储存阶段自放电过快会导致容量下降和后续性能不稳定。",
+      "symptoms": [
+        "容量骤降",
+        "电压异常"
+      ],
+      "causes": [
+        "微短路",
+        "杂质污染",
+        "储存条件不当"
+      ],
+      "recommendations": [
+        "缩短静置周期",
+        "检查绝缘状态",
+        "优化储存环境"
+      ],
+      "evidence_templates": [
+        "{symptom}在低负载情况下仍持续出现时，需要考虑自放电异常。"
+      ],
+      "evidence_source": [
+        "储存维护规则"
+      ],
+      "rule_id": "RULE-STOR-001",
+      "confidence_basis": [
+        "静置阶段容量下降",
+        "电压保持异常",
+        "储存场景匹配"
+      ],
+      "source_scope": [
+        "calce",
+        "kaggle"
+      ],
+      "symptom_weights": {
+        "容量骤降": 0.9,
+        "电压异常": 1.1
+      },
+      "threshold_hints": [
+        "静置阶段容量持续下降",
+        "电压保持能力下降"
       ]
     }
   ]

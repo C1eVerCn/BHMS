@@ -151,6 +151,10 @@ class AnomalyEventModel(BaseModel):
     description: str
     source: str = "statistical"
     evidence: list[str] = Field(default_factory=list)
+    evidence_source: str = "statistical_rules"
+    rule_id: Optional[str] = None
+    confidence_basis: list[str] = Field(default_factory=list)
+    source_scope: list[str] = Field(default_factory=list)
 
 
 class CandidateFault(BaseModel):
@@ -160,14 +164,27 @@ class CandidateFault(BaseModel):
     description: str
     category: Optional[str] = None
     matched_symptoms: list[str] = Field(default_factory=list)
+    all_symptoms: list[str] = Field(default_factory=list)
     root_causes: list[str] = Field(default_factory=list)
     recommendations: list[str] = Field(default_factory=list)
+    evidence_source: list[str] = Field(default_factory=list)
+    rule_id: Optional[str] = None
+    confidence_basis: list[str] = Field(default_factory=list)
+    source_scope: list[str] = Field(default_factory=list)
+    threshold_hints: list[str] = Field(default_factory=list)
+    symptom_coverage: float = 0.0
+    matched_symptom_count: int = 0
+    score_breakdown: dict[str, Any] = Field(default_factory=dict)
 
 
 class GraphTraceNode(BaseModel):
     id: str
     label: str
     node_type: str
+    evidence_source: list[str] = Field(default_factory=list)
+    rule_id: Optional[str] = None
+    confidence_basis: list[str] = Field(default_factory=list)
+    source_scope: list[str] = Field(default_factory=list)
     properties: dict[str, Any] = Field(default_factory=dict)
 
 
@@ -199,6 +216,7 @@ class DiagnosisRecord(BaseModel):
     payload: dict[str, Any] = Field(default_factory=dict)
     candidate_faults: list[CandidateFault] = Field(default_factory=list)
     graph_trace: Optional[GraphTrace] = None
+    decision_basis: list[str] = Field(default_factory=list)
     report_markdown: Optional[str] = None
 
 
@@ -216,6 +234,7 @@ class DiagnosisResult(BaseModel):
     diagnosis_time: str
     candidate_faults: list[CandidateFault] = Field(default_factory=list)
     graph_trace: GraphTrace
+    decision_basis: list[str] = Field(default_factory=list)
     report_markdown: str
 
 
@@ -227,6 +246,11 @@ class KnowledgeEntry(BaseModel):
     symptoms: list[str]
     causes: list[str]
     recommendations: list[str]
+    evidence_source: list[str] = Field(default_factory=list)
+    rule_id: Optional[str] = None
+    confidence_basis: list[str] = Field(default_factory=list)
+    source_scope: list[str] = Field(default_factory=list)
+    threshold_hints: list[str] = Field(default_factory=list)
 
 
 class BatteryHealth(BaseModel):

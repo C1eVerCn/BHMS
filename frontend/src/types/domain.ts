@@ -145,6 +145,10 @@ export interface AnomalyEvent {
   description: string
   source: string
   evidence: string[]
+  evidence_source?: string
+  rule_id?: string | null
+  confidence_basis?: string[]
+  source_scope?: string[]
 }
 
 export interface AnomalyDetectionResult {
@@ -164,14 +168,27 @@ export interface CandidateFault {
   description: string
   category?: string | null
   matched_symptoms: string[]
+  all_symptoms?: string[]
   root_causes: string[]
   recommendations: string[]
+  evidence_source?: string[]
+  rule_id?: string | null
+  confidence_basis?: string[]
+  source_scope?: string[]
+  threshold_hints?: string[]
+  symptom_coverage?: number
+  matched_symptom_count?: number
+  score_breakdown?: Record<string, unknown>
 }
 
 export interface GraphTraceNode {
   id: string
   label: string
   node_type: string
+  evidence_source?: string[]
+  rule_id?: string | null
+  confidence_basis?: string[]
+  source_scope?: string[]
   properties: Record<string, unknown>
 }
 
@@ -203,6 +220,7 @@ export interface DiagnosisRecord {
   payload?: Record<string, unknown>
   candidate_faults?: CandidateFault[]
   graph_trace?: GraphTrace
+  decision_basis?: string[]
   report_markdown?: string | null
 }
 
@@ -220,6 +238,7 @@ export interface DiagnosisResult {
   diagnosis_time: string
   candidate_faults: CandidateFault[]
   graph_trace: GraphTrace
+  decision_basis?: string[]
   report_markdown: string
 }
 
@@ -467,7 +486,11 @@ export interface KnowledgeSummary {
   fault_count: number
   symptom_alias_count: number
   categories: Record<string, number>
+  source_coverage?: Record<string, number>
   severity_distribution: Record<string, number>
+  evidence_sources?: Array<[string, number]>
+  rule_count?: number
+  threshold_rule_count?: number
   fault_names: string[]
   top_symptoms: Array<[string, number]>
   graph_backend: string

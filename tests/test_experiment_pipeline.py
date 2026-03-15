@@ -241,6 +241,7 @@ def test_ablation_summary_contains_real_variants_and_delta(tmp_path: Path):
         variants.append(build_variant_summary("nasa", variant, per_seed, model_dir=settings.model_dir))
 
     summary = create_ablation_summary("nasa", variants=variants, model_dir=settings.model_dir)
+    feature_config = json.loads((settings.processed_dir / "nasa" / "nasa_feature_config.json").read_text(encoding="utf-8"))
 
     assert summary["available"] is True
     variant_keys = {item["key"] for item in summary["variants"]}
@@ -248,6 +249,10 @@ def test_ablation_summary_contains_real_variants_and_delta(tmp_path: Path):
     assert all("aggregate_metrics" in item for item in summary["variants"])
     assert all("delta_vs_full" in item for item in summary["variants"])
     assert Path(summary["artifact_paths"]["summary"]).exists()
+    assert "voltage_mean" in feature_config["feature_columns"]
+    assert Path(
+        settings.model_dir / "nasa" / "hybrid" / "ablation" / "capacity_only" / "seed-7" / "data_profile" / "capacity_only_feature_config.json"
+    ).exists()
 
 
 def test_case_bundle_export_auto_generates_missing_reports_and_directory(tmp_path: Path):

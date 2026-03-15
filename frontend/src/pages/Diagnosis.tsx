@@ -175,6 +175,12 @@ const Diagnosis: React.FC = () => {
                 <PanelCard title="诊断依据">
                   <Space direction="vertical" size={14} style={{ width: '100%' }}>
                     <List dataSource={currentDiagnosis.evidence} renderItem={(item) => <List.Item>{item}</List.Item>} />
+                    {currentDiagnosis.decision_basis?.length ? (
+                      <>
+                        <Title level={5}>为什么优先判断为这个故障</Title>
+                        <List dataSource={currentDiagnosis.decision_basis} renderItem={(item) => <List.Item>{item}</List.Item>} />
+                      </>
+                    ) : null}
                     <Alert
                       type="info"
                       showIcon
@@ -183,6 +189,39 @@ const Diagnosis: React.FC = () => {
                   </Space>
                 </PanelCard>
               </div>
+
+              <PanelCard title="候选故障排序" style={{ marginTop: 18 }}>
+                {currentDiagnosis.candidate_faults?.length ? (
+                  <List
+                    dataSource={currentDiagnosis.candidate_faults}
+                    renderItem={(item) => (
+                      <List.Item>
+                        <Space direction="vertical" size={4} style={{ width: '100%' }}>
+                          <Space size={8} wrap>
+                            <Text strong>{item.name}</Text>
+                            <StatusTag tone={diagnosisTone(item.severity)}>{item.severity}</StatusTag>
+                            <Text type="secondary">score {item.score.toFixed(3)}</Text>
+                            {item.rule_id ? <Text code>{item.rule_id}</Text> : null}
+                          </Space>
+                          <Text type="secondary">
+                            匹配症状 {item.matched_symptom_count ?? item.matched_symptoms.length}/{item.all_symptoms?.length ?? item.matched_symptoms.length}
+                            ，覆盖率 {typeof item.symptom_coverage === 'number' ? item.symptom_coverage.toFixed(3) : '--'}
+                          </Text>
+                          <Text>{item.description}</Text>
+                          {item.confidence_basis?.length ? (
+                            <Text type="secondary">排序依据：{item.confidence_basis.join('；')}</Text>
+                          ) : null}
+                          {item.evidence_source?.length ? (
+                            <Text type="secondary">证据来源：{item.evidence_source.join('、')}</Text>
+                          ) : null}
+                        </Space>
+                      </List.Item>
+                    )}
+                  />
+                ) : (
+                  <Alert type="info" showIcon message="暂无候选故障排序" />
+                )}
+              </PanelCard>
             </>
           ) : (
             <PanelCard className="empty-state-card">

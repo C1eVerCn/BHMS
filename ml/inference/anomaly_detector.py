@@ -29,6 +29,30 @@ ANOMALY_LABELS = {
     AnomalyType.UNKNOWN: "未知异常",
 }
 
+SOURCE_THRESHOLD_PROFILES: dict[str, dict[str, float]] = {
+    "nasa": {
+        "capacity_drop_threshold": 0.18,
+        "temperature_high_threshold": 48.0,
+        "temperature_rise_rate": 3.5,
+        "current_spike_threshold": 4.5,
+        "resistance_increase_threshold": 0.25,
+    },
+    "calce": {
+        "capacity_drop_threshold": 0.16,
+        "temperature_high_threshold": 42.0,
+        "temperature_rise_rate": 2.8,
+        "current_spike_threshold": 4.0,
+        "resistance_increase_threshold": 0.22,
+    },
+    "kaggle": {
+        "capacity_drop_threshold": 0.17,
+        "temperature_high_threshold": 43.0,
+        "temperature_rise_rate": 3.0,
+        "current_spike_threshold": 4.2,
+        "resistance_increase_threshold": 0.24,
+    },
+}
+
 
 @dataclass
 class AnomalyThreshold:
@@ -55,6 +79,10 @@ class AnomalyEvent:
     description: str
     source: str = "statistical"
     evidence: list[str] = field(default_factory=list)
+    evidence_source: str = "statistical_rules"
+    rule_id: Optional[str] = None
+    confidence_basis: list[str] = field(default_factory=list)
+    source_scope: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -70,122 +98,174 @@ class StatisticalDetector:
         self.baseline_capacity = capacity
         self.baseline_resistance = resistance
 
-    def detect(self, features: dict[str, float]) -> list[AnomalyEvent]:
+    def detect(self, features: dict[str, float], source_scope: Optional[str] = None) -> list[AnomalyEvent]:
         events: list[AnomalyEvent] = []
+        thresholds = self._thresholds_for_source(source_scope)
+        source_tags = [source_scope.lower()] if source_scope else ["generic"]
 
         if "capacity" in features and self.baseline_capacity:
             capacity = float(features["capacity"])
             capacity_ratio = capacity / max(self.baseline_capacity, 1e-6)
-            if capacity_ratio < (1 - self.thresholds.capacity_drop_threshold):
+            if capacity_ratio < (1 - thresholds.capacity_drop_threshold):
                 events.append(
                     AnomalyEvent(
                         code=AnomalyType.CAPACITY_DROP.value,
-                        symptom=ANOMALY_LABELS[AnomalyType.CAPACITY_DROP],
-                        severity=self._calculate_severity(capacity_ratio, 1 - self.thresholds.capacity_drop_threshold, 0.5),
+                        symptom="容量衰减过快",
+                        severity=self._calculate_descending_severity(capacity_ratio, 1 - thresholds.capacity_drop_threshold, 0.55),
                         metric_name="capacity",
                         metric_value=capacity,
-                        threshold_value=f"<{self.baseline_capacity * (1 - self.thresholds.capacity_drop_threshold):.3f}",
+                        threshold_value=f"<{self.baseline_capacity * (1 - thresholds.capacity_drop_threshold):.3f}",
                         description=f"容量衰减至 {capacity_ratio * 100:.1f}% ，低于设定阈值。",
-                        evidence=[f"基线容量: {self.baseline_capacity:.3f}Ah"],
+                        evidence=[f"基线容量: {self.baseline_capacity:.3f}Ah", f"来源阈值: 容量保持率 < {(1 - thresholds.capacity_drop_threshold) * 100:.1f}%"],
+                        evidence_source="source_adaptive_rules",
+                        rule_id="STAT-CAP-001",
+                        confidence_basis=["容量保持率阈值命中", "相对基线容量偏离", "来源自适应阈值"],
+                        source_scope=source_tags,
                     )
                 )
 
         if "voltage_mean" in features:
             voltage = float(features["voltage_mean"])
-            if voltage < self.thresholds.voltage_range_min or voltage > self.thresholds.voltage_range_max:
-                severity = "high" if voltage < 2.0 or voltage > 5.0 else "medium"
+            if voltage < thresholds.voltage_range_min or voltage > thresholds.voltage_range_max:
+                severity = "critical" if voltage < 2.0 or voltage > 5.0 else "high" if voltage < 2.3 or voltage > 4.8 else "medium"
+                symptom = "欠压" if voltage < thresholds.voltage_range_min else "过压"
                 events.append(
                     AnomalyEvent(
                         code=AnomalyType.VOLTAGE_ANOMALY.value,
-                        symptom=ANOMALY_LABELS[AnomalyType.VOLTAGE_ANOMALY],
+                        symptom=symptom,
                         severity=severity,
                         metric_name="voltage_mean",
                         metric_value=voltage,
-                        threshold_value=f"[{self.thresholds.voltage_range_min}, {self.thresholds.voltage_range_max}]",
+                        threshold_value=f"[{thresholds.voltage_range_min}, {thresholds.voltage_range_max}]",
                         description=f"平均电压 {voltage:.2f}V 超出正常工作区间。",
+                        evidence_source="source_adaptive_rules",
+                        rule_id="STAT-VOLT-001",
+                        confidence_basis=["电压工作区间越界", "来源自适应安全区间"],
+                        source_scope=source_tags,
                     )
                 )
 
         if "temperature_mean" in features:
             temperature = float(features["temperature_mean"])
-            if temperature > self.thresholds.temperature_high_threshold or temperature < self.thresholds.temperature_low_threshold:
+            if temperature > thresholds.temperature_high_threshold or temperature < thresholds.temperature_low_threshold:
                 events.append(
                     AnomalyEvent(
                         code=AnomalyType.TEMPERATURE_ANOMALY.value,
                         symptom=ANOMALY_LABELS[AnomalyType.TEMPERATURE_ANOMALY],
-                        severity=self._calculate_temperature_severity(temperature),
+                        severity=self._calculate_temperature_severity(temperature, thresholds),
                         metric_name="temperature_mean",
                         metric_value=temperature,
-                        threshold_value=f"[{self.thresholds.temperature_low_threshold}, {self.thresholds.temperature_high_threshold}]",
+                        threshold_value=f"[{thresholds.temperature_low_threshold}, {thresholds.temperature_high_threshold}]",
                         description=f"平均温度 {temperature:.1f}°C 超出安全范围。",
+                        evidence_source="source_adaptive_rules",
+                        rule_id="STAT-TEMP-001",
+                        confidence_basis=["温度安全阈值越界", "热风险等级映射"],
+                        source_scope=source_tags,
                     )
                 )
 
         if "temperature_rise_rate" in features:
             rise_rate = float(features["temperature_rise_rate"])
-            if rise_rate > self.thresholds.temperature_rise_rate:
+            if rise_rate > thresholds.temperature_rise_rate:
                 events.append(
                     AnomalyEvent(
                         code=AnomalyType.TEMPERATURE_ANOMALY.value,
-                        symptom=ANOMALY_LABELS[AnomalyType.TEMPERATURE_ANOMALY],
-                        severity=self._calculate_severity(rise_rate, self.thresholds.temperature_rise_rate, self.thresholds.temperature_rise_rate * 3),
+                        symptom="温升过快",
+                        severity=self._calculate_ascending_severity(rise_rate, thresholds.temperature_rise_rate, thresholds.temperature_rise_rate * 3.5),
                         metric_name="temperature_rise_rate",
                         metric_value=rise_rate,
-                        threshold_value=f">{self.thresholds.temperature_rise_rate}",
+                        threshold_value=f">{thresholds.temperature_rise_rate}",
                         description=f"温升速率达到 {rise_rate:.2f}°C/min ，高于经验阈值。",
+                        evidence_source="source_adaptive_rules",
+                        rule_id="STAT-TEMP-002",
+                        confidence_basis=["温升速率阈值命中", "热失控先导信号"],
+                        source_scope=source_tags,
                     )
                 )
 
-        if "current_mean" in features and abs(float(features["current_mean"])) > self.thresholds.current_spike_threshold:
+        if "current_mean" in features and abs(float(features["current_mean"])) > thresholds.current_spike_threshold:
             current = float(features["current_mean"])
             events.append(
                 AnomalyEvent(
                     code=AnomalyType.CURRENT_ANOMALY.value,
-                    symptom=ANOMALY_LABELS[AnomalyType.CURRENT_ANOMALY],
-                    severity=self._calculate_severity(abs(current), self.thresholds.current_spike_threshold, self.thresholds.current_spike_threshold * 3),
+                    symptom="电流尖峰",
+                    severity=self._calculate_ascending_severity(abs(current), thresholds.current_spike_threshold, thresholds.current_spike_threshold * 3.2),
                     metric_name="current_mean",
                     metric_value=current,
-                    threshold_value=f"±{self.thresholds.current_spike_threshold}",
+                    threshold_value=f"±{thresholds.current_spike_threshold}",
                     description=f"平均电流幅值 {current:.2f}A 过高，可能存在异常工况。",
+                    evidence_source="source_adaptive_rules",
+                    rule_id="STAT-CURR-001",
+                    confidence_basis=["电流幅值超阈值", "工况冲击风险"],
+                    source_scope=source_tags,
                 )
             )
 
         if "internal_resistance" in features and self.baseline_resistance:
             resistance = float(features["internal_resistance"])
             resistance_ratio = resistance / max(self.baseline_resistance, 1e-6)
-            if resistance_ratio > (1 + self.thresholds.resistance_increase_threshold):
+            if resistance_ratio > (1 + thresholds.resistance_increase_threshold):
                 events.append(
                     AnomalyEvent(
                         code=AnomalyType.INTERNAL_RESISTANCE.value,
-                        symptom=ANOMALY_LABELS[AnomalyType.INTERNAL_RESISTANCE],
-                        severity=self._calculate_severity(
+                        symptom="内阻增大",
+                        severity=self._calculate_ascending_severity(
                             resistance_ratio,
-                            1 + self.thresholds.resistance_increase_threshold,
-                            2.0,
+                            1 + thresholds.resistance_increase_threshold,
+                            2.2,
                         ),
                         metric_name="internal_resistance",
                         metric_value=resistance,
-                        threshold_value=f">{self.baseline_resistance * (1 + self.thresholds.resistance_increase_threshold):.4f}",
+                        threshold_value=f">{self.baseline_resistance * (1 + thresholds.resistance_increase_threshold):.4f}",
                         description=f"内阻增加至基线的 {resistance_ratio * 100:.1f}% 。",
+                        evidence_source="source_adaptive_rules",
+                        rule_id="STAT-IR-001",
+                        confidence_basis=["内阻相对基线升高", "极化/老化规则命中"],
+                        source_scope=source_tags,
                     )
                 )
 
         return events
 
-    def _calculate_temperature_severity(self, temperature: float) -> str:
-        if temperature > self.thresholds.temperature_high_threshold + 15 or temperature < self.thresholds.temperature_low_threshold - 10:
+    def _thresholds_for_source(self, source_scope: Optional[str]) -> AnomalyThreshold:
+        if not source_scope:
+            return self.thresholds
+        overrides = SOURCE_THRESHOLD_PROFILES.get(source_scope.lower())
+        if not overrides:
+            return self.thresholds
+        return AnomalyThreshold(**{**asdict(self.thresholds), **overrides})
+
+    @staticmethod
+    def _calculate_temperature_severity(temperature: float, thresholds: AnomalyThreshold) -> str:
+        if temperature > thresholds.temperature_high_threshold + 18 or temperature < thresholds.temperature_low_threshold - 12:
+            return "critical"
+        if temperature > thresholds.temperature_high_threshold + 10 or temperature < thresholds.temperature_low_threshold - 8:
             return "high"
-        if temperature > self.thresholds.temperature_high_threshold + 5 or temperature < self.thresholds.temperature_low_threshold - 5:
+        if temperature > thresholds.temperature_high_threshold + 4 or temperature < thresholds.temperature_low_threshold - 4:
             return "medium"
         return "low"
 
-    def _calculate_severity(self, value: float, threshold: float, max_val: float) -> str:
-        ratio = (value - threshold) / max(max_val - threshold, 1e-6)
-        if ratio < 0.3:
+    @staticmethod
+    def _calculate_ascending_severity(value: float, threshold: float, critical_max: float) -> str:
+        ratio = (value - threshold) / max(critical_max - threshold, 1e-6)
+        if ratio < 0.25:
             return "low"
-        if ratio < 0.7:
+        if ratio < 0.55:
             return "medium"
-        return "high"
+        if ratio < 0.85:
+            return "high"
+        return "critical"
+
+    @staticmethod
+    def _calculate_descending_severity(value: float, threshold: float, critical_min: float) -> str:
+        ratio = (threshold - value) / max(threshold - critical_min, 1e-6)
+        if ratio < 0.25:
+            return "low"
+        if ratio < 0.55:
+            return "medium"
+        if ratio < 0.85:
+            return "high"
+        return "critical"
 
 
 class IsolationForestDetector:
@@ -240,6 +320,10 @@ class IsolationForestDetector:
                     description=description,
                     source="isolation_forest",
                     evidence=evidence,
+                    evidence_source="isolation_forest_model",
+                    rule_id="IF-UNKNOWN-001",
+                    confidence_basis=["孤立森林异常分数", "多维特征离群程度"],
+                    source_scope=["generic"],
                 )
             )
         return events
@@ -271,14 +355,25 @@ class AnomalyDetector:
         if self.if_detector:
             self.if_detector.fit(X, feature_names)
 
-    def detect(self, features: dict[str, float], X_multivariate: Optional[np.ndarray] = None) -> dict[str, Any]:
-        statistical_events = self.statistical_detector.detect(features) if self.statistical_detector and features else []
+    def detect(
+        self,
+        features: dict[str, float],
+        X_multivariate: Optional[np.ndarray] = None,
+        source_scope: Optional[str] = None,
+    ) -> dict[str, Any]:
+        statistical_events = (
+            self.statistical_detector.detect(features, source_scope=source_scope)
+            if self.statistical_detector and features
+            else []
+        )
         if_events = self.if_detector.detect_anomalies(X_multivariate) if self.if_detector and X_multivariate is not None else []
         all_events = statistical_events + if_events
         severities = [event.severity for event in all_events]
         max_severity = None
         if severities:
-            if "high" in severities:
+            if "critical" in severities:
+                max_severity = "critical"
+            elif "high" in severities:
                 max_severity = "high"
             elif "medium" in severities:
                 max_severity = "medium"

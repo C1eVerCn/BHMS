@@ -101,10 +101,12 @@ def test_prediction_and_diagnosis_return_explainable_payloads(tmp_path: Path):
     diagnosis = prediction_service.diagnose(
         battery_id=battery_id,
         anomalies=[{'symptom': '温度异常', 'severity': 'high', 'description': '平均温度升高明显', 'code': 'temperature_anomaly'}],
-        battery_info={'battery_id': battery_id},
+        battery_info={'battery_id': battery_id, 'source': 'kaggle'},
     )
     assert diagnosis['candidate_faults']
     assert diagnosis['graph_trace']['nodes']
+    assert diagnosis['decision_basis']
+    assert diagnosis['candidate_faults'][0]['rule_id']
     assert '电池故障诊断报告' in diagnosis['report_markdown']
 
 
@@ -156,7 +158,7 @@ def test_insight_service_exposes_profile_case_bundle_and_system_status(tmp_path:
     prediction_service.diagnose(
         battery_id=battery_id,
         anomalies=[{'symptom': '温度异常', 'severity': 'high', 'description': '平均温度升高明显', 'code': 'temperature_anomaly'}],
-        battery_info={'battery_id': battery_id},
+        battery_info={'battery_id': battery_id, 'source': 'calce'},
     )
 
     profile = insight_service.get_dataset_profile('calce')
@@ -169,6 +171,7 @@ def test_insight_service_exposes_profile_case_bundle_and_system_status(tmp_path:
     assert bundle['battery_id'] == battery_id
     assert bundle['prediction'] is not None
     assert bundle['diagnosis'] is not None
+    assert bundle['diagnosis'].get('decision_basis')
     assert 'BHMS 案例包' in bundle['bundle_markdown']
     assert status['database_ready'] is True
     assert '导出预测/诊断报告' in status['demo_acceptance_flow']

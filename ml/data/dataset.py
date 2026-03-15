@@ -187,12 +187,15 @@ class RULDataModule:
             },
         }
 
-    def export_metadata(self) -> dict[str, str]:
+    def export_metadata(self, output_dir: str | Path | None = None, file_prefix: Optional[str] = None) -> dict[str, str]:
         summary = self.summary()
-        split_path = self.output_dir / f"{self.source}_split.json"
-        normalization_path = self.output_dir / f"{self.source}_normalization.json"
-        feature_path = self.output_dir / f"{self.source}_feature_config.json"
-        summary_path = self.output_dir / f"{self.source}_dataset_summary.json"
+        target_dir = Path(output_dir) if output_dir is not None else self.output_dir
+        target_dir.mkdir(parents=True, exist_ok=True)
+        prefix = file_prefix or self.source
+        split_path = target_dir / f"{prefix}_split.json"
+        normalization_path = target_dir / f"{prefix}_normalization.json"
+        feature_path = target_dir / f"{prefix}_feature_config.json"
+        summary_path = target_dir / f"{prefix}_dataset_summary.json"
         split_path.write_text(json.dumps(summary["split"], ensure_ascii=False, indent=2), encoding="utf-8")
         normalization_path.write_text(json.dumps(summary["normalization"], ensure_ascii=False, indent=2), encoding="utf-8")
         feature_path.write_text(

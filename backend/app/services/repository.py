@@ -478,7 +478,16 @@ class BHMSRepository:
                         event.get("description"),
                         event.get("source", "statistical"),
                         self._now(),
-                        json.dumps({"evidence": event.get("evidence", [])}, ensure_ascii=False),
+                        json.dumps(
+                            {
+                                "evidence": event.get("evidence", []),
+                                "evidence_source": event.get("evidence_source"),
+                                "rule_id": event.get("rule_id"),
+                                "confidence_basis": event.get("confidence_basis", []),
+                                "source_scope": event.get("source_scope", []),
+                            },
+                            ensure_ascii=False,
+                        ),
                     ),
                 )
                 event_ids.append(int(cursor.lastrowid))
@@ -501,6 +510,10 @@ class BHMSRepository:
             item = dict(row)
             metadata = self._decode_json(item.pop("metadata_json"), {})
             item["evidence"] = metadata.get("evidence", [])
+            item["evidence_source"] = metadata.get("evidence_source", "statistical_rules")
+            item["rule_id"] = metadata.get("rule_id")
+            item["confidence_basis"] = metadata.get("confidence_basis", [])
+            item["source_scope"] = metadata.get("source_scope", [])
             result.append(item)
         return result
 

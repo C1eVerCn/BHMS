@@ -217,6 +217,16 @@ class InsightService:
         faults = payload.get("faults", [])
         categories = Counter(str(item.get("category", "未分类")) for item in faults)
         severity_distribution = Counter(str(item.get("severity", "unknown")) for item in faults)
+        source_coverage = Counter(
+            source
+            for item in faults
+            for source in (item.get("source_scope") or ["generic"])
+        )
+        evidence_sources = Counter(
+            source
+            for item in faults
+            for source in (item.get("evidence_source") or [])
+        )
         symptom_counter = Counter(
             symptom
             for item in faults
@@ -227,12 +237,17 @@ class InsightService:
             "symptom_alias_count": len(payload.get("symptom_aliases", {})),
             "categories": dict(categories),
             "severity_distribution": dict(severity_distribution),
+            "source_coverage": dict(source_coverage),
+            "evidence_sources": evidence_sources.most_common(8),
+            "rule_count": sum(1 for item in faults if item.get("rule_id")),
+            "threshold_rule_count": sum(1 for item in faults if item.get("threshold_hints")),
             "fault_names": [item.get("name") for item in faults],
             "top_symptoms": symptom_counter.most_common(8),
             "graph_backend": self.settings.graph_backend,
             "knowledge_path": str(self.settings.knowledge_path),
             "coverage_notes": [
                 "知识库用于 GraphRAG 候选故障排序、根因链组织与处理建议生成。",
+                "当前候选故障会显式展示规则编号、证据来源、适用数据源和排序依据。",
                 "当前结果展示的是可审计证据链，而不是模型隐式思维过程。",
                 "如需扩展论文深度，可继续补充故障类型、症状别名、阈值与规则来源。",
             ],
@@ -514,6 +529,8 @@ class InsightService:
                 lines.append(f"- 根因：{item}")
             for item in list(diagnosis.get("recommendations") or [])[:4]:
                 lines.append(f"- 建议：{item}")
+            for item in list(diagnosis.get("decision_basis") or [])[:3]:
+                lines.append(f"- 排序依据：{item}")
         else:
             lines.append("- 尚未生成 GraphRAG 诊断记录")
         lines.extend(["", "## 六、实验背景"])

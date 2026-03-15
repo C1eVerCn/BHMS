@@ -118,7 +118,7 @@ class PredictionService:
             "current_mean": point.get("current_mean", 0.0),
             "internal_resistance": point.get("internal_resistance"),
         }
-        results = self.anomaly_detector.detect(features)
+        results = self.anomaly_detector.detect(features, source_scope=str(battery.get("source", "")))
         events = [event.to_dict() for event in results["events"]]
         event_ids = self.repository.insert_anomaly_events(battery_id, events) if events else []
         return {
@@ -149,9 +149,21 @@ class PredictionService:
                 "evidence": ["异常检测结果为空，系统未识别到容量、电压或温度异常事件"],
                 "candidate_faults": [],
                 "graph_trace": GraphTrace(matched_symptoms=[], nodes=[], edges=[], ranking_basis=["无异常事件，因此未进入图谱检索"]).to_dict(),
+                "decision_basis": ["当前无异常事件，因此系统直接返回“未发现明显故障”。"],
                 "report_markdown": "# 电池故障诊断报告\n\n## 诊断结论\n- 当前未发现明显故障\n\n## 说明\n- 本次异常检测未发现可支撑故障诊断的异常事件。",
             }
-            record_id = self.repository.insert_diagnosis({"battery_id": battery_id, **diagnosis, "payload": {"candidate_faults": [], "graph_trace": diagnosis["graph_trace"], "report_markdown": diagnosis["report_markdown"]}})
+            record_id = self.repository.insert_diagnosis(
+                {
+                    "battery_id": battery_id,
+                    **diagnosis,
+                    "payload": {
+                        "candidate_faults": [],
+                        "graph_trace": diagnosis["graph_trace"],
+                        "decision_basis": diagnosis["decision_basis"],
+                        "report_markdown": diagnosis["report_markdown"],
+                    },
+                }
+            )
             return {
                 "id": record_id,
                 "battery_id": battery_id,
@@ -173,6 +185,7 @@ class PredictionService:
                 "payload": {
                     "candidate_faults": [item.to_dict() for item in diagnosis.candidate_faults],
                     "graph_trace": diagnosis.graph_trace.to_dict(),
+                    "decision_basis": diagnosis.decision_basis,
                     "report_markdown": diagnosis.report_markdown,
                 },
             }

@@ -41,6 +41,15 @@ def test_llm_interface_returns_structured_diagnosis():
                 "causes": ["过充"],
                 "recommendations": ["降低充电倍率"],
                 "matched_symptoms": ["容量骤降"],
+                "all_symptoms": ["容量骤降", "温度异常", "电流异常"],
+                "rule_id": "RULE-AGE-001",
+                "evidence_source": ["公开退化机理规则"],
+                "confidence_basis": ["症状覆盖率", "严重度加权"],
+                "source_scope": ["generic"],
+                "threshold_hints": ["capacity_ratio < 0.85"],
+                "symptom_coverage": 0.667,
+                "matched_symptom_count": 1,
+                "score_breakdown": {"coverage_score": 0.2, "severity_score": 0.1},
                 "evidence_templates": ["检测到{symptom}。"],
             }
         ],
@@ -49,6 +58,8 @@ def test_llm_interface_returns_structured_diagnosis():
     assert isinstance(diagnosis, DiagnosisResult)
     assert diagnosis.fault_type == "容量衰减异常"
     assert diagnosis.confidence > 0
+    assert diagnosis.decision_basis
+    assert diagnosis.candidate_faults[0].rule_id == "RULE-AGE-001"
 
 
 def test_graphrag_engine_end_to_end():
@@ -58,9 +69,11 @@ def test_graphrag_engine_end_to_end():
             {"symptom": "温度异常", "severity": "high", "description": "平均温度达到 56C"},
             {"symptom": "电压异常", "severity": "medium", "description": "存在欠压波动"},
         ],
-        battery_info={"battery_id": "B0005"},
+        battery_info={"battery_id": "B0005", "source": "nasa"},
     )
     assert diagnosis.fault_type in {"热失控风险", "工况波动异常", "电压采样异常"}
+    assert diagnosis.decision_basis
+    assert diagnosis.candidate_faults[0].rule_id is not None
     report = engine.generate_report(diagnosis)
     assert "电池故障诊断报告" in report
 

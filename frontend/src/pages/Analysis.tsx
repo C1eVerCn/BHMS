@@ -293,8 +293,24 @@ const Analysis: React.FC = () => {
                           renderItem={(item: CandidateFault) => (
                             <List.Item>
                               <List.Item.Meta
-                                title={`${item.name} · score ${item.score.toFixed(3)}`}
-                                description={`${item.description}；匹配症状：${item.matched_symptoms.join('、') || '无'}`}
+                                title={
+                                  <Space size={8} wrap>
+                                    <span>{item.name}</span>
+                                    <span>score {item.score.toFixed(3)}</span>
+                                    {item.rule_id ? <Text code>{item.rule_id}</Text> : null}
+                                  </Space>
+                                }
+                                description={
+                                  <Space direction="vertical" size={2} style={{ width: '100%' }}>
+                                    <Text type="secondary">{item.description}</Text>
+                                    <Text type="secondary">匹配症状：{item.matched_symptoms.join('、') || '无'}</Text>
+                                    <Text type="secondary">
+                                      覆盖率 {typeof item.symptom_coverage === 'number' ? item.symptom_coverage.toFixed(3) : '--'}，
+                                      适用来源 {item.source_scope?.join('、') || '--'}
+                                    </Text>
+                                    {item.confidence_basis?.length ? <Text type="secondary">排序依据：{item.confidence_basis.join('；')}</Text> : null}
+                                  </Space>
+                                }
                               />
                             </List.Item>
                           )}
@@ -328,6 +344,12 @@ const Analysis: React.FC = () => {
                         <List size="small" dataSource={diagnosis.root_causes} renderItem={(item) => <List.Item>{item}</List.Item>} />
                         <Title level={5}>处理建议</Title>
                         <List size="small" dataSource={diagnosis.recommendations} renderItem={(item) => <List.Item>{item}</List.Item>} />
+                        {diagnosis.decision_basis?.length ? (
+                          <>
+                            <Title level={5}>为什么优先判断为该故障</Title>
+                            <List size="small" dataSource={diagnosis.decision_basis} renderItem={(item) => <List.Item>{item}</List.Item>} />
+                          </>
+                        ) : null}
                         <Button
                           icon={<DownloadOutlined />}
                           onClick={() => void downloadTextReport(diagnosis.id, diagnosis.report_markdown, getDiagnosisReportText, 'diagnosis-report')}
@@ -826,22 +848,50 @@ function SystemStatusPanel({ status }: { status: SystemStatus }) {
   )
 }
 
-function KnowledgePanel({ summary, graphBackend }: { summary: { fault_count: number; symptom_alias_count: number; categories: Record<string, number>; top_symptoms: Array<[string, number]>; coverage_notes: string[] }; graphBackend?: string }) {
+function KnowledgePanel({
+  summary,
+  graphBackend,
+}: {
+  summary: {
+    fault_count: number
+    symptom_alias_count: number
+    categories: Record<string, number>
+    top_symptoms: Array<[string, number]>
+    coverage_notes: string[]
+    source_coverage?: Record<string, number>
+    evidence_sources?: Array<[string, number]>
+    rule_count?: number
+    threshold_rule_count?: number
+  }
+  graphBackend?: string
+}) {
   return (
     <Space direction="vertical" size={16} style={{ width: '100%' }}>
       <Alert
         type="info"
         showIcon
-        message={`当前知识库包含 ${summary.fault_count} 类故障、${summary.symptom_alias_count} 个症状别名`}
-        description={`GraphRAG 运行后端：${graphBackend ?? 'unknown'}`}
+        message={`当前知识库包含 ${summary.fault_count} 类故障、${summary.symptom_alias_count} 个症状别名、${summary.rule_count ?? 0} 条规则`}
+        description={`GraphRAG 运行后端：${graphBackend ?? 'unknown'}；带阈值提示规则 ${summary.threshold_rule_count ?? 0} 条`}
       />
       <List
         size="small"
         dataSource={Object.entries(summary.categories)}
         renderItem={([category, count]) => <List.Item>{category}：{count}</List.Item>}
       />
+      {summary.source_coverage ? (
+        <>
+          <Title level={5}>来源覆盖</Title>
+          <List size="small" dataSource={Object.entries(summary.source_coverage)} renderItem={([source, count]) => <List.Item>{source}：{count}</List.Item>} />
+        </>
+      ) : null}
       <Title level={5}>高频症状</Title>
       <List size="small" dataSource={summary.top_symptoms} renderItem={(item) => <List.Item>{item[0]}：{item[1]}</List.Item>} />
+      {summary.evidence_sources?.length ? (
+        <>
+          <Title level={5}>证据来源</Title>
+          <List size="small" dataSource={summary.evidence_sources} renderItem={(item) => <List.Item>{item[0]}：{item[1]}</List.Item>} />
+        </>
+      ) : null}
       <List size="small" dataSource={summary.coverage_notes} renderItem={(item) => <List.Item>{item}</List.Item>} />
     </Space>
   )
@@ -1081,7 +1131,7 @@ function hydratePredictionFromHistory(record: PredictionRecord | undefined) {
   } as PredictionResult
 }
 
-function hydrateDiagnosisFromHistory(record: DiagnosisRecord | undefined) {
+function hydrateDiagnosisFromHistory(record: DiagnosisRecord | undefined): DiagnosisResult | undefined {
   if (!record || !record.graph_trace) return undefined
   return {
     id: record.id,
@@ -1097,6 +1147,7 @@ function hydrateDiagnosisFromHistory(record: DiagnosisRecord | undefined) {
     diagnosis_time: record.created_at,
     candidate_faults: record.candidate_faults ?? [],
     graph_trace: record.graph_trace,
+    decision_basis: record.decision_basis ?? [],
     report_markdown: record.report_markdown ?? '',
   }
 }
