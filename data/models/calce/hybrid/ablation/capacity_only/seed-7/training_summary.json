@@ -3,10 +3,10 @@
   "model_type": "hybrid",
   "model_version": "calce-capacity_only-seed-7",
   "best_val_loss": 9.459049328168232,
-  "best_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/ablation/capacity_only/seed-7/hybrid_best.pt",
-  "final_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/ablation/capacity_only/seed-7/hybrid_final.pt",
+  "best_checkpoint": "data/models/calce/hybrid/ablation/capacity_only/seed-7/hybrid_best.pt",
+  "final_checkpoint": "data/models/calce/hybrid/ablation/capacity_only/seed-7/hybrid_final.pt",
   "data_summary": {
-    "csv_path": "/Users/chris/Documents/trae_projects/BHMS/data/processed/calce/calce_cycle_summary.csv",
+    "csv_path": "data/processed/calce/calce_cycle_summary.csv",
     "source": "calce",
     "seq_len": 24,
     "batch_size": 8,

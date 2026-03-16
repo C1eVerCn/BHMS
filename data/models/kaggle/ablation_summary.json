@@ -25,9 +25,9 @@
             "r2": -18.459434231122334,
             "lr": 0.0003
           },
-          "best_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/runs/seed-7/hybrid_best.pt",
-          "final_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/runs/seed-7/hybrid_final.pt",
-          "artifact_dir": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/runs/seed-7",
+          "best_checkpoint": "data/models/kaggle/hybrid/runs/seed-7/hybrid_best.pt",
+          "final_checkpoint": "data/models/kaggle/hybrid/runs/seed-7/hybrid_final.pt",
+          "artifact_dir": "data/models/kaggle/hybrid/runs/seed-7",
           "summary_path": null,
           "history": {
             "train": [
@@ -880,7 +880,7 @@
               2.648118257522583
             ]
           },
-          "test_details_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/runs/seed-7/test_details.json"
+          "test_details_path": "data/models/kaggle/hybrid/runs/seed-7/test_details.json"
         },
         {
           "seed": 21,
@@ -894,9 +894,9 @@
             "r2": -37.912893954912825,
             "lr": 0.0003
           },
-          "best_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/runs/seed-21/hybrid_best.pt",
-          "final_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/runs/seed-21/hybrid_final.pt",
-          "artifact_dir": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/runs/seed-21",
+          "best_checkpoint": "data/models/kaggle/hybrid/runs/seed-21/hybrid_best.pt",
+          "final_checkpoint": "data/models/kaggle/hybrid/runs/seed-21/hybrid_final.pt",
+          "artifact_dir": "data/models/kaggle/hybrid/runs/seed-21",
           "summary_path": null,
           "history": {
             "train": [
@@ -1749,7 +1749,7 @@
               1.530996561050415
             ]
           },
-          "test_details_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/runs/seed-21/test_details.json"
+          "test_details_path": "data/models/kaggle/hybrid/runs/seed-21/test_details.json"
         },
         {
           "seed": 42,
@@ -1763,9 +1763,9 @@
             "r2": -7.339669982592265,
             "lr": 0.0003
           },
-          "best_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/runs/seed-42/hybrid_best.pt",
-          "final_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/runs/seed-42/hybrid_final.pt",
-          "artifact_dir": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/runs/seed-42",
+          "best_checkpoint": "data/models/kaggle/hybrid/runs/seed-42/hybrid_best.pt",
+          "final_checkpoint": "data/models/kaggle/hybrid/runs/seed-42/hybrid_final.pt",
+          "artifact_dir": "data/models/kaggle/hybrid/runs/seed-42",
           "summary_path": null,
           "history": {
             "train": [
@@ -2618,7 +2618,7 @@
               1.705848217010498
             ]
           },
-          "test_details_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/runs/seed-42/test_details.json"
+          "test_details_path": "data/models/kaggle/hybrid/runs/seed-42/test_details.json"
         }
       ],
       "aggregate_metrics": {
@@ -2637,36 +2637,36 @@
       },
       "best_checkpoint": {
         "seed": 42,
-        "path": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/runs/seed-42/hybrid_best.pt"
+        "path": "data/models/kaggle/hybrid/runs/seed-42/hybrid_best.pt"
       },
       "artifact_paths": {
-        "summary": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/hybrid_multi_seed_summary.json",
-        "plots_dir": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/plots"
+        "summary": "data/models/kaggle/hybrid/hybrid_multi_seed_summary.json",
+        "plots_dir": "data/models/kaggle/hybrid/plots"
       },
       "plots": [
         {
           "key": "metrics_overview",
           "title": "KAGGLE hybrid multi-seed metrics",
           "description": "Mean and std across the configured random seeds.",
-          "path": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/plots/metrics_overview.png",
+          "path": "data/models/kaggle/hybrid/plots/metrics_overview.png",
           "generated_at": "2026-03-15T08:29:25.308373",
-          "metadata_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/plots/metrics_overview.json"
+          "metadata_path": "data/models/kaggle/hybrid/plots/metrics_overview.json"
         },
         {
           "key": "error_distribution",
           "title": "KAGGLE hybrid error distribution",
           "description": "Prediction error histogram for every configured seed.",
-          "path": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/plots/error_distribution.png",
+          "path": "data/models/kaggle/hybrid/plots/error_distribution.png",
           "generated_at": "2026-03-15T08:29:25.365106",
-          "metadata_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/plots/error_distribution.json"
+          "metadata_path": "data/models/kaggle/hybrid/plots/error_distribution.json"
         },
         {
           "key": "training_curves",
           "title": "KAGGLE hybrid training curves",
           "description": "Train/validation loss curves for the configured seed runs.",
-          "path": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/plots/training_curves.png",
+          "path": "data/models/kaggle/hybrid/plots/training_curves.png",
           "generated_at": "2026-03-15T08:29:25.410457",
-          "metadata_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/plots/training_curves.json"
+          "metadata_path": "data/models/kaggle/hybrid/plots/training_curves.json"
         }
       ],
       "delta_vs_full": {
@@ -2698,9 +2698,9 @@
             "r2": -44.467688330014546,
             "lr": 0.0003
           },
-          "best_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/ablation/no_xlstm/seed-7/hybrid_best.pt",
-          "final_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/ablation/no_xlstm/seed-7/hybrid_final.pt",
-          "artifact_dir": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/ablation/no_xlstm/seed-7",
+          "best_checkpoint": "data/models/kaggle/hybrid/ablation/no_xlstm/seed-7/hybrid_best.pt",
+          "final_checkpoint": "data/models/kaggle/hybrid/ablation/no_xlstm/seed-7/hybrid_final.pt",
+          "artifact_dir": "data/models/kaggle/hybrid/ablation/no_xlstm/seed-7",
           "summary_path": null,
           "history": {
             "train": [
@@ -3553,7 +3553,7 @@
               1.3196756839752197
             ]
           },
-          "test_details_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/ablation/no_xlstm/seed-7/test_details.json"
+          "test_details_path": "data/models/kaggle/hybrid/ablation/no_xlstm/seed-7/test_details.json"
         },
         {
           "seed": 21,
@@ -3565,9 +3565,9 @@
             "r2": -15.886839342117309,
             "lr": 0.0003
           },
-          "best_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/ablation/no_xlstm/seed-21/hybrid_best.pt",
-          "final_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/ablation/no_xlstm/seed-21/hybrid_final.pt",
-          "artifact_dir": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/ablation/no_xlstm/seed-21",
+          "best_checkpoint": "data/models/kaggle/hybrid/ablation/no_xlstm/seed-21/hybrid_best.pt",
+          "final_checkpoint": "data/models/kaggle/hybrid/ablation/no_xlstm/seed-21/hybrid_final.pt",
+          "artifact_dir": "data/models/kaggle/hybrid/ablation/no_xlstm/seed-21",
           "summary_path": null,
           "history": {
             "train": [
@@ -4420,7 +4420,7 @@
               3.178145408630371
             ]
           },
-          "test_details_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/ablation/no_xlstm/seed-21/test_details.json"
+          "test_details_path": "data/models/kaggle/hybrid/ablation/no_xlstm/seed-21/test_details.json"
         },
         {
           "seed": 42,
@@ -4432,9 +4432,9 @@
             "r2": -17.43885491291682,
             "lr": 0.0003
           },
-          "best_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/ablation/no_xlstm/seed-42/hybrid_best.pt",
-          "final_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/ablation/no_xlstm/seed-42/hybrid_final.pt",
-          "artifact_dir": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/ablation/no_xlstm/seed-42",
+          "best_checkpoint": "data/models/kaggle/hybrid/ablation/no_xlstm/seed-42/hybrid_best.pt",
+          "final_checkpoint": "data/models/kaggle/hybrid/ablation/no_xlstm/seed-42/hybrid_final.pt",
+          "artifact_dir": "data/models/kaggle/hybrid/ablation/no_xlstm/seed-42",
           "summary_path": null,
           "history": {
             "train": [
@@ -5287,7 +5287,7 @@
               3.2170603275299072
             ]
           },
-          "test_details_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/ablation/no_xlstm/seed-42/test_details.json"
+          "test_details_path": "data/models/kaggle/hybrid/ablation/no_xlstm/seed-42/test_details.json"
         }
       ],
       "aggregate_metrics": {
@@ -5314,9 +5314,9 @@
           "r2": -15.886839342117309,
           "lr": 0.0003
         },
-        "best_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/ablation/no_xlstm/seed-21/hybrid_best.pt",
-        "final_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/ablation/no_xlstm/seed-21/hybrid_final.pt",
-        "artifact_dir": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/ablation/no_xlstm/seed-21",
+        "best_checkpoint": "data/models/kaggle/hybrid/ablation/no_xlstm/seed-21/hybrid_best.pt",
+        "final_checkpoint": "data/models/kaggle/hybrid/ablation/no_xlstm/seed-21/hybrid_final.pt",
+        "artifact_dir": "data/models/kaggle/hybrid/ablation/no_xlstm/seed-21",
         "summary_path": null,
         "history": {
           "train": [
@@ -6169,36 +6169,36 @@
             3.178145408630371
           ]
         },
-        "test_details_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/ablation/no_xlstm/seed-21/test_details.json"
+        "test_details_path": "data/models/kaggle/hybrid/ablation/no_xlstm/seed-21/test_details.json"
       },
       "artifact_paths": {
-        "variant_dir": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/ablation/no_xlstm",
-        "plots_dir": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/ablation/no_xlstm/plots"
+        "variant_dir": "data/models/kaggle/hybrid/ablation/no_xlstm",
+        "plots_dir": "data/models/kaggle/hybrid/ablation/no_xlstm/plots"
       },
       "plots": [
         {
           "key": "metrics_overview",
           "title": "KAGGLE no_xlstm metrics",
           "description": "Aggregate mean/std metrics for the ablation variant.",
-          "path": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/ablation/no_xlstm/plots/metrics_overview.png",
+          "path": "data/models/kaggle/hybrid/ablation/no_xlstm/plots/metrics_overview.png",
           "generated_at": "2026-03-15T08:29:25.445261",
-          "metadata_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/ablation/no_xlstm/plots/metrics_overview.json"
+          "metadata_path": "data/models/kaggle/hybrid/ablation/no_xlstm/plots/metrics_overview.json"
         },
         {
           "key": "error_distribution",
           "title": "KAGGLE no_xlstm error distribution",
           "description": "Prediction error histogram for each seed in the ablation variant.",
-          "path": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/ablation/no_xlstm/plots/error_distribution.png",
+          "path": "data/models/kaggle/hybrid/ablation/no_xlstm/plots/error_distribution.png",
           "generated_at": "2026-03-15T08:29:25.498728",
-          "metadata_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/ablation/no_xlstm/plots/error_distribution.json"
+          "metadata_path": "data/models/kaggle/hybrid/ablation/no_xlstm/plots/error_distribution.json"
         },
         {
           "key": "training_curves",
           "title": "KAGGLE no_xlstm training curves",
           "description": "Train/validation loss for the ablation variant.",
-          "path": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/ablation/no_xlstm/plots/training_curves.png",
+          "path": "data/models/kaggle/hybrid/ablation/no_xlstm/plots/training_curves.png",
           "generated_at": "2026-03-15T08:29:25.542909",
-          "metadata_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/ablation/no_xlstm/plots/training_curves.json"
+          "metadata_path": "data/models/kaggle/hybrid/ablation/no_xlstm/plots/training_curves.json"
         }
       ],
       "delta_vs_full": {
@@ -6230,9 +6230,9 @@
             "r2": -17.59438133239746,
             "lr": 0.0003
           },
-          "best_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/ablation/no_transformer/seed-7/hybrid_best.pt",
-          "final_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/ablation/no_transformer/seed-7/hybrid_final.pt",
-          "artifact_dir": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/ablation/no_transformer/seed-7",
+          "best_checkpoint": "data/models/kaggle/hybrid/ablation/no_transformer/seed-7/hybrid_best.pt",
+          "final_checkpoint": "data/models/kaggle/hybrid/ablation/no_transformer/seed-7/hybrid_final.pt",
+          "artifact_dir": "data/models/kaggle/hybrid/ablation/no_transformer/seed-7",
           "summary_path": null,
           "history": {
             "train": [
@@ -7085,7 +7085,7 @@
               1.954059362411499
             ]
           },
-          "test_details_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/ablation/no_transformer/seed-7/test_details.json"
+          "test_details_path": "data/models/kaggle/hybrid/ablation/no_transformer/seed-7/test_details.json"
         },
         {
           "seed": 21,
@@ -7097,9 +7097,9 @@
             "r2": -12.082290840148925,
             "lr": 0.0003
           },
-          "best_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/ablation/no_transformer/seed-21/hybrid_best.pt",
-          "final_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/ablation/no_transformer/seed-21/hybrid_final.pt",
-          "artifact_dir": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/ablation/no_transformer/seed-21",
+          "best_checkpoint": "data/models/kaggle/hybrid/ablation/no_transformer/seed-21/hybrid_best.pt",
+          "final_checkpoint": "data/models/kaggle/hybrid/ablation/no_transformer/seed-21/hybrid_final.pt",
+          "artifact_dir": "data/models/kaggle/hybrid/ablation/no_transformer/seed-21",
           "summary_path": null,
           "history": {
             "train": [
@@ -7952,7 +7952,7 @@
               2.5619540214538574
             ]
           },
-          "test_details_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/ablation/no_transformer/seed-21/test_details.json"
+          "test_details_path": "data/models/kaggle/hybrid/ablation/no_transformer/seed-21/test_details.json"
         },
         {
           "seed": 42,
@@ -7964,9 +7964,9 @@
             "r2": -12.980671572685242,
             "lr": 0.0003
           },
-          "best_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/ablation/no_transformer/seed-42/hybrid_best.pt",
-          "final_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/ablation/no_transformer/seed-42/hybrid_final.pt",
-          "artifact_dir": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/ablation/no_transformer/seed-42",
+          "best_checkpoint": "data/models/kaggle/hybrid/ablation/no_transformer/seed-42/hybrid_best.pt",
+          "final_checkpoint": "data/models/kaggle/hybrid/ablation/no_transformer/seed-42/hybrid_final.pt",
+          "artifact_dir": "data/models/kaggle/hybrid/ablation/no_transformer/seed-42",
           "summary_path": null,
           "history": {
             "train": [
@@ -8819,7 +8819,7 @@
               0.49223166704177856
             ]
           },
-          "test_details_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/ablation/no_transformer/seed-42/test_details.json"
+          "test_details_path": "data/models/kaggle/hybrid/ablation/no_transformer/seed-42/test_details.json"
         }
       ],
       "aggregate_metrics": {
@@ -8846,9 +8846,9 @@
           "r2": -12.082290840148925,
           "lr": 0.0003
         },
-        "best_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/ablation/no_transformer/seed-21/hybrid_best.pt",
-        "final_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/ablation/no_transformer/seed-21/hybrid_final.pt",
-        "artifact_dir": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/ablation/no_transformer/seed-21",
+        "best_checkpoint": "data/models/kaggle/hybrid/ablation/no_transformer/seed-21/hybrid_best.pt",
+        "final_checkpoint": "data/models/kaggle/hybrid/ablation/no_transformer/seed-21/hybrid_final.pt",
+        "artifact_dir": "data/models/kaggle/hybrid/ablation/no_transformer/seed-21",
         "summary_path": null,
         "history": {
           "train": [
@@ -9701,36 +9701,36 @@
             2.5619540214538574
           ]
         },
-        "test_details_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/ablation/no_transformer/seed-21/test_details.json"
+        "test_details_path": "data/models/kaggle/hybrid/ablation/no_transformer/seed-21/test_details.json"
       },
       "artifact_paths": {
-        "variant_dir": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/ablation/no_transformer",
-        "plots_dir": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/ablation/no_transformer/plots"
+        "variant_dir": "data/models/kaggle/hybrid/ablation/no_transformer",
+        "plots_dir": "data/models/kaggle/hybrid/ablation/no_transformer/plots"
       },
       "plots": [
         {
           "key": "metrics_overview",
           "title": "KAGGLE no_transformer metrics",
           "description": "Aggregate mean/std metrics for the ablation variant.",
-          "path": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/ablation/no_transformer/plots/metrics_overview.png",
+          "path": "data/models/kaggle/hybrid/ablation/no_transformer/plots/metrics_overview.png",
           "generated_at": "2026-03-15T08:29:25.576231",
-          "metadata_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/ablation/no_transformer/plots/metrics_overview.json"
+          "metadata_path": "data/models/kaggle/hybrid/ablation/no_transformer/plots/metrics_overview.json"
         },
         {
           "key": "error_distribution",
           "title": "KAGGLE no_transformer error distribution",
           "description": "Prediction error histogram for each seed in the ablation variant.",
-          "path": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/ablation/no_transformer/plots/error_distribution.png",
+          "path": "data/models/kaggle/hybrid/ablation/no_transformer/plots/error_distribution.png",
           "generated_at": "2026-03-15T08:29:25.631966",
-          "metadata_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/ablation/no_transformer/plots/error_distribution.json"
+          "metadata_path": "data/models/kaggle/hybrid/ablation/no_transformer/plots/error_distribution.json"
         },
         {
           "key": "training_curves",
           "title": "KAGGLE no_transformer training curves",
           "description": "Train/validation loss for the ablation variant.",
-          "path": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/ablation/no_transformer/plots/training_curves.png",
+          "path": "data/models/kaggle/hybrid/ablation/no_transformer/plots/training_curves.png",
           "generated_at": "2026-03-15T08:29:25.677213",
-          "metadata_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/ablation/no_transformer/plots/training_curves.json"
+          "metadata_path": "data/models/kaggle/hybrid/ablation/no_transformer/plots/training_curves.json"
         }
       ],
       "delta_vs_full": {
@@ -9762,9 +9762,9 @@
             "r2": -24.421851936976115,
             "lr": 8.317050813874547e-06
           },
-          "best_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/ablation/capacity_only/seed-7/hybrid_best.pt",
-          "final_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/ablation/capacity_only/seed-7/hybrid_final.pt",
-          "artifact_dir": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/ablation/capacity_only/seed-7",
+          "best_checkpoint": "data/models/kaggle/hybrid/ablation/capacity_only/seed-7/hybrid_best.pt",
+          "final_checkpoint": "data/models/kaggle/hybrid/ablation/capacity_only/seed-7/hybrid_final.pt",
+          "artifact_dir": "data/models/kaggle/hybrid/ablation/capacity_only/seed-7",
           "summary_path": null,
           "history": {
             "train": [
@@ -10585,7 +10585,7 @@
               6.945612907409668
             ]
           },
-          "test_details_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/ablation/capacity_only/seed-7/test_details.json"
+          "test_details_path": "data/models/kaggle/hybrid/ablation/capacity_only/seed-7/test_details.json"
         },
         {
           "seed": 21,
@@ -10597,9 +10597,9 @@
             "r2": -24.013935029506683,
             "lr": 0.0003
           },
-          "best_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/ablation/capacity_only/seed-21/hybrid_best.pt",
-          "final_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/ablation/capacity_only/seed-21/hybrid_final.pt",
-          "artifact_dir": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/ablation/capacity_only/seed-21",
+          "best_checkpoint": "data/models/kaggle/hybrid/ablation/capacity_only/seed-21/hybrid_best.pt",
+          "final_checkpoint": "data/models/kaggle/hybrid/ablation/capacity_only/seed-21/hybrid_final.pt",
+          "artifact_dir": "data/models/kaggle/hybrid/ablation/capacity_only/seed-21",
           "summary_path": null,
           "history": {
             "train": [
@@ -11452,7 +11452,7 @@
               7.0070977210998535
             ]
           },
-          "test_details_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/ablation/capacity_only/seed-21/test_details.json"
+          "test_details_path": "data/models/kaggle/hybrid/ablation/capacity_only/seed-21/test_details.json"
         },
         {
           "seed": 42,
@@ -11464,9 +11464,9 @@
             "r2": -28.49567092657089,
             "lr": 0.0003
           },
-          "best_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/ablation/capacity_only/seed-42/hybrid_best.pt",
-          "final_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/ablation/capacity_only/seed-42/hybrid_final.pt",
-          "artifact_dir": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/ablation/capacity_only/seed-42",
+          "best_checkpoint": "data/models/kaggle/hybrid/ablation/capacity_only/seed-42/hybrid_best.pt",
+          "final_checkpoint": "data/models/kaggle/hybrid/ablation/capacity_only/seed-42/hybrid_final.pt",
+          "artifact_dir": "data/models/kaggle/hybrid/ablation/capacity_only/seed-42",
           "summary_path": null,
           "history": {
             "train": [
@@ -12319,7 +12319,7 @@
               7.731732368469238
             ]
           },
-          "test_details_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/ablation/capacity_only/seed-42/test_details.json"
+          "test_details_path": "data/models/kaggle/hybrid/ablation/capacity_only/seed-42/test_details.json"
         }
       ],
       "aggregate_metrics": {
@@ -12346,9 +12346,9 @@
           "r2": -24.013935029506683,
           "lr": 0.0003
         },
-        "best_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/ablation/capacity_only/seed-21/hybrid_best.pt",
-        "final_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/ablation/capacity_only/seed-21/hybrid_final.pt",
-        "artifact_dir": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/ablation/capacity_only/seed-21",
+        "best_checkpoint": "data/models/kaggle/hybrid/ablation/capacity_only/seed-21/hybrid_best.pt",
+        "final_checkpoint": "data/models/kaggle/hybrid/ablation/capacity_only/seed-21/hybrid_final.pt",
+        "artifact_dir": "data/models/kaggle/hybrid/ablation/capacity_only/seed-21",
         "summary_path": null,
         "history": {
           "train": [
@@ -13201,36 +13201,36 @@
             7.0070977210998535
           ]
         },
-        "test_details_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/ablation/capacity_only/seed-21/test_details.json"
+        "test_details_path": "data/models/kaggle/hybrid/ablation/capacity_only/seed-21/test_details.json"
       },
       "artifact_paths": {
-        "variant_dir": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/ablation/capacity_only",
-        "plots_dir": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/ablation/capacity_only/plots"
+        "variant_dir": "data/models/kaggle/hybrid/ablation/capacity_only",
+        "plots_dir": "data/models/kaggle/hybrid/ablation/capacity_only/plots"
       },
       "plots": [
         {
           "key": "metrics_overview",
           "title": "KAGGLE capacity_only metrics",
           "description": "Aggregate mean/std metrics for the ablation variant.",
-          "path": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/ablation/capacity_only/plots/metrics_overview.png",
+          "path": "data/models/kaggle/hybrid/ablation/capacity_only/plots/metrics_overview.png",
           "generated_at": "2026-03-15T08:29:25.708316",
-          "metadata_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/ablation/capacity_only/plots/metrics_overview.json"
+          "metadata_path": "data/models/kaggle/hybrid/ablation/capacity_only/plots/metrics_overview.json"
         },
         {
           "key": "error_distribution",
           "title": "KAGGLE capacity_only error distribution",
           "description": "Prediction error histogram for each seed in the ablation variant.",
-          "path": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/ablation/capacity_only/plots/error_distribution.png",
+          "path": "data/models/kaggle/hybrid/ablation/capacity_only/plots/error_distribution.png",
           "generated_at": "2026-03-15T08:29:25.760035",
-          "metadata_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/ablation/capacity_only/plots/error_distribution.json"
+          "metadata_path": "data/models/kaggle/hybrid/ablation/capacity_only/plots/error_distribution.json"
         },
         {
           "key": "training_curves",
           "title": "KAGGLE capacity_only training curves",
           "description": "Train/validation loss for the ablation variant.",
-          "path": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/ablation/capacity_only/plots/training_curves.png",
+          "path": "data/models/kaggle/hybrid/ablation/capacity_only/plots/training_curves.png",
           "generated_at": "2026-03-15T08:29:25.804408",
-          "metadata_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/ablation/capacity_only/plots/training_curves.json"
+          "metadata_path": "data/models/kaggle/hybrid/ablation/capacity_only/plots/training_curves.json"
         }
       ],
       "delta_vs_full": {
@@ -13243,8 +13243,8 @@
     "Delta is computed against full_hybrid using aggregate RMSE."
   ],
   "artifact_paths": {
-    "summary": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/ablation_summary.json",
-    "plots_dir": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/plots"
+    "summary": "data/models/kaggle/ablation_summary.json",
+    "plots_dir": "data/models/kaggle/plots"
   },
   "generated_at": "2026-03-15T08:29:25.804813",
   "plots": [
@@ -13252,9 +13252,9 @@
       "key": "ablation_overview",
       "title": "KAGGLE ablation overview",
       "description": "Aggregate RMSE for each hybrid ablation variant.",
-      "path": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/plots/ablation_overview.png",
+      "path": "data/models/kaggle/plots/ablation_overview.png",
       "generated_at": "2026-03-15T08:29:25.835494",
-      "metadata_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/plots/ablation_overview.json"
+      "metadata_path": "data/models/kaggle/plots/ablation_overview.json"
     }
   ]
 }

@@ -2,7 +2,7 @@
   "key": "dataset_split",
   "title": "CALCE dataset split",
   "description": "Battery counts in the fixed train/validation/test split.",
-  "path": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/plots/dataset_split.png",
+  "path": "data/models/calce/plots/dataset_split.png",
   "generated_at": "2026-03-15T08:29:25.112921",
   "split_snapshot": {
     "train_batteries": [

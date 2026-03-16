@@ -8,7 +8,7 @@
     21,
     42
   ],
-  "config_path": "/Users/chris/Documents/trae_projects/BHMS/configs/calce_bilstm.yaml",
+  "config_path": "configs/calce_bilstm.yaml",
   "config_snapshot": {
     "data": {
       "csv_path": "data/processed/calce/calce_cycle_summary.csv",
@@ -83,9 +83,9 @@
         "r2": -30.256395598252613,
         "lr": 0.0002505
       },
-      "best_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/bilstm/runs/seed-7/bilstm_best.pt",
-      "final_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/bilstm/runs/seed-7/bilstm_final.pt",
-      "artifact_dir": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/bilstm/runs/seed-7",
+      "best_checkpoint": "data/models/calce/bilstm/runs/seed-7/bilstm_best.pt",
+      "final_checkpoint": "data/models/calce/bilstm/runs/seed-7/bilstm_final.pt",
+      "artifact_dir": "data/models/calce/bilstm/runs/seed-7",
       "summary_path": null,
       "history": {
         "train": [
@@ -568,7 +568,7 @@
           9.308938026428223
         ]
       },
-      "test_details_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/bilstm/runs/seed-7/test_details.json"
+      "test_details_path": "data/models/calce/bilstm/runs/seed-7/test_details.json"
     },
     {
       "seed": 21,
@@ -582,9 +582,9 @@
         "r2": -32.70259844263395,
         "lr": 0.0002505
       },
-      "best_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/bilstm/runs/seed-21/bilstm_best.pt",
-      "final_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/bilstm/runs/seed-21/bilstm_final.pt",
-      "artifact_dir": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/bilstm/runs/seed-21",
+      "best_checkpoint": "data/models/calce/bilstm/runs/seed-21/bilstm_best.pt",
+      "final_checkpoint": "data/models/calce/bilstm/runs/seed-21/bilstm_final.pt",
+      "artifact_dir": "data/models/calce/bilstm/runs/seed-21",
       "summary_path": null,
       "history": {
         "train": [
@@ -1067,7 +1067,7 @@
           7.897238254547119
         ]
       },
-      "test_details_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/bilstm/runs/seed-21/test_details.json"
+      "test_details_path": "data/models/calce/bilstm/runs/seed-21/test_details.json"
     },
     {
       "seed": 42,
@@ -1081,9 +1081,9 @@
         "r2": -36.7266037662824,
         "lr": 0.0002505
       },
-      "best_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/bilstm/runs/seed-42/bilstm_best.pt",
-      "final_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/bilstm/runs/seed-42/bilstm_final.pt",
-      "artifact_dir": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/bilstm/runs/seed-42",
+      "best_checkpoint": "data/models/calce/bilstm/runs/seed-42/bilstm_best.pt",
+      "final_checkpoint": "data/models/calce/bilstm/runs/seed-42/bilstm_final.pt",
+      "artifact_dir": "data/models/calce/bilstm/runs/seed-42",
       "summary_path": null,
       "history": {
         "train": [
@@ -1566,7 +1566,7 @@
           15.131924629211426
         ]
       },
-      "test_details_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/bilstm/runs/seed-42/test_details.json"
+      "test_details_path": "data/models/calce/bilstm/runs/seed-42/test_details.json"
     }
   ],
   "aggregate_metrics": {
@@ -1585,11 +1585,11 @@
   },
   "best_checkpoint": {
     "seed": 42,
-    "path": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/bilstm/runs/seed-42/bilstm_best.pt"
+    "path": "data/models/calce/bilstm/runs/seed-42/bilstm_best.pt"
   },
   "artifact_paths": {
-    "summary": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/bilstm/bilstm_multi_seed_summary.json",
-    "plots_dir": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/bilstm/plots"
+    "summary": "data/models/calce/bilstm/bilstm_multi_seed_summary.json",
+    "plots_dir": "data/models/calce/bilstm/plots"
   },
   "generated_at": "2026-03-15T08:29:24.272153",
   "plots": [
@@ -1597,25 +1597,25 @@
       "key": "metrics_overview",
       "title": "CALCE bilstm multi-seed metrics",
       "description": "Mean and std across the configured random seeds.",
-      "path": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/bilstm/plots/metrics_overview.png",
+      "path": "data/models/calce/bilstm/plots/metrics_overview.png",
       "generated_at": "2026-03-15T08:29:24.304792",
-      "metadata_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/bilstm/plots/metrics_overview.json"
+      "metadata_path": "data/models/calce/bilstm/plots/metrics_overview.json"
     },
     {
       "key": "error_distribution",
       "title": "CALCE bilstm error distribution",
       "description": "Prediction error histogram for every configured seed.",
-      "path": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/bilstm/plots/error_distribution.png",
+      "path": "data/models/calce/bilstm/plots/error_distribution.png",
       "generated_at": "2026-03-15T08:29:24.360846",
-      "metadata_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/bilstm/plots/error_distribution.json"
+      "metadata_path": "data/models/calce/bilstm/plots/error_distribution.json"
     },
     {
       "key": "training_curves",
       "title": "CALCE bilstm training curves",
       "description": "Train/validation loss curves for the configured seed runs.",
-      "path": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/bilstm/plots/training_curves.png",
+      "path": "data/models/calce/bilstm/plots/training_curves.png",
       "generated_at": "2026-03-15T08:29:24.405948",
-      "metadata_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/bilstm/plots/training_curves.json"
+      "metadata_path": "data/models/calce/bilstm/plots/training_curves.json"
     }
   ]
 }

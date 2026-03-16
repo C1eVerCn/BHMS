@@ -25,9 +25,9 @@
             "r2": -55.922520741820335,
             "lr": 0.00012711304747648549
           },
-          "best_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/runs/seed-7/hybrid_best.pt",
-          "final_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/runs/seed-7/hybrid_final.pt",
-          "artifact_dir": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/runs/seed-7",
+          "best_checkpoint": "data/models/nasa/hybrid/runs/seed-7/hybrid_best.pt",
+          "final_checkpoint": "data/models/nasa/hybrid/runs/seed-7/hybrid_final.pt",
+          "artifact_dir": "data/models/nasa/hybrid/runs/seed-7",
           "summary_path": null,
           "history": {
             "train": [
@@ -1135,7 +1135,7 @@
               0.0
             ]
           },
-          "test_details_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/runs/seed-7/test_details.json"
+          "test_details_path": "data/models/nasa/hybrid/runs/seed-7/test_details.json"
         },
         {
           "seed": 21,
@@ -1149,9 +1149,9 @@
             "r2": -19.890938758850098,
             "lr": 0.00012711304747648549
           },
-          "best_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/runs/seed-21/hybrid_best.pt",
-          "final_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/runs/seed-21/hybrid_final.pt",
-          "artifact_dir": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/runs/seed-21",
+          "best_checkpoint": "data/models/nasa/hybrid/runs/seed-21/hybrid_best.pt",
+          "final_checkpoint": "data/models/nasa/hybrid/runs/seed-21/hybrid_final.pt",
+          "artifact_dir": "data/models/nasa/hybrid/runs/seed-21",
           "summary_path": null,
           "history": {
             "train": [
@@ -2259,7 +2259,7 @@
               13.432294845581055
             ]
           },
-          "test_details_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/runs/seed-21/test_details.json"
+          "test_details_path": "data/models/nasa/hybrid/runs/seed-21/test_details.json"
         },
         {
           "seed": 42,
@@ -2273,9 +2273,9 @@
             "r2": -55.801458559930325,
             "lr": 0.00012711304747648549
           },
-          "best_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/runs/seed-42/hybrid_best.pt",
-          "final_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/runs/seed-42/hybrid_final.pt",
-          "artifact_dir": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/runs/seed-42",
+          "best_checkpoint": "data/models/nasa/hybrid/runs/seed-42/hybrid_best.pt",
+          "final_checkpoint": "data/models/nasa/hybrid/runs/seed-42/hybrid_final.pt",
+          "artifact_dir": "data/models/nasa/hybrid/runs/seed-42",
           "summary_path": null,
           "history": {
             "train": [
@@ -3383,7 +3383,7 @@
               0.0
             ]
           },
-          "test_details_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/runs/seed-42/test_details.json"
+          "test_details_path": "data/models/nasa/hybrid/runs/seed-42/test_details.json"
         }
       ],
       "aggregate_metrics": {
@@ -3402,36 +3402,36 @@
       },
       "best_checkpoint": {
         "seed": 21,
-        "path": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/runs/seed-21/hybrid_best.pt"
+        "path": "data/models/nasa/hybrid/runs/seed-21/hybrid_best.pt"
       },
       "artifact_paths": {
-        "summary": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/hybrid_multi_seed_summary.json",
-        "plots_dir": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/plots"
+        "summary": "data/models/nasa/hybrid/hybrid_multi_seed_summary.json",
+        "plots_dir": "data/models/nasa/hybrid/plots"
       },
       "plots": [
         {
           "key": "metrics_overview",
           "title": "NASA hybrid multi-seed metrics",
           "description": "Mean and std across the configured random seeds.",
-          "path": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/plots/metrics_overview.png",
+          "path": "data/models/nasa/hybrid/plots/metrics_overview.png",
           "generated_at": "2026-03-15T08:29:23.550351",
-          "metadata_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/plots/metrics_overview.json"
+          "metadata_path": "data/models/nasa/hybrid/plots/metrics_overview.json"
         },
         {
           "key": "error_distribution",
           "title": "NASA hybrid error distribution",
           "description": "Prediction error histogram for every configured seed.",
-          "path": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/plots/error_distribution.png",
+          "path": "data/models/nasa/hybrid/plots/error_distribution.png",
           "generated_at": "2026-03-15T08:29:23.604300",
-          "metadata_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/plots/error_distribution.json"
+          "metadata_path": "data/models/nasa/hybrid/plots/error_distribution.json"
         },
         {
           "key": "training_curves",
           "title": "NASA hybrid training curves",
           "description": "Train/validation loss curves for the configured seed runs.",
-          "path": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/plots/training_curves.png",
+          "path": "data/models/nasa/hybrid/plots/training_curves.png",
           "generated_at": "2026-03-15T08:29:23.655929",
-          "metadata_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/plots/training_curves.json"
+          "metadata_path": "data/models/nasa/hybrid/plots/training_curves.json"
         }
       ],
       "delta_vs_full": {
@@ -3463,9 +3463,9 @@
             "r2": -44.98766331374645,
             "lr": 0.00012711304747648549
           },
-          "best_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/ablation/no_xlstm/seed-7/hybrid_best.pt",
-          "final_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/ablation/no_xlstm/seed-7/hybrid_final.pt",
-          "artifact_dir": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/ablation/no_xlstm/seed-7",
+          "best_checkpoint": "data/models/nasa/hybrid/ablation/no_xlstm/seed-7/hybrid_best.pt",
+          "final_checkpoint": "data/models/nasa/hybrid/ablation/no_xlstm/seed-7/hybrid_final.pt",
+          "artifact_dir": "data/models/nasa/hybrid/ablation/no_xlstm/seed-7",
           "summary_path": null,
           "history": {
             "train": [
@@ -4573,7 +4573,7 @@
               0.0
             ]
           },
-          "test_details_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/ablation/no_xlstm/seed-7/test_details.json"
+          "test_details_path": "data/models/nasa/hybrid/ablation/no_xlstm/seed-7/test_details.json"
         },
         {
           "seed": 21,
@@ -4585,9 +4585,9 @@
             "r2": -40.54051202535629,
             "lr": 0.0002995391413931026
           },
-          "best_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/ablation/no_xlstm/seed-21/hybrid_best.pt",
-          "final_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/ablation/no_xlstm/seed-21/hybrid_final.pt",
-          "artifact_dir": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/ablation/no_xlstm/seed-21",
+          "best_checkpoint": "data/models/nasa/hybrid/ablation/no_xlstm/seed-21/hybrid_best.pt",
+          "final_checkpoint": "data/models/nasa/hybrid/ablation/no_xlstm/seed-21/hybrid_final.pt",
+          "artifact_dir": "data/models/nasa/hybrid/ablation/no_xlstm/seed-21",
           "summary_path": null,
           "history": {
             "train": [
@@ -5855,7 +5855,7 @@
               0.0
             ]
           },
-          "test_details_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/ablation/no_xlstm/seed-21/test_details.json"
+          "test_details_path": "data/models/nasa/hybrid/ablation/no_xlstm/seed-21/test_details.json"
         },
         {
           "seed": 42,
@@ -5867,9 +5867,9 @@
             "r2": -52.491021938622,
             "lr": 0.00012711304747648549
           },
-          "best_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/ablation/no_xlstm/seed-42/hybrid_best.pt",
-          "final_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/ablation/no_xlstm/seed-42/hybrid_final.pt",
-          "artifact_dir": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/ablation/no_xlstm/seed-42",
+          "best_checkpoint": "data/models/nasa/hybrid/ablation/no_xlstm/seed-42/hybrid_best.pt",
+          "final_checkpoint": "data/models/nasa/hybrid/ablation/no_xlstm/seed-42/hybrid_final.pt",
+          "artifact_dir": "data/models/nasa/hybrid/ablation/no_xlstm/seed-42",
           "summary_path": null,
           "history": {
             "train": [
@@ -6977,7 +6977,7 @@
               0.0
             ]
           },
-          "test_details_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/ablation/no_xlstm/seed-42/test_details.json"
+          "test_details_path": "data/models/nasa/hybrid/ablation/no_xlstm/seed-42/test_details.json"
         }
       ],
       "aggregate_metrics": {
@@ -7004,9 +7004,9 @@
           "r2": -40.54051202535629,
           "lr": 0.0002995391413931026
         },
-        "best_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/ablation/no_xlstm/seed-21/hybrid_best.pt",
-        "final_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/ablation/no_xlstm/seed-21/hybrid_final.pt",
-        "artifact_dir": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/ablation/no_xlstm/seed-21",
+        "best_checkpoint": "data/models/nasa/hybrid/ablation/no_xlstm/seed-21/hybrid_best.pt",
+        "final_checkpoint": "data/models/nasa/hybrid/ablation/no_xlstm/seed-21/hybrid_final.pt",
+        "artifact_dir": "data/models/nasa/hybrid/ablation/no_xlstm/seed-21",
         "summary_path": null,
         "history": {
           "train": [
@@ -8274,36 +8274,36 @@
             0.0
           ]
         },
-        "test_details_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/ablation/no_xlstm/seed-21/test_details.json"
+        "test_details_path": "data/models/nasa/hybrid/ablation/no_xlstm/seed-21/test_details.json"
       },
       "artifact_paths": {
-        "variant_dir": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/ablation/no_xlstm",
-        "plots_dir": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/ablation/no_xlstm/plots"
+        "variant_dir": "data/models/nasa/hybrid/ablation/no_xlstm",
+        "plots_dir": "data/models/nasa/hybrid/ablation/no_xlstm/plots"
       },
       "plots": [
         {
           "key": "metrics_overview",
           "title": "NASA no_xlstm metrics",
           "description": "Aggregate mean/std metrics for the ablation variant.",
-          "path": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/ablation/no_xlstm/plots/metrics_overview.png",
+          "path": "data/models/nasa/hybrid/ablation/no_xlstm/plots/metrics_overview.png",
           "generated_at": "2026-03-15T08:29:23.690461",
-          "metadata_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/ablation/no_xlstm/plots/metrics_overview.json"
+          "metadata_path": "data/models/nasa/hybrid/ablation/no_xlstm/plots/metrics_overview.json"
         },
         {
           "key": "error_distribution",
           "title": "NASA no_xlstm error distribution",
           "description": "Prediction error histogram for each seed in the ablation variant.",
-          "path": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/ablation/no_xlstm/plots/error_distribution.png",
+          "path": "data/models/nasa/hybrid/ablation/no_xlstm/plots/error_distribution.png",
           "generated_at": "2026-03-15T08:29:23.743002",
-          "metadata_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/ablation/no_xlstm/plots/error_distribution.json"
+          "metadata_path": "data/models/nasa/hybrid/ablation/no_xlstm/plots/error_distribution.json"
         },
         {
           "key": "training_curves",
           "title": "NASA no_xlstm training curves",
           "description": "Train/validation loss for the ablation variant.",
-          "path": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/ablation/no_xlstm/plots/training_curves.png",
+          "path": "data/models/nasa/hybrid/ablation/no_xlstm/plots/training_curves.png",
           "generated_at": "2026-03-15T08:29:23.792655",
-          "metadata_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/ablation/no_xlstm/plots/training_curves.json"
+          "metadata_path": "data/models/nasa/hybrid/ablation/no_xlstm/plots/training_curves.json"
         }
       ],
       "delta_vs_full": {
@@ -8335,9 +8335,9 @@
             "r2": -9.611084301024675,
             "lr": 0.00012711304747648549
           },
-          "best_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/ablation/no_transformer/seed-7/hybrid_best.pt",
-          "final_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/ablation/no_transformer/seed-7/hybrid_final.pt",
-          "artifact_dir": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/ablation/no_transformer/seed-7",
+          "best_checkpoint": "data/models/nasa/hybrid/ablation/no_transformer/seed-7/hybrid_best.pt",
+          "final_checkpoint": "data/models/nasa/hybrid/ablation/no_transformer/seed-7/hybrid_final.pt",
+          "artifact_dir": "data/models/nasa/hybrid/ablation/no_transformer/seed-7",
           "summary_path": null,
           "history": {
             "train": [
@@ -9445,7 +9445,7 @@
               0.0
             ]
           },
-          "test_details_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/ablation/no_transformer/seed-7/test_details.json"
+          "test_details_path": "data/models/nasa/hybrid/ablation/no_transformer/seed-7/test_details.json"
         },
         {
           "seed": 21,
@@ -9457,9 +9457,9 @@
             "r2": -30.000501848757267,
             "lr": 0.00012711304747648549
           },
-          "best_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/ablation/no_transformer/seed-21/hybrid_best.pt",
-          "final_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/ablation/no_transformer/seed-21/hybrid_final.pt",
-          "artifact_dir": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/ablation/no_transformer/seed-21",
+          "best_checkpoint": "data/models/nasa/hybrid/ablation/no_transformer/seed-21/hybrid_best.pt",
+          "final_checkpoint": "data/models/nasa/hybrid/ablation/no_transformer/seed-21/hybrid_final.pt",
+          "artifact_dir": "data/models/nasa/hybrid/ablation/no_transformer/seed-21",
           "summary_path": null,
           "history": {
             "train": [
@@ -10567,7 +10567,7 @@
               0.0
             ]
           },
-          "test_details_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/ablation/no_transformer/seed-21/test_details.json"
+          "test_details_path": "data/models/nasa/hybrid/ablation/no_transformer/seed-21/test_details.json"
         },
         {
           "seed": 42,
@@ -10579,9 +10579,9 @@
             "r2": -55.361856423318386,
             "lr": 0.00012711304747648549
           },
-          "best_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/ablation/no_transformer/seed-42/hybrid_best.pt",
-          "final_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/ablation/no_transformer/seed-42/hybrid_final.pt",
-          "artifact_dir": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/ablation/no_transformer/seed-42",
+          "best_checkpoint": "data/models/nasa/hybrid/ablation/no_transformer/seed-42/hybrid_best.pt",
+          "final_checkpoint": "data/models/nasa/hybrid/ablation/no_transformer/seed-42/hybrid_final.pt",
+          "artifact_dir": "data/models/nasa/hybrid/ablation/no_transformer/seed-42",
           "summary_path": null,
           "history": {
             "train": [
@@ -11689,7 +11689,7 @@
               0.0
             ]
           },
-          "test_details_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/ablation/no_transformer/seed-42/test_details.json"
+          "test_details_path": "data/models/nasa/hybrid/ablation/no_transformer/seed-42/test_details.json"
         }
       ],
       "aggregate_metrics": {
@@ -11716,9 +11716,9 @@
           "r2": -9.611084301024675,
           "lr": 0.00012711304747648549
         },
-        "best_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/ablation/no_transformer/seed-7/hybrid_best.pt",
-        "final_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/ablation/no_transformer/seed-7/hybrid_final.pt",
-        "artifact_dir": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/ablation/no_transformer/seed-7",
+        "best_checkpoint": "data/models/nasa/hybrid/ablation/no_transformer/seed-7/hybrid_best.pt",
+        "final_checkpoint": "data/models/nasa/hybrid/ablation/no_transformer/seed-7/hybrid_final.pt",
+        "artifact_dir": "data/models/nasa/hybrid/ablation/no_transformer/seed-7",
         "summary_path": null,
         "history": {
           "train": [
@@ -12826,36 +12826,36 @@
             0.0
           ]
         },
-        "test_details_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/ablation/no_transformer/seed-7/test_details.json"
+        "test_details_path": "data/models/nasa/hybrid/ablation/no_transformer/seed-7/test_details.json"
       },
       "artifact_paths": {
-        "variant_dir": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/ablation/no_transformer",
-        "plots_dir": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/ablation/no_transformer/plots"
+        "variant_dir": "data/models/nasa/hybrid/ablation/no_transformer",
+        "plots_dir": "data/models/nasa/hybrid/ablation/no_transformer/plots"
       },
       "plots": [
         {
           "key": "metrics_overview",
           "title": "NASA no_transformer metrics",
           "description": "Aggregate mean/std metrics for the ablation variant.",
-          "path": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/ablation/no_transformer/plots/metrics_overview.png",
+          "path": "data/models/nasa/hybrid/ablation/no_transformer/plots/metrics_overview.png",
           "generated_at": "2026-03-15T08:29:23.825776",
-          "metadata_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/ablation/no_transformer/plots/metrics_overview.json"
+          "metadata_path": "data/models/nasa/hybrid/ablation/no_transformer/plots/metrics_overview.json"
         },
         {
           "key": "error_distribution",
           "title": "NASA no_transformer error distribution",
           "description": "Prediction error histogram for each seed in the ablation variant.",
-          "path": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/ablation/no_transformer/plots/error_distribution.png",
+          "path": "data/models/nasa/hybrid/ablation/no_transformer/plots/error_distribution.png",
           "generated_at": "2026-03-15T08:29:23.936677",
-          "metadata_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/ablation/no_transformer/plots/error_distribution.json"
+          "metadata_path": "data/models/nasa/hybrid/ablation/no_transformer/plots/error_distribution.json"
         },
         {
           "key": "training_curves",
           "title": "NASA no_transformer training curves",
           "description": "Train/validation loss for the ablation variant.",
-          "path": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/ablation/no_transformer/plots/training_curves.png",
+          "path": "data/models/nasa/hybrid/ablation/no_transformer/plots/training_curves.png",
           "generated_at": "2026-03-15T08:29:23.987073",
-          "metadata_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/ablation/no_transformer/plots/training_curves.json"
+          "metadata_path": "data/models/nasa/hybrid/ablation/no_transformer/plots/training_curves.json"
         }
       ],
       "delta_vs_full": {
@@ -12887,9 +12887,9 @@
             "r2": -46.46703411266208,
             "lr": 0.00012711304747648549
           },
-          "best_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/ablation/capacity_only/seed-7/hybrid_best.pt",
-          "final_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/ablation/capacity_only/seed-7/hybrid_final.pt",
-          "artifact_dir": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/ablation/capacity_only/seed-7",
+          "best_checkpoint": "data/models/nasa/hybrid/ablation/capacity_only/seed-7/hybrid_best.pt",
+          "final_checkpoint": "data/models/nasa/hybrid/ablation/capacity_only/seed-7/hybrid_final.pt",
+          "artifact_dir": "data/models/nasa/hybrid/ablation/capacity_only/seed-7",
           "summary_path": null,
           "history": {
             "train": [
@@ -13997,7 +13997,7 @@
               0.8612388372421265
             ]
           },
-          "test_details_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/ablation/capacity_only/seed-7/test_details.json"
+          "test_details_path": "data/models/nasa/hybrid/ablation/capacity_only/seed-7/test_details.json"
         },
         {
           "seed": 21,
@@ -14009,9 +14009,9 @@
             "r2": -45.197079822421074,
             "lr": 0.00012711304747648549
           },
-          "best_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/ablation/capacity_only/seed-21/hybrid_best.pt",
-          "final_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/ablation/capacity_only/seed-21/hybrid_final.pt",
-          "artifact_dir": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/ablation/capacity_only/seed-21",
+          "best_checkpoint": "data/models/nasa/hybrid/ablation/capacity_only/seed-21/hybrid_best.pt",
+          "final_checkpoint": "data/models/nasa/hybrid/ablation/capacity_only/seed-21/hybrid_final.pt",
+          "artifact_dir": "data/models/nasa/hybrid/ablation/capacity_only/seed-21",
           "summary_path": null,
           "history": {
             "train": [
@@ -15119,7 +15119,7 @@
               1.0519226789474487
             ]
           },
-          "test_details_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/ablation/capacity_only/seed-21/test_details.json"
+          "test_details_path": "data/models/nasa/hybrid/ablation/capacity_only/seed-21/test_details.json"
         },
         {
           "seed": 42,
@@ -15131,9 +15131,9 @@
             "r2": -45.046361457556486,
             "lr": 0.0002995391413931026
           },
-          "best_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/ablation/capacity_only/seed-42/hybrid_best.pt",
-          "final_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/ablation/capacity_only/seed-42/hybrid_final.pt",
-          "artifact_dir": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/ablation/capacity_only/seed-42",
+          "best_checkpoint": "data/models/nasa/hybrid/ablation/capacity_only/seed-42/hybrid_best.pt",
+          "final_checkpoint": "data/models/nasa/hybrid/ablation/capacity_only/seed-42/hybrid_final.pt",
+          "artifact_dir": "data/models/nasa/hybrid/ablation/capacity_only/seed-42",
           "summary_path": null,
           "history": {
             "train": [
@@ -16401,7 +16401,7 @@
               0.9634739756584167
             ]
           },
-          "test_details_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/ablation/capacity_only/seed-42/test_details.json"
+          "test_details_path": "data/models/nasa/hybrid/ablation/capacity_only/seed-42/test_details.json"
         }
       ],
       "aggregate_metrics": {
@@ -16428,9 +16428,9 @@
           "r2": -45.046361457556486,
           "lr": 0.0002995391413931026
         },
-        "best_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/ablation/capacity_only/seed-42/hybrid_best.pt",
-        "final_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/ablation/capacity_only/seed-42/hybrid_final.pt",
-        "artifact_dir": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/ablation/capacity_only/seed-42",
+        "best_checkpoint": "data/models/nasa/hybrid/ablation/capacity_only/seed-42/hybrid_best.pt",
+        "final_checkpoint": "data/models/nasa/hybrid/ablation/capacity_only/seed-42/hybrid_final.pt",
+        "artifact_dir": "data/models/nasa/hybrid/ablation/capacity_only/seed-42",
         "summary_path": null,
         "history": {
           "train": [
@@ -17698,36 +17698,36 @@
             0.9634739756584167
           ]
         },
-        "test_details_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/ablation/capacity_only/seed-42/test_details.json"
+        "test_details_path": "data/models/nasa/hybrid/ablation/capacity_only/seed-42/test_details.json"
       },
       "artifact_paths": {
-        "variant_dir": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/ablation/capacity_only",
-        "plots_dir": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/ablation/capacity_only/plots"
+        "variant_dir": "data/models/nasa/hybrid/ablation/capacity_only",
+        "plots_dir": "data/models/nasa/hybrid/ablation/capacity_only/plots"
       },
       "plots": [
         {
           "key": "metrics_overview",
           "title": "NASA capacity_only metrics",
           "description": "Aggregate mean/std metrics for the ablation variant.",
-          "path": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/ablation/capacity_only/plots/metrics_overview.png",
+          "path": "data/models/nasa/hybrid/ablation/capacity_only/plots/metrics_overview.png",
           "generated_at": "2026-03-15T08:29:24.020684",
-          "metadata_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/ablation/capacity_only/plots/metrics_overview.json"
+          "metadata_path": "data/models/nasa/hybrid/ablation/capacity_only/plots/metrics_overview.json"
         },
         {
           "key": "error_distribution",
           "title": "NASA capacity_only error distribution",
           "description": "Prediction error histogram for each seed in the ablation variant.",
-          "path": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/ablation/capacity_only/plots/error_distribution.png",
+          "path": "data/models/nasa/hybrid/ablation/capacity_only/plots/error_distribution.png",
           "generated_at": "2026-03-15T08:29:24.073752",
-          "metadata_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/ablation/capacity_only/plots/error_distribution.json"
+          "metadata_path": "data/models/nasa/hybrid/ablation/capacity_only/plots/error_distribution.json"
         },
         {
           "key": "training_curves",
           "title": "NASA capacity_only training curves",
           "description": "Train/validation loss for the ablation variant.",
-          "path": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/ablation/capacity_only/plots/training_curves.png",
+          "path": "data/models/nasa/hybrid/ablation/capacity_only/plots/training_curves.png",
           "generated_at": "2026-03-15T08:29:24.118419",
-          "metadata_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/ablation/capacity_only/plots/training_curves.json"
+          "metadata_path": "data/models/nasa/hybrid/ablation/capacity_only/plots/training_curves.json"
         }
       ],
       "delta_vs_full": {
@@ -17740,8 +17740,8 @@
     "Delta is computed against full_hybrid using aggregate RMSE."
   ],
   "artifact_paths": {
-    "summary": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/ablation_summary.json",
-    "plots_dir": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/plots"
+    "summary": "data/models/nasa/ablation_summary.json",
+    "plots_dir": "data/models/nasa/plots"
   },
   "generated_at": "2026-03-15T08:29:24.118878",
   "plots": [
@@ -17749,9 +17749,9 @@
       "key": "ablation_overview",
       "title": "NASA ablation overview",
       "description": "Aggregate RMSE for each hybrid ablation variant.",
-      "path": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/plots/ablation_overview.png",
+      "path": "data/models/nasa/plots/ablation_overview.png",
       "generated_at": "2026-03-15T08:29:24.158737",
-      "metadata_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/plots/ablation_overview.json"
+      "metadata_path": "data/models/nasa/plots/ablation_overview.json"
     }
   ]
 }

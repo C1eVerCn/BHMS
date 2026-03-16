@@ -130,27 +130,27 @@
     "val": 338,
     "test": 247
   },
-  "processed_summary_path": "/Users/chris/Documents/trae_projects/BHMS/data/processed/nasa/nasa_dataset_summary.json",
-  "comparison_summary_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/comparison_summary.json",
+  "processed_summary_path": "data/processed/nasa/nasa_dataset_summary.json",
+  "comparison_summary_path": "data/models/nasa/comparison_summary.json",
   "comparison_available": true,
   "dataset_files": [
     {
       "file_name": "nasa_cycle_summary.csv",
-      "file_path": "/Users/chris/Documents/trae_projects/BHMS/data/processed/nasa/nasa_cycle_summary.csv",
+      "file_path": "data/processed/nasa/nasa_cycle_summary.csv",
       "row_count": 2794,
       "include_in_training": true,
       "created_at": "2026-03-14T13:48:39.409878"
     },
     {
       "file_name": "nasa_cycle_summary.csv",
-      "file_path": "/Users/chris/Documents/trae_projects/BHMS/data/processed/nasa/nasa_cycle_summary.csv",
+      "file_path": "data/processed/nasa/nasa_cycle_summary.csv",
       "row_count": 2794,
       "include_in_training": true,
       "created_at": "2026-03-14T13:35:15.168630"
     },
     {
       "file_name": "nasa_cycle_summary.csv",
-      "file_path": "/Users/chris/Documents/trae_projects/BHMS/data/processed/nasa/nasa_cycle_summary.csv",
+      "file_path": "data/processed/nasa/nasa_cycle_summary.csv",
       "row_count": 2794,
       "include_in_training": true,
       "created_at": "2026-03-14T13:33:15.856943"

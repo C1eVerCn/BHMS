@@ -3,11 +3,14 @@
 from __future__ import annotations
 
 import json
+import random
 from dataclasses import asdict
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Optional
 
+import numpy as np
+import torch
 import yaml
 
 from backend.app.core.database import get_database
@@ -27,6 +30,7 @@ from ml.training.experiment_artifacts import (
     plot_source_comparison,
     plot_split_overview,
     plot_training_curves,
+    serialize_path,
     select_best_run,
     write_json,
     write_plot_manifest,
@@ -106,6 +110,12 @@ def run_training_experiment(
     data_cfg = dict(merged.get("data", {}))
     model_cfg = dict(merged.get("model", {}))
     training_cfg = merge_configs(dict(merged.get("training", {})), training_overrides or {})
+    seed = int(training_cfg.get("seed", 42))
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
     csv_path = resolve_path(data_cfg["csv_path"])
     checkpoint_dir = resolve_path(training_cfg.get("checkpoint_dir", "data/models"))
     log_dir = resolve_path(training_cfg.get("log_dir", "data/models/logs"))
@@ -123,10 +133,18 @@ def run_training_experiment(
         batch_size=int(training_cfg.get("batch_size", 16)),
         feature_cols=data_cfg.get("feature_columns"),
         output_dir=csv_path.parent,
+        seed=seed,
     )
     data_summary = data_module.summary()
-    if suite_kind == "ablation":
-        data_module.export_metadata(output_dir=checkpoint_dir / source / model_type / artifact_subdir / "data_profile", file_prefix=variant_key)
+    if artifact_subdir:
+        root_summary_path = csv_path.parent / f"{source}_dataset_summary.json"
+        if not root_summary_path.exists():
+            data_module.export_metadata()
+        profile_prefix = variant_key if suite_kind == "ablation" else source
+        data_module.export_metadata(
+            output_dir=checkpoint_dir / source / model_type / artifact_subdir / "data_profile",
+            file_prefix=profile_prefix,
+        )
     else:
         data_module.export_metadata()
 
@@ -158,9 +176,9 @@ def run_training_experiment(
         "suite_kind": suite_kind,
         "variant_key": variant_key,
         "seed": trainer.config.seed,
-        "artifact_dir": str(trainer.checkpoint_dir),
-        "log_dir": str(trainer.log_dir),
-        "config_path": str(resolved_config),
+        "artifact_dir": serialize_path(trainer.checkpoint_dir),
+        "log_dir": serialize_path(trainer.log_dir),
+        "config_path": serialize_path(resolved_config),
         "config_snapshot": merged,
         "split_snapshot": data_summary.get("split", {}),
         "feature_columns": data_summary.get("feature_columns", []),
@@ -168,11 +186,11 @@ def run_training_experiment(
         "training_config": asdict(trainer.config),
         "history_summary": _history_summary(result.get("history", {})),
         "test_details": test_details,
-        "test_details_path": str(test_details_path),
+        "test_details_path": serialize_path(test_details_path),
     }
     summary_path = trainer.checkpoint_dir / f"{model_type}_experiment_summary.json"
     write_json(summary_path, summary)
-    summary["summary_path"] = str(summary_path)
+    summary["summary_path"] = serialize_path(summary_path)
 
     if persist_training_run:
         repo.insert_training_run(
@@ -187,13 +205,13 @@ def run_training_experiment(
                     "seed": trainer.config.seed,
                     "suite_kind": suite_kind,
                     "variant_key": variant_key,
-                    "artifact_dir": str(trainer.checkpoint_dir),
-                    "config_path": str(resolved_config),
+                    "artifact_dir": serialize_path(trainer.checkpoint_dir),
+                    "config_path": serialize_path(resolved_config),
                     "config_snapshot": merged,
                     "split_snapshot": data_summary.get("split", {}),
                     "feature_columns": data_summary.get("feature_columns", []),
-                    "summary_path": str(summary_path),
-                    "test_details_path": str(test_details_path),
+                    "summary_path": serialize_path(summary_path),
+                    "test_details_path": serialize_path(test_details_path),
                 },
             }
         )
@@ -220,7 +238,7 @@ def create_multi_seed_summary(
         "suite_kind": "multi_seed",
         "available": True,
         "seeds": seeds,
-        "config_path": str(resolve_path(config_path)),
+        "config_path": serialize_path(resolve_path(config_path)),
         "config_snapshot": per_seed_summaries[0].get("config_snapshot", {}) if per_seed_summaries else {},
         "split_snapshot": per_seed_summaries[0].get("split_snapshot", {}) if per_seed_summaries else {},
         "feature_columns": per_seed_summaries[0].get("feature_columns", []) if per_seed_summaries else [],
@@ -231,8 +249,8 @@ def create_multi_seed_summary(
             "path": best_run.get("best_checkpoint") if best_run else None,
         },
         "artifact_paths": {
-            "summary": str(artifact_root / f"{model_type}_multi_seed_summary.json"),
-            "plots_dir": str(plots_dir),
+            "summary": serialize_path(artifact_root / f"{model_type}_multi_seed_summary.json"),
+            "plots_dir": serialize_path(plots_dir),
         },
         "generated_at": datetime.utcnow().isoformat(),
     }
@@ -287,8 +305,8 @@ def create_ablation_summary(
             "Delta is computed against full_hybrid using aggregate RMSE.",
         ],
         "artifact_paths": {
-            "summary": str(artifact_root / "ablation_summary.json"),
-            "plots_dir": str(plots_dir),
+            "summary": serialize_path(artifact_root / "ablation_summary.json"),
+            "plots_dir": serialize_path(plots_dir),
         },
         "generated_at": datetime.utcnow().isoformat(),
     }

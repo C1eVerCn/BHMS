@@ -7,65 +7,65 @@
     "diagnosis_generated": false,
     "anomaly_generated": false
   },
-  "export_dir": "/Users/chris/Documents/trae_projects/BHMS/data/exports/cases/kaggle::kaggle_demo::KAGGLE_UNSEEN_201/20260315-082926",
+  "export_dir": "data/exports/cases/kaggle::kaggle_demo::KAGGLE_UNSEEN_201/20260315-082926",
   "charts": [
     {
-      "path": "/Users/chris/Documents/trae_projects/BHMS/data/exports/cases/kaggle::kaggle_demo::KAGGLE_UNSEEN_201/20260315-082926/charts/rul_projection.png",
+      "path": "data/exports/cases/kaggle::kaggle_demo::KAGGLE_UNSEEN_201/20260315-082926/charts/rul_projection.png",
       "kind": "chart",
       "key": "rul_projection"
     },
     {
-      "path": "/Users/chris/Documents/trae_projects/BHMS/data/exports/cases/kaggle::kaggle_demo::KAGGLE_UNSEEN_201/20260315-082926/charts/diagnosis_graph.png",
+      "path": "data/exports/cases/kaggle::kaggle_demo::KAGGLE_UNSEEN_201/20260315-082926/charts/diagnosis_graph.png",
       "kind": "chart",
       "key": "diagnosis_graph"
     },
     {
-      "path": "/Users/chris/Documents/trae_projects/BHMS/data/exports/cases/kaggle::kaggle_demo::KAGGLE_UNSEEN_201/20260315-082926/charts/experiment_summary.png",
+      "path": "data/exports/cases/kaggle::kaggle_demo::KAGGLE_UNSEEN_201/20260315-082926/charts/experiment_summary.png",
       "kind": "chart",
       "key": "experiment_summary"
     }
   ],
   "files": [
     {
-      "path": "/Users/chris/Documents/trae_projects/BHMS/data/exports/cases/kaggle::kaggle_demo::KAGGLE_UNSEEN_201/20260315-082926/manifest.json",
+      "path": "data/exports/cases/kaggle::kaggle_demo::KAGGLE_UNSEEN_201/20260315-082926/manifest.json",
       "kind": "manifest"
     },
     {
-      "path": "/Users/chris/Documents/trae_projects/BHMS/data/exports/cases/kaggle::kaggle_demo::KAGGLE_UNSEEN_201/20260315-082926/case_bundle.md",
+      "path": "data/exports/cases/kaggle::kaggle_demo::KAGGLE_UNSEEN_201/20260315-082926/case_bundle.md",
       "kind": "case_bundle"
     },
     {
-      "path": "/Users/chris/Documents/trae_projects/BHMS/data/exports/cases/kaggle::kaggle_demo::KAGGLE_UNSEEN_201/20260315-082926/prediction_report.md",
+      "path": "data/exports/cases/kaggle::kaggle_demo::KAGGLE_UNSEEN_201/20260315-082926/prediction_report.md",
       "kind": "prediction_report"
     },
     {
-      "path": "/Users/chris/Documents/trae_projects/BHMS/data/exports/cases/kaggle::kaggle_demo::KAGGLE_UNSEEN_201/20260315-082926/diagnosis_report.md",
+      "path": "data/exports/cases/kaggle::kaggle_demo::KAGGLE_UNSEEN_201/20260315-082926/diagnosis_report.md",
       "kind": "diagnosis_report"
     },
     {
-      "path": "/Users/chris/Documents/trae_projects/BHMS/data/exports/cases/kaggle::kaggle_demo::KAGGLE_UNSEEN_201/20260315-082926/sample_profile.json",
+      "path": "data/exports/cases/kaggle::kaggle_demo::KAGGLE_UNSEEN_201/20260315-082926/sample_profile.json",
       "kind": "sample_profile"
     },
     {
-      "path": "/Users/chris/Documents/trae_projects/BHMS/data/exports/cases/kaggle::kaggle_demo::KAGGLE_UNSEEN_201/20260315-082926/dataset_profile.json",
+      "path": "data/exports/cases/kaggle::kaggle_demo::KAGGLE_UNSEEN_201/20260315-082926/dataset_profile.json",
       "kind": "dataset_profile"
     },
     {
-      "path": "/Users/chris/Documents/trae_projects/BHMS/data/exports/cases/kaggle::kaggle_demo::KAGGLE_UNSEEN_201/20260315-082926/experiment_context.json",
+      "path": "data/exports/cases/kaggle::kaggle_demo::KAGGLE_UNSEEN_201/20260315-082926/experiment_context.json",
       "kind": "experiment_context"
     },
     {
-      "path": "/Users/chris/Documents/trae_projects/BHMS/data/exports/cases/kaggle::kaggle_demo::KAGGLE_UNSEEN_201/20260315-082926/charts/rul_projection.png",
+      "path": "data/exports/cases/kaggle::kaggle_demo::KAGGLE_UNSEEN_201/20260315-082926/charts/rul_projection.png",
       "kind": "chart",
       "key": "rul_projection"
     },
     {
-      "path": "/Users/chris/Documents/trae_projects/BHMS/data/exports/cases/kaggle::kaggle_demo::KAGGLE_UNSEEN_201/20260315-082926/charts/diagnosis_graph.png",
+      "path": "data/exports/cases/kaggle::kaggle_demo::KAGGLE_UNSEEN_201/20260315-082926/charts/diagnosis_graph.png",
       "kind": "chart",
       "key": "diagnosis_graph"
     },
     {
-      "path": "/Users/chris/Documents/trae_projects/BHMS/data/exports/cases/kaggle::kaggle_demo::KAGGLE_UNSEEN_201/20260315-082926/charts/experiment_summary.png",
+      "path": "data/exports/cases/kaggle::kaggle_demo::KAGGLE_UNSEEN_201/20260315-082926/charts/experiment_summary.png",
       "kind": "chart",
       "key": "experiment_summary"
     }

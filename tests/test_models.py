@@ -13,8 +13,10 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from ml.models import BiLSTMConfig, BiLSTMRULPredictor, RULPredictor, RULPredictorConfig  # noqa: E402
+from ml.models.hybrid.rul_predictor import TemporalAttentionPooling  # noqa: E402
 from ml.models.transformer import PositionalEncoding, TransformerBlock  # noqa: E402
 from ml.models.xlstm import mLSTM, sLSTM, xLSTMBlock  # noqa: E402
+from ml.training.trainer import TransformedRegressionLoss  # noqa: E402
 
 
 @pytest.mark.parametrize("batch_size,seq_len,input_dim,hidden_dim", [(4, 24, 10, 32)])
@@ -73,3 +75,39 @@ def test_bilstm_baseline_predictor():
 def test_hybrid_output_head_has_no_sigmoid():
     model = RULPredictor(RULPredictorConfig(input_dim=10, d_model=32, xlstm_layers=1, transformer_layers=1))
     assert isinstance(model.predictor[-1], torch.nn.Linear)
+
+
+def test_temporal_attention_pooling_weights_sum_to_one():
+    pooling = TemporalAttentionPooling(input_dim=16, hidden_dim=8, dropout=0.0)
+    pooled, weights = pooling(torch.randn(2, 12, 16))
+    assert pooled.shape == (2, 16)
+    assert weights.shape == (2, 12)
+    assert torch.allclose(weights.sum(dim=1), torch.ones(2), atol=1e-5)
+
+
+def test_hybrid_attention_pooling_returns_pooling_weights():
+    config = RULPredictorConfig(
+        input_dim=10,
+        d_model=32,
+        xlstm_layers=1,
+        transformer_layers=1,
+        fusion_dim=32,
+        pooling_mode="attention",
+        pooling_hidden_dim=16,
+        transformer_parallel=True,
+    )
+    model = RULPredictor(config)
+    prediction, features = model(torch.randn(2, 18, 10), return_features=True)
+    assert prediction.shape == (2, 1)
+    assert features is not None
+    assert features["pooling_weights"] is not None
+    assert features["pooling_weights"].shape == (2, 18)
+
+
+def test_transformed_regression_loss_supports_log1p_targets():
+    loss_fn = TransformedRegressionLoss(torch.nn.L1Loss(), transform="log1p")
+    predictions = torch.tensor([[9.0]])
+    targets = torch.tensor([[4.0]])
+    loss = loss_fn(predictions, targets)
+    expected = torch.abs(torch.log1p(predictions) - torch.log1p(targets)).mean()
+    assert torch.allclose(loss, expected)

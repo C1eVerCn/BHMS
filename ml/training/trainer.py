@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 from dataclasses import asdict, dataclass, fields
 from pathlib import Path
 from typing import Any, Optional
@@ -16,6 +15,7 @@ from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 
 from ml.models import BiLSTMConfig, BiLSTMRULPredictor, RULPredictor, RULPredictorConfig, RULLoss
+from ml.training.experiment_artifacts import serialize_path, write_json
 
 
 @dataclass
@@ -42,6 +42,7 @@ class TrainingConfig:
     resume_from: Optional[str] = None
     run_name: Optional[str] = None
     artifact_subdir: Optional[str] = None
+    target_transform: str = "none"
 
 
 class EarlyStopping:
@@ -58,6 +59,26 @@ class EarlyStopping:
             return False
         self.counter += 1
         return self.counter >= self.patience
+
+
+class TransformedRegressionLoss(nn.Module):
+    def __init__(self, base_loss: nn.Module, transform: str = "none"):
+        super().__init__()
+        self.base_loss = base_loss
+        self.transform = transform.lower()
+
+    def _apply_transform(self, value: torch.Tensor) -> torch.Tensor:
+        value = torch.clamp(value, min=0.0)
+        if self.transform == "none":
+            return value
+        if self.transform == "log1p":
+            return torch.log1p(value)
+        if self.transform == "sqrt":
+            return torch.sqrt(value)
+        raise ValueError(f"未知 target_transform: {self.transform}")
+
+    def forward(self, predictions: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
+        return self.base_loss(self._apply_transform(predictions), self._apply_transform(targets))
 
 
 class RULTrainer:
@@ -120,12 +141,14 @@ class RULTrainer:
 
     def _build_criterion(self):
         if self.config.loss_type == "huber":
-            return RULLoss(delta=self.config.huber_delta)
+            base_loss = RULLoss(delta=self.config.huber_delta)
         if self.config.loss_type == "mse":
-            return nn.MSELoss()
+            base_loss = nn.MSELoss()
         if self.config.loss_type == "mae":
-            return nn.L1Loss()
-        raise ValueError(f"未知损失函数类型: {self.config.loss_type}")
+            base_loss = nn.L1Loss()
+        if self.config.loss_type not in {"huber", "mse", "mae"}:
+            raise ValueError(f"未知损失函数类型: {self.config.loss_type}")
+        return TransformedRegressionLoss(base_loss, transform=self.config.target_transform)
 
     @staticmethod
     def _calculate_metrics(predictions: torch.Tensor, targets: torch.Tensor) -> dict[str, float]:
@@ -213,7 +236,7 @@ class RULTrainer:
             },
             checkpoint_path,
         )
-        checkpoint_path.with_suffix(".json").write_text(json.dumps(metadata, ensure_ascii=False, indent=2), encoding="utf-8")
+        write_json(checkpoint_path.with_suffix(".json"), metadata)
         return checkpoint_path
 
     def train(self) -> dict[str, Any]:
@@ -255,16 +278,14 @@ class RULTrainer:
             "model_type": self.config.model_type,
             "model_version": self.config.model_version,
             "best_val_loss": self.best_val_loss,
-            "best_checkpoint": str(self.best_checkpoint_path) if self.best_checkpoint_path else None,
-            "final_checkpoint": str(self.final_checkpoint_path),
+            "best_checkpoint": serialize_path(self.best_checkpoint_path) if self.best_checkpoint_path else None,
+            "final_checkpoint": serialize_path(self.final_checkpoint_path),
             "data_summary": self.data_summary,
             "history": self.history,
             "test_metrics": test_metrics,
             "test_details": self.test_outputs,
         }
-        (self.checkpoint_dir / "training_summary.json").write_text(
-            json.dumps(comparison_summary, ensure_ascii=False, indent=2), encoding="utf-8"
-        )
+        write_json(self.checkpoint_dir / "training_summary.json", comparison_summary)
         self.writer.close()
         return comparison_summary
 

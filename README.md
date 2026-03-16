@@ -11,7 +11,7 @@
 - `可解释`：系统内可查看 RUL 证据链、候选故障排序、GraphRAG 子图、decision basis、知识库摘要
 - `轻量工程化`：继续使用 `FastAPI + React/Vite + SQLite + PyTorch + Neo4j/内存图谱`
 
-当前最主要的短板不是脚本缺失，而是实验指标仍偏弱：多个来源上的 `R²` 仍为负，论文级结论还需要继续补强。
+当前最主要的短板不是脚本缺失，而是实验指标仍偏弱、数据规模仍偏小；后续主线将围绕 `xLSTM + Transformer + GraphRAG` 的全生命周期预测与机理解释框架继续推进。
 
 ## 当前实现范围
 
@@ -149,5 +149,5 @@ python scripts/run_comparison.py --source nasa
 - `Doc/系统使用说明.md`：新机器启动与页面使用
 - `Doc/实验复现说明.md`：数据、训练、实验与案例资产复现
 - `Doc/答辩演示手册.md`：5-8 分钟演示流程与答辩口径
-- `Doc/BHMS毕业设计成品落地方案.md`：当前状态与下一步优先级
-- `Doc/BHMS_MVP实现说明.md`：MVP 与当前成品基线的边界说明
+- `Doc/BHMS统一框架实施计划.md`：统一框架主线、阶段目标与后续实施路线
+- `Doc/BHMS毕业设计成品落地方案.md`：当前仓库状态与封版优先级

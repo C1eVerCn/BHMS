@@ -2,6 +2,6 @@
   "key": "experiment_summary",
   "title": "KAGGLE model comparison",
   "description": "Aggregate multi-seed metric comparison between Bi-LSTM and Hybrid.",
-  "path": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/plots/experiment_summary.png",
+  "path": "data/models/kaggle/plots/experiment_summary.png",
   "generated_at": "2026-03-15T08:29:25.877203"
 }

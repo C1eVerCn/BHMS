@@ -3,10 +3,10 @@
   "model_type": "hybrid",
   "model_version": "kaggle-hybrid-seed-21",
   "best_val_loss": 12.824752062559128,
-  "best_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/runs/seed-21/hybrid_best.pt",
-  "final_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/runs/seed-21/hybrid_final.pt",
+  "best_checkpoint": "data/models/kaggle/hybrid/runs/seed-21/hybrid_best.pt",
+  "final_checkpoint": "data/models/kaggle/hybrid/runs/seed-21/hybrid_final.pt",
   "data_summary": {
-    "csv_path": "/Users/chris/Documents/trae_projects/BHMS/data/processed/kaggle/kaggle_cycle_summary.csv",
+    "csv_path": "data/processed/kaggle/kaggle_cycle_summary.csv",
     "source": "kaggle",
     "seq_len": 24,
     "batch_size": 8,
@@ -929,9 +929,9 @@
   "suite_kind": "multi_seed",
   "variant_key": "hybrid",
   "seed": 21,
-  "artifact_dir": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/runs/seed-21",
-  "log_dir": "/Users/chris/Documents/trae_projects/BHMS/data/models/logs/kaggle/hybrid/runs/seed-21",
-  "config_path": "/Users/chris/Documents/trae_projects/BHMS/configs/kaggle_hybrid.yaml",
+  "artifact_dir": "data/models/kaggle/hybrid/runs/seed-21",
+  "log_dir": "data/models/logs/kaggle/hybrid/runs/seed-21",
+  "config_path": "configs/kaggle_hybrid.yaml",
   "config_snapshot": {
     "data": {
       "csv_path": "data/processed/kaggle/kaggle_cycle_summary.csv",
@@ -1024,8 +1024,8 @@
     "min_delta": 0.0001,
     "loss_type": "huber",
     "huber_delta": 1.0,
-    "checkpoint_dir": "/Users/chris/Documents/trae_projects/BHMS/data/models",
-    "log_dir": "/Users/chris/Documents/trae_projects/BHMS/data/models/logs",
+    "checkpoint_dir": "data/models",
+    "log_dir": "data/models/logs",
     "device": "auto",
     "use_amp": false,
     "max_grad_norm": 1.0,
@@ -1040,5 +1040,5 @@
     "last_train_loss": 10.160128430886703,
     "last_val_loss": 12.838692367076874
   },
-  "test_details_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/runs/seed-21/test_details.json"
+  "test_details_path": "data/models/kaggle/hybrid/runs/seed-21/test_details.json"
 }

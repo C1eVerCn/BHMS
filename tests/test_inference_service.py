@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 
@@ -37,3 +38,31 @@ def test_calibration_raises_implausibly_short_model_output():
     )
     assert calibrated["applied"] is True
     assert calibrated["predicted_rul"] > 2.8
+
+
+def test_resolve_checkpoint_prefers_best_seed_from_summary(tmp_path: Path):
+    service = RULInferenceService(tmp_path)
+    worse_checkpoint = tmp_path / "calce" / "hybrid" / "optimized-config" / "runs" / "seed-7" / "hybrid_best.pt"
+    better_checkpoint = tmp_path / "calce" / "hybrid" / "optimized-config" / "runs" / "seed-21" / "hybrid_best.pt"
+    worse_checkpoint.parent.mkdir(parents=True, exist_ok=True)
+    better_checkpoint.parent.mkdir(parents=True, exist_ok=True)
+    worse_checkpoint.write_bytes(b"worse")
+    better_checkpoint.write_bytes(b"better")
+
+    summary_path = tmp_path / "calce" / "hybrid" / "optimized-config" / "optimized_multi_seed_summary.json"
+    summary_path.write_text(
+        json.dumps(
+            {
+                "per_seed_runs": [
+                    {"seed": 7, "metrics": {"rmse": 10.0}, "best_checkpoint": str(worse_checkpoint)},
+                    {"seed": 21, "metrics": {"rmse": 6.0}, "best_checkpoint": str(better_checkpoint)},
+                ]
+            },
+            ensure_ascii=False,
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+
+    resolved = service._resolve_checkpoint("calce", "hybrid")
+    assert resolved == better_checkpoint

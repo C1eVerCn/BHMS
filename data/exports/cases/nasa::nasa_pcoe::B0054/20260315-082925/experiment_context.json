@@ -41,14 +41,14 @@
       "key": "ablation_overview",
       "title": "NASA ablation overview",
       "description": "Aggregate RMSE for each hybrid ablation variant.",
-      "path": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/plots/ablation_overview.png",
+      "path": "data/models/nasa/plots/ablation_overview.png",
       "generated_at": "2026-03-15T08:29:24.158737"
     },
     {
       "key": "dataset_split",
       "title": "NASA dataset split",
       "description": "Battery counts in the fixed train/validation/test split.",
-      "path": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/plots/dataset_split.png",
+      "path": "data/models/nasa/plots/dataset_split.png",
       "generated_at": "2026-03-15T08:29:24.234834",
       "split_snapshot": {
         "train_batteries": [
@@ -97,14 +97,14 @@
       "key": "experiment_ablations",
       "title": "NASA ablation summary",
       "description": "Aggregate RMSE comparison for the configured ablation variants.",
-      "path": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/plots/experiment_ablations.png",
+      "path": "data/models/nasa/plots/experiment_ablations.png",
       "generated_at": "2026-03-15T08:29:24.270084"
     },
     {
       "key": "experiment_summary",
       "title": "NASA model comparison",
       "description": "Aggregate multi-seed metric comparison between Bi-LSTM and Hybrid.",
-      "path": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/plots/experiment_summary.png",
+      "path": "data/models/nasa/plots/experiment_summary.png",
       "generated_at": "2026-03-15T08:29:24.202838"
     }
   ]

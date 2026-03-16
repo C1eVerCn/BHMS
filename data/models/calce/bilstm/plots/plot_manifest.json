@@ -4,21 +4,21 @@
       "key": "error_distribution",
       "title": "CALCE bilstm error distribution",
       "description": "Prediction error histogram for every configured seed.",
-      "path": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/bilstm/plots/error_distribution.png",
+      "path": "data/models/calce/bilstm/plots/error_distribution.png",
       "generated_at": "2026-03-15T08:29:24.360846"
     },
     {
       "key": "metrics_overview",
       "title": "CALCE bilstm multi-seed metrics",
       "description": "Mean and std across the configured random seeds.",
-      "path": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/bilstm/plots/metrics_overview.png",
+      "path": "data/models/calce/bilstm/plots/metrics_overview.png",
       "generated_at": "2026-03-15T08:29:24.304792"
     },
     {
       "key": "training_curves",
       "title": "CALCE bilstm training curves",
       "description": "Train/validation loss curves for the configured seed runs.",
-      "path": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/bilstm/plots/training_curves.png",
+      "path": "data/models/calce/bilstm/plots/training_curves.png",
       "generated_at": "2026-03-15T08:29:24.405948"
     }
   ],

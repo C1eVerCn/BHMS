@@ -33,8 +33,8 @@
     "min_delta": 0.0001,
     "loss_type": "huber",
     "huber_delta": 1.0,
-    "checkpoint_dir": "/Users/chris/Documents/trae_projects/BHMS/data/models",
-    "log_dir": "/Users/chris/Documents/trae_projects/BHMS/data/models/logs",
+    "checkpoint_dir": "data/models",
+    "log_dir": "data/models/logs",
     "device": "auto",
     "use_amp": false,
     "max_grad_norm": 1.0,
@@ -45,7 +45,7 @@
     "artifact_subdir": "ablation/no_xlstm/seed-21"
   },
   "data_summary": {
-    "csv_path": "/Users/chris/Documents/trae_projects/BHMS/data/processed/calce/calce_cycle_summary.csv",
+    "csv_path": "data/processed/calce/calce_cycle_summary.csv",
     "source": "calce",
     "seq_len": 24,
     "batch_size": 8,

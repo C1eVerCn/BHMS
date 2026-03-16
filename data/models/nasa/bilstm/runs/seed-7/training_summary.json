@@ -3,10 +3,10 @@
   "model_type": "bilstm",
   "model_version": "nasa-bilstm-seed-7",
   "best_val_loss": 0.0,
-  "best_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/bilstm/runs/seed-7/bilstm_best.pt",
-  "final_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/bilstm/runs/seed-7/bilstm_final.pt",
+  "best_checkpoint": "data/models/nasa/bilstm/runs/seed-7/bilstm_best.pt",
+  "final_checkpoint": "data/models/nasa/bilstm/runs/seed-7/bilstm_final.pt",
   "data_summary": {
-    "csv_path": "/Users/chris/Documents/trae_projects/BHMS/data/processed/nasa/nasa_cycle_summary.csv",
+    "csv_path": "data/processed/nasa/nasa_cycle_summary.csv",
     "source": "nasa",
     "seq_len": 30,
     "batch_size": 16,

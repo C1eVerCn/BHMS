@@ -25,9 +25,9 @@
             "r2": -42.95541205008825,
             "lr": 0.0003
           },
-          "best_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/runs/seed-7/hybrid_best.pt",
-          "final_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/runs/seed-7/hybrid_final.pt",
-          "artifact_dir": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/runs/seed-7",
+          "best_checkpoint": "data/models/calce/hybrid/runs/seed-7/hybrid_best.pt",
+          "final_checkpoint": "data/models/calce/hybrid/runs/seed-7/hybrid_final.pt",
+          "artifact_dir": "data/models/calce/hybrid/runs/seed-7",
           "summary_path": null,
           "history": {
             "train": [
@@ -670,7 +670,7 @@
               17.364599227905273
             ]
           },
-          "test_details_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/runs/seed-7/test_details.json"
+          "test_details_path": "data/models/calce/hybrid/runs/seed-7/test_details.json"
         },
         {
           "seed": 21,
@@ -684,9 +684,9 @@
             "r2": -56.77013864119848,
             "lr": 0.0003
           },
-          "best_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/runs/seed-21/hybrid_best.pt",
-          "final_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/runs/seed-21/hybrid_final.pt",
-          "artifact_dir": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/runs/seed-21",
+          "best_checkpoint": "data/models/calce/hybrid/runs/seed-21/hybrid_best.pt",
+          "final_checkpoint": "data/models/calce/hybrid/runs/seed-21/hybrid_final.pt",
+          "artifact_dir": "data/models/calce/hybrid/runs/seed-21",
           "summary_path": null,
           "history": {
             "train": [
@@ -1329,7 +1329,7 @@
               0.35446682572364807
             ]
           },
-          "test_details_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/runs/seed-21/test_details.json"
+          "test_details_path": "data/models/calce/hybrid/runs/seed-21/test_details.json"
         },
         {
           "seed": 42,
@@ -1343,9 +1343,9 @@
             "r2": -31.191551327705383,
             "lr": 0.0003
           },
-          "best_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/runs/seed-42/hybrid_best.pt",
-          "final_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/runs/seed-42/hybrid_final.pt",
-          "artifact_dir": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/runs/seed-42",
+          "best_checkpoint": "data/models/calce/hybrid/runs/seed-42/hybrid_best.pt",
+          "final_checkpoint": "data/models/calce/hybrid/runs/seed-42/hybrid_final.pt",
+          "artifact_dir": "data/models/calce/hybrid/runs/seed-42",
           "summary_path": null,
           "history": {
             "train": [
@@ -1988,7 +1988,7 @@
               12.187453269958496
             ]
           },
-          "test_details_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/runs/seed-42/test_details.json"
+          "test_details_path": "data/models/calce/hybrid/runs/seed-42/test_details.json"
         }
       ],
       "aggregate_metrics": {
@@ -2007,36 +2007,36 @@
       },
       "best_checkpoint": {
         "seed": 42,
-        "path": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/runs/seed-42/hybrid_best.pt"
+        "path": "data/models/calce/hybrid/runs/seed-42/hybrid_best.pt"
       },
       "artifact_paths": {
-        "summary": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/hybrid_multi_seed_summary.json",
-        "plots_dir": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/plots"
+        "summary": "data/models/calce/hybrid/hybrid_multi_seed_summary.json",
+        "plots_dir": "data/models/calce/hybrid/plots"
       },
       "plots": [
         {
           "key": "metrics_overview",
           "title": "CALCE hybrid multi-seed metrics",
           "description": "Mean and std across the configured random seeds.",
-          "path": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/plots/metrics_overview.png",
+          "path": "data/models/calce/hybrid/plots/metrics_overview.png",
           "generated_at": "2026-03-15T08:29:24.438385",
-          "metadata_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/plots/metrics_overview.json"
+          "metadata_path": "data/models/calce/hybrid/plots/metrics_overview.json"
         },
         {
           "key": "error_distribution",
           "title": "CALCE hybrid error distribution",
           "description": "Prediction error histogram for every configured seed.",
-          "path": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/plots/error_distribution.png",
+          "path": "data/models/calce/hybrid/plots/error_distribution.png",
           "generated_at": "2026-03-15T08:29:24.494414",
-          "metadata_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/plots/error_distribution.json"
+          "metadata_path": "data/models/calce/hybrid/plots/error_distribution.json"
         },
         {
           "key": "training_curves",
           "title": "CALCE hybrid training curves",
           "description": "Train/validation loss curves for the configured seed runs.",
-          "path": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/plots/training_curves.png",
+          "path": "data/models/calce/hybrid/plots/training_curves.png",
           "generated_at": "2026-03-15T08:29:24.538999",
-          "metadata_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/plots/training_curves.json"
+          "metadata_path": "data/models/calce/hybrid/plots/training_curves.json"
         }
       ],
       "delta_vs_full": {
@@ -2068,9 +2068,9 @@
             "r2": -52.64191953341166,
             "lr": 0.0003
           },
-          "best_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/ablation/no_xlstm/seed-7/hybrid_best.pt",
-          "final_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/ablation/no_xlstm/seed-7/hybrid_final.pt",
-          "artifact_dir": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/ablation/no_xlstm/seed-7",
+          "best_checkpoint": "data/models/calce/hybrid/ablation/no_xlstm/seed-7/hybrid_best.pt",
+          "final_checkpoint": "data/models/calce/hybrid/ablation/no_xlstm/seed-7/hybrid_final.pt",
+          "artifact_dir": "data/models/calce/hybrid/ablation/no_xlstm/seed-7",
           "summary_path": null,
           "history": {
             "train": [
@@ -2713,7 +2713,7 @@
               1.1666748523712158
             ]
           },
-          "test_details_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/ablation/no_xlstm/seed-7/test_details.json"
+          "test_details_path": "data/models/calce/hybrid/ablation/no_xlstm/seed-7/test_details.json"
         },
         {
           "seed": 21,
@@ -2725,9 +2725,9 @@
             "r2": -30.869399944941204,
             "lr": 0.0003
           },
-          "best_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/ablation/no_xlstm/seed-21/hybrid_best.pt",
-          "final_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/ablation/no_xlstm/seed-21/hybrid_final.pt",
-          "artifact_dir": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/ablation/no_xlstm/seed-21",
+          "best_checkpoint": "data/models/calce/hybrid/ablation/no_xlstm/seed-21/hybrid_best.pt",
+          "final_checkpoint": "data/models/calce/hybrid/ablation/no_xlstm/seed-21/hybrid_final.pt",
+          "artifact_dir": "data/models/calce/hybrid/ablation/no_xlstm/seed-21",
           "summary_path": null,
           "history": {
             "train": [
@@ -3370,7 +3370,7 @@
               11.104963302612305
             ]
           },
-          "test_details_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/ablation/no_xlstm/seed-21/test_details.json"
+          "test_details_path": "data/models/calce/hybrid/ablation/no_xlstm/seed-21/test_details.json"
         },
         {
           "seed": 42,
@@ -3382,9 +3382,9 @@
             "r2": -41.04757914940516,
             "lr": 0.0003
           },
-          "best_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/ablation/no_xlstm/seed-42/hybrid_best.pt",
-          "final_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/ablation/no_xlstm/seed-42/hybrid_final.pt",
-          "artifact_dir": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/ablation/no_xlstm/seed-42",
+          "best_checkpoint": "data/models/calce/hybrid/ablation/no_xlstm/seed-42/hybrid_best.pt",
+          "final_checkpoint": "data/models/calce/hybrid/ablation/no_xlstm/seed-42/hybrid_final.pt",
+          "artifact_dir": "data/models/calce/hybrid/ablation/no_xlstm/seed-42",
           "summary_path": null,
           "history": {
             "train": [
@@ -4027,7 +4027,7 @@
               3.8888885974884033
             ]
           },
-          "test_details_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/ablation/no_xlstm/seed-42/test_details.json"
+          "test_details_path": "data/models/calce/hybrid/ablation/no_xlstm/seed-42/test_details.json"
         }
       ],
       "aggregate_metrics": {
@@ -4054,9 +4054,9 @@
           "r2": -30.869399944941204,
           "lr": 0.0003
         },
-        "best_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/ablation/no_xlstm/seed-21/hybrid_best.pt",
-        "final_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/ablation/no_xlstm/seed-21/hybrid_final.pt",
-        "artifact_dir": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/ablation/no_xlstm/seed-21",
+        "best_checkpoint": "data/models/calce/hybrid/ablation/no_xlstm/seed-21/hybrid_best.pt",
+        "final_checkpoint": "data/models/calce/hybrid/ablation/no_xlstm/seed-21/hybrid_final.pt",
+        "artifact_dir": "data/models/calce/hybrid/ablation/no_xlstm/seed-21",
         "summary_path": null,
         "history": {
           "train": [
@@ -4699,36 +4699,36 @@
             11.104963302612305
           ]
         },
-        "test_details_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/ablation/no_xlstm/seed-21/test_details.json"
+        "test_details_path": "data/models/calce/hybrid/ablation/no_xlstm/seed-21/test_details.json"
       },
       "artifact_paths": {
-        "variant_dir": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/ablation/no_xlstm",
-        "plots_dir": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/ablation/no_xlstm/plots"
+        "variant_dir": "data/models/calce/hybrid/ablation/no_xlstm",
+        "plots_dir": "data/models/calce/hybrid/ablation/no_xlstm/plots"
       },
       "plots": [
         {
           "key": "metrics_overview",
           "title": "CALCE no_xlstm metrics",
           "description": "Aggregate mean/std metrics for the ablation variant.",
-          "path": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/ablation/no_xlstm/plots/metrics_overview.png",
+          "path": "data/models/calce/hybrid/ablation/no_xlstm/plots/metrics_overview.png",
           "generated_at": "2026-03-15T08:29:24.572509",
-          "metadata_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/ablation/no_xlstm/plots/metrics_overview.json"
+          "metadata_path": "data/models/calce/hybrid/ablation/no_xlstm/plots/metrics_overview.json"
         },
         {
           "key": "error_distribution",
           "title": "CALCE no_xlstm error distribution",
           "description": "Prediction error histogram for each seed in the ablation variant.",
-          "path": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/ablation/no_xlstm/plots/error_distribution.png",
+          "path": "data/models/calce/hybrid/ablation/no_xlstm/plots/error_distribution.png",
           "generated_at": "2026-03-15T08:29:24.628699",
-          "metadata_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/ablation/no_xlstm/plots/error_distribution.json"
+          "metadata_path": "data/models/calce/hybrid/ablation/no_xlstm/plots/error_distribution.json"
         },
         {
           "key": "training_curves",
           "title": "CALCE no_xlstm training curves",
           "description": "Train/validation loss for the ablation variant.",
-          "path": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/ablation/no_xlstm/plots/training_curves.png",
+          "path": "data/models/calce/hybrid/ablation/no_xlstm/plots/training_curves.png",
           "generated_at": "2026-03-15T08:29:24.674077",
-          "metadata_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/ablation/no_xlstm/plots/training_curves.json"
+          "metadata_path": "data/models/calce/hybrid/ablation/no_xlstm/plots/training_curves.json"
         }
       ],
       "delta_vs_full": {
@@ -4760,9 +4760,9 @@
             "r2": -38.5187598268191,
             "lr": 0.0003
           },
-          "best_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/ablation/no_transformer/seed-7/hybrid_best.pt",
-          "final_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/ablation/no_transformer/seed-7/hybrid_final.pt",
-          "artifact_dir": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/ablation/no_transformer/seed-7",
+          "best_checkpoint": "data/models/calce/hybrid/ablation/no_transformer/seed-7/hybrid_best.pt",
+          "final_checkpoint": "data/models/calce/hybrid/ablation/no_transformer/seed-7/hybrid_final.pt",
+          "artifact_dir": "data/models/calce/hybrid/ablation/no_transformer/seed-7",
           "summary_path": null,
           "history": {
             "train": [
@@ -5405,7 +5405,7 @@
               4.929534912109375
             ]
           },
-          "test_details_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/ablation/no_transformer/seed-7/test_details.json"
+          "test_details_path": "data/models/calce/hybrid/ablation/no_transformer/seed-7/test_details.json"
         },
         {
           "seed": 21,
@@ -5417,9 +5417,9 @@
             "r2": -31.9957049091657,
             "lr": 0.0003
           },
-          "best_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/ablation/no_transformer/seed-21/hybrid_best.pt",
-          "final_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/ablation/no_transformer/seed-21/hybrid_final.pt",
-          "artifact_dir": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/ablation/no_transformer/seed-21",
+          "best_checkpoint": "data/models/calce/hybrid/ablation/no_transformer/seed-21/hybrid_best.pt",
+          "final_checkpoint": "data/models/calce/hybrid/ablation/no_transformer/seed-21/hybrid_final.pt",
+          "artifact_dir": "data/models/calce/hybrid/ablation/no_transformer/seed-21",
           "summary_path": null,
           "history": {
             "train": [
@@ -6062,7 +6062,7 @@
               7.901340007781982
             ]
           },
-          "test_details_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/ablation/no_transformer/seed-21/test_details.json"
+          "test_details_path": "data/models/calce/hybrid/ablation/no_transformer/seed-21/test_details.json"
         },
         {
           "seed": 42,
@@ -6074,9 +6074,9 @@
             "r2": -30.645077268282574,
             "lr": 0.0003
           },
-          "best_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/ablation/no_transformer/seed-42/hybrid_best.pt",
-          "final_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/ablation/no_transformer/seed-42/hybrid_final.pt",
-          "artifact_dir": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/ablation/no_transformer/seed-42",
+          "best_checkpoint": "data/models/calce/hybrid/ablation/no_transformer/seed-42/hybrid_best.pt",
+          "final_checkpoint": "data/models/calce/hybrid/ablation/no_transformer/seed-42/hybrid_final.pt",
+          "artifact_dir": "data/models/calce/hybrid/ablation/no_transformer/seed-42",
           "summary_path": null,
           "history": {
             "train": [
@@ -6719,7 +6719,7 @@
               9.206928253173828
             ]
           },
-          "test_details_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/ablation/no_transformer/seed-42/test_details.json"
+          "test_details_path": "data/models/calce/hybrid/ablation/no_transformer/seed-42/test_details.json"
         }
       ],
       "aggregate_metrics": {
@@ -6746,9 +6746,9 @@
           "r2": -30.645077268282574,
           "lr": 0.0003
         },
-        "best_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/ablation/no_transformer/seed-42/hybrid_best.pt",
-        "final_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/ablation/no_transformer/seed-42/hybrid_final.pt",
-        "artifact_dir": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/ablation/no_transformer/seed-42",
+        "best_checkpoint": "data/models/calce/hybrid/ablation/no_transformer/seed-42/hybrid_best.pt",
+        "final_checkpoint": "data/models/calce/hybrid/ablation/no_transformer/seed-42/hybrid_final.pt",
+        "artifact_dir": "data/models/calce/hybrid/ablation/no_transformer/seed-42",
         "summary_path": null,
         "history": {
           "train": [
@@ -7391,36 +7391,36 @@
             9.206928253173828
           ]
         },
-        "test_details_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/ablation/no_transformer/seed-42/test_details.json"
+        "test_details_path": "data/models/calce/hybrid/ablation/no_transformer/seed-42/test_details.json"
       },
       "artifact_paths": {
-        "variant_dir": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/ablation/no_transformer",
-        "plots_dir": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/ablation/no_transformer/plots"
+        "variant_dir": "data/models/calce/hybrid/ablation/no_transformer",
+        "plots_dir": "data/models/calce/hybrid/ablation/no_transformer/plots"
       },
       "plots": [
         {
           "key": "metrics_overview",
           "title": "CALCE no_transformer metrics",
           "description": "Aggregate mean/std metrics for the ablation variant.",
-          "path": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/ablation/no_transformer/plots/metrics_overview.png",
+          "path": "data/models/calce/hybrid/ablation/no_transformer/plots/metrics_overview.png",
           "generated_at": "2026-03-15T08:29:24.701301",
-          "metadata_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/ablation/no_transformer/plots/metrics_overview.json"
+          "metadata_path": "data/models/calce/hybrid/ablation/no_transformer/plots/metrics_overview.json"
         },
         {
           "key": "error_distribution",
           "title": "CALCE no_transformer error distribution",
           "description": "Prediction error histogram for each seed in the ablation variant.",
-          "path": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/ablation/no_transformer/plots/error_distribution.png",
+          "path": "data/models/calce/hybrid/ablation/no_transformer/plots/error_distribution.png",
           "generated_at": "2026-03-15T08:29:24.760225",
-          "metadata_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/ablation/no_transformer/plots/error_distribution.json"
+          "metadata_path": "data/models/calce/hybrid/ablation/no_transformer/plots/error_distribution.json"
         },
         {
           "key": "training_curves",
           "title": "CALCE no_transformer training curves",
           "description": "Train/validation loss for the ablation variant.",
-          "path": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/ablation/no_transformer/plots/training_curves.png",
+          "path": "data/models/calce/hybrid/ablation/no_transformer/plots/training_curves.png",
           "generated_at": "2026-03-15T08:29:24.805033",
-          "metadata_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/ablation/no_transformer/plots/training_curves.json"
+          "metadata_path": "data/models/calce/hybrid/ablation/no_transformer/plots/training_curves.json"
         }
       ],
       "delta_vs_full": {
@@ -7452,9 +7452,9 @@
             "r2": -24.379333714644115,
             "lr": 2.8405930810269197e-06
           },
-          "best_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/ablation/capacity_only/seed-7/hybrid_best.pt",
-          "final_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/ablation/capacity_only/seed-7/hybrid_final.pt",
-          "artifact_dir": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/ablation/capacity_only/seed-7",
+          "best_checkpoint": "data/models/calce/hybrid/ablation/capacity_only/seed-7/hybrid_best.pt",
+          "final_checkpoint": "data/models/calce/hybrid/ablation/capacity_only/seed-7/hybrid_final.pt",
+          "artifact_dir": "data/models/calce/hybrid/ablation/capacity_only/seed-7",
           "summary_path": null,
           "history": {
             "train": [
@@ -8081,7 +8081,7 @@
               11.167383193969727
             ]
           },
-          "test_details_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/ablation/capacity_only/seed-7/test_details.json"
+          "test_details_path": "data/models/calce/hybrid/ablation/capacity_only/seed-7/test_details.json"
         },
         {
           "seed": 21,
@@ -8093,9 +8093,9 @@
             "r2": -27.748626331488293,
             "lr": 0.0003
           },
-          "best_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/ablation/capacity_only/seed-21/hybrid_best.pt",
-          "final_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/ablation/capacity_only/seed-21/hybrid_final.pt",
-          "artifact_dir": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/ablation/capacity_only/seed-21",
+          "best_checkpoint": "data/models/calce/hybrid/ablation/capacity_only/seed-21/hybrid_best.pt",
+          "final_checkpoint": "data/models/calce/hybrid/ablation/capacity_only/seed-21/hybrid_final.pt",
+          "artifact_dir": "data/models/calce/hybrid/ablation/capacity_only/seed-21",
           "summary_path": null,
           "history": {
             "train": [
@@ -8738,7 +8738,7 @@
               9.92362117767334
             ]
           },
-          "test_details_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/ablation/capacity_only/seed-21/test_details.json"
+          "test_details_path": "data/models/calce/hybrid/ablation/capacity_only/seed-21/test_details.json"
         },
         {
           "seed": 42,
@@ -8750,9 +8750,9 @@
             "r2": -32.97709105412165,
             "lr": 0.0003
           },
-          "best_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/ablation/capacity_only/seed-42/hybrid_best.pt",
-          "final_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/ablation/capacity_only/seed-42/hybrid_final.pt",
-          "artifact_dir": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/ablation/capacity_only/seed-42",
+          "best_checkpoint": "data/models/calce/hybrid/ablation/capacity_only/seed-42/hybrid_best.pt",
+          "final_checkpoint": "data/models/calce/hybrid/ablation/capacity_only/seed-42/hybrid_final.pt",
+          "artifact_dir": "data/models/calce/hybrid/ablation/capacity_only/seed-42",
           "summary_path": null,
           "history": {
             "train": [
@@ -9395,7 +9395,7 @@
               10.960203170776367
             ]
           },
-          "test_details_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/ablation/capacity_only/seed-42/test_details.json"
+          "test_details_path": "data/models/calce/hybrid/ablation/capacity_only/seed-42/test_details.json"
         }
       ],
       "aggregate_metrics": {
@@ -9422,9 +9422,9 @@
           "r2": -24.379333714644115,
           "lr": 2.8405930810269197e-06
         },
-        "best_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/ablation/capacity_only/seed-7/hybrid_best.pt",
-        "final_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/ablation/capacity_only/seed-7/hybrid_final.pt",
-        "artifact_dir": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/ablation/capacity_only/seed-7",
+        "best_checkpoint": "data/models/calce/hybrid/ablation/capacity_only/seed-7/hybrid_best.pt",
+        "final_checkpoint": "data/models/calce/hybrid/ablation/capacity_only/seed-7/hybrid_final.pt",
+        "artifact_dir": "data/models/calce/hybrid/ablation/capacity_only/seed-7",
         "summary_path": null,
         "history": {
           "train": [
@@ -10051,36 +10051,36 @@
             11.167383193969727
           ]
         },
-        "test_details_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/ablation/capacity_only/seed-7/test_details.json"
+        "test_details_path": "data/models/calce/hybrid/ablation/capacity_only/seed-7/test_details.json"
       },
       "artifact_paths": {
-        "variant_dir": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/ablation/capacity_only",
-        "plots_dir": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/ablation/capacity_only/plots"
+        "variant_dir": "data/models/calce/hybrid/ablation/capacity_only",
+        "plots_dir": "data/models/calce/hybrid/ablation/capacity_only/plots"
       },
       "plots": [
         {
           "key": "metrics_overview",
           "title": "CALCE capacity_only metrics",
           "description": "Aggregate mean/std metrics for the ablation variant.",
-          "path": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/ablation/capacity_only/plots/metrics_overview.png",
+          "path": "data/models/calce/hybrid/ablation/capacity_only/plots/metrics_overview.png",
           "generated_at": "2026-03-15T08:29:24.835453",
-          "metadata_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/ablation/capacity_only/plots/metrics_overview.json"
+          "metadata_path": "data/models/calce/hybrid/ablation/capacity_only/plots/metrics_overview.json"
         },
         {
           "key": "error_distribution",
           "title": "CALCE capacity_only error distribution",
           "description": "Prediction error histogram for each seed in the ablation variant.",
-          "path": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/ablation/capacity_only/plots/error_distribution.png",
+          "path": "data/models/calce/hybrid/ablation/capacity_only/plots/error_distribution.png",
           "generated_at": "2026-03-15T08:29:24.884785",
-          "metadata_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/ablation/capacity_only/plots/error_distribution.json"
+          "metadata_path": "data/models/calce/hybrid/ablation/capacity_only/plots/error_distribution.json"
         },
         {
           "key": "training_curves",
           "title": "CALCE capacity_only training curves",
           "description": "Train/validation loss for the ablation variant.",
-          "path": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/ablation/capacity_only/plots/training_curves.png",
+          "path": "data/models/calce/hybrid/ablation/capacity_only/plots/training_curves.png",
           "generated_at": "2026-03-15T08:29:24.935876",
-          "metadata_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/ablation/capacity_only/plots/training_curves.json"
+          "metadata_path": "data/models/calce/hybrid/ablation/capacity_only/plots/training_curves.json"
         }
       ],
       "delta_vs_full": {
@@ -10093,8 +10093,8 @@
     "Delta is computed against full_hybrid using aggregate RMSE."
   ],
   "artifact_paths": {
-    "summary": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/ablation_summary.json",
-    "plots_dir": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/plots"
+    "summary": "data/models/calce/ablation_summary.json",
+    "plots_dir": "data/models/calce/plots"
   },
   "generated_at": "2026-03-15T08:29:24.936364",
   "plots": [
@@ -10102,9 +10102,9 @@
       "key": "ablation_overview",
       "title": "CALCE ablation overview",
       "description": "Aggregate RMSE for each hybrid ablation variant.",
-      "path": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/plots/ablation_overview.png",
+      "path": "data/models/calce/plots/ablation_overview.png",
       "generated_at": "2026-03-15T08:29:25.041569",
-      "metadata_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/plots/ablation_overview.json"
+      "metadata_path": "data/models/calce/plots/ablation_overview.json"
     }
   ]
 }

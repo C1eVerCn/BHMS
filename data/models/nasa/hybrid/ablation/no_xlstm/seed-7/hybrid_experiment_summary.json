@@ -3,10 +3,10 @@
   "model_type": "hybrid",
   "model_version": "nasa-no_xlstm-seed-7",
   "best_val_loss": 0.7666806090961803,
-  "best_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/ablation/no_xlstm/seed-7/hybrid_best.pt",
-  "final_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/ablation/no_xlstm/seed-7/hybrid_final.pt",
+  "best_checkpoint": "data/models/nasa/hybrid/ablation/no_xlstm/seed-7/hybrid_best.pt",
+  "final_checkpoint": "data/models/nasa/hybrid/ablation/no_xlstm/seed-7/hybrid_final.pt",
   "data_summary": {
-    "csv_path": "/Users/chris/Documents/trae_projects/BHMS/data/processed/nasa/nasa_cycle_summary.csv",
+    "csv_path": "data/processed/nasa/nasa_cycle_summary.csv",
     "source": "nasa",
     "seq_len": 30,
     "batch_size": 16,
@@ -1212,9 +1212,9 @@
   "suite_kind": "ablation",
   "variant_key": "no_xlstm",
   "seed": 7,
-  "artifact_dir": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/ablation/no_xlstm/seed-7",
-  "log_dir": "/Users/chris/Documents/trae_projects/BHMS/data/models/logs/nasa/hybrid/ablation/no_xlstm/seed-7",
-  "config_path": "/Users/chris/Documents/trae_projects/BHMS/configs/nasa_hybrid.yaml",
+  "artifact_dir": "data/models/nasa/hybrid/ablation/no_xlstm/seed-7",
+  "log_dir": "data/models/logs/nasa/hybrid/ablation/no_xlstm/seed-7",
+  "config_path": "configs/nasa_hybrid.yaml",
   "config_snapshot": {
     "data": {
       "csv_path": "data/processed/nasa/nasa_cycle_summary.csv",
@@ -1337,8 +1337,8 @@
     "min_delta": 0.0001,
     "loss_type": "huber",
     "huber_delta": 1.0,
-    "checkpoint_dir": "/Users/chris/Documents/trae_projects/BHMS/data/models",
-    "log_dir": "/Users/chris/Documents/trae_projects/BHMS/data/models/logs",
+    "checkpoint_dir": "data/models",
+    "log_dir": "data/models/logs",
     "device": "auto",
     "use_amp": false,
     "max_grad_norm": 1.0,
@@ -1353,5 +1353,5 @@
     "last_train_loss": 5.781000834244948,
     "last_val_loss": 2.750681936486878
   },
-  "test_details_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/ablation/no_xlstm/seed-7/test_details.json"
+  "test_details_path": "data/models/nasa/hybrid/ablation/no_xlstm/seed-7/test_details.json"
 }

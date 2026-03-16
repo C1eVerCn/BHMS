@@ -1,0 +1,61 @@
+{
+  "source": "calce",
+  "model_type": "hybrid",
+  "config_path": "configs/calce_hybrid_optimized.yaml",
+  "suite_kind": "optimized_multi_seed",
+  "seeds": [
+    7,
+    21,
+    42
+  ],
+  "aggregate_metrics": {
+    "rmse": 8.113155,
+    "mae": 7.816742,
+    "mape": 58.592635,
+    "r2": -17.292928
+  },
+  "per_seed_runs": [
+    {
+      "seed": 7,
+      "metrics": {
+        "loss": 9.29548684755961,
+        "rmse": 10.080333312352499,
+        "mae": 9.790672238667806,
+        "mape": 62.0683411916097,
+        "r2": -23.5567569732666,
+        "lr": 0.0003
+      },
+      "best_checkpoint": "data/models/calce/hybrid/optimized-config/runs/seed-7/hybrid_best.pt",
+      "final_checkpoint": "data/models/calce/hybrid/optimized-config/runs/seed-7/hybrid_final.pt",
+      "summary_path": "data/models/calce/hybrid/optimized-config/runs/seed-7/hybrid_experiment_summary.json"
+    },
+    {
+      "seed": 21,
+      "metrics": {
+        "loss": 5.693760232130686,
+        "rmse": 6.474216647942861,
+        "mae": 6.174785860379537,
+        "mape": 53.708866341908774,
+        "r2": -11.378007471561432,
+        "lr": 0.0003
+      },
+      "best_checkpoint": "data/models/calce/hybrid/optimized-config/runs/seed-21/hybrid_best.pt",
+      "final_checkpoint": "data/models/calce/hybrid/optimized-config/runs/seed-21/hybrid_final.pt",
+      "summary_path": "data/models/calce/hybrid/optimized-config/runs/seed-21/hybrid_experiment_summary.json"
+    },
+    {
+      "seed": 42,
+      "metrics": {
+        "loss": 6.99752205212911,
+        "rmse": 7.784914914766947,
+        "mae": 7.484767317771912,
+        "mape": 60.00069675445557,
+        "r2": -16.944020764033,
+        "lr": 0.0003
+      },
+      "best_checkpoint": "data/models/calce/hybrid/optimized-config/runs/seed-42/hybrid_best.pt",
+      "final_checkpoint": "data/models/calce/hybrid/optimized-config/runs/seed-42/hybrid_final.pt",
+      "summary_path": "data/models/calce/hybrid/optimized-config/runs/seed-42/hybrid_experiment_summary.json"
+    }
+  ]
+}

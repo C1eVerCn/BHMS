@@ -135,28 +135,26 @@ class sLSTMLayer(nn.Module):
             hidden_proj = self.hidden_proj(h)
             i_h, f_h, z_h, o_h = hidden_proj.chunk(4, dim=-1)
             
-            # 指数门控 - sLSTM的核心特性
-            # 使用exp激活函数增强非线性
-            i_t = torch.exp(torch.clamp(i_x + i_h, min=-10.0, max=10.0))  # 输入门（指数形式）
-            f_t = torch.exp(torch.clamp(f_x + f_h, min=-10.0, max=10.0))  # 遗忘门（指数形式）
-            
-            # 归一化因子
-            m = torch.maximum(torch.log(f_t) + m, torch.log(i_t))
-            
+            # 使用稳定化后的指数门控，避免长序列时 cell state 数值爆炸。
+            log_i = torch.clamp(i_x + i_h, min=-10.0, max=10.0)
+            log_f = torch.clamp(f_x + f_h, min=-10.0, max=10.0)
+            m_new = torch.maximum(log_f + m, log_i)
+            i_t = torch.exp(log_i - m_new)
+            f_t = torch.exp(log_f + m - m_new)
+
             # 候选状态
             z_t = torch.tanh(z_x + z_h)
-            
-            # 更新细胞状态
+
+            # 归一化后的细胞状态更新
             c = f_t * c + i_t * z_t
-            
-            # 归一化的细胞状态
-            c_norm = c / torch.exp(m)
-            
+            c_norm = c
+
             # 输出门
             o_t = torch.sigmoid(o_x + o_h)
             
             # 新的隐藏状态
             h = o_t * torch.tanh(c_norm)
+            m = m_new
             
             outputs.append(h)
         
@@ -197,19 +195,19 @@ class sLSTMCell(nn.Module):
         proj = self.proj(combined)
         i_gate, f_gate, z_gate, o_gate, inp = proj.chunk(5, dim=-1)
         
-        # 指数门控
-        i_t = torch.exp(torch.clamp(i_gate, min=-10.0, max=10.0))
-        f_t = torch.exp(torch.clamp(f_gate, min=-10.0, max=10.0))
-        
-        # 更新归一化因子
-        m_new = torch.maximum(torch.log(f_t) + m, torch.log(i_t))
+        # 指数门控的稳定化实现
+        log_i = torch.clamp(i_gate, min=-10.0, max=10.0)
+        log_f = torch.clamp(f_gate, min=-10.0, max=10.0)
+        m_new = torch.maximum(log_f + m, log_i)
+        i_t = torch.exp(log_i - m_new)
+        f_t = torch.exp(log_f + m - m_new)
         
         # 候选状态
         z_t = torch.tanh(z_gate)
         
         # 更新细胞状态
         c_new = f_t * c + i_t * z_t
-        c_norm = c_new / torch.exp(m_new)
+        c_norm = c_new
         
         # 输出
         o_t = torch.sigmoid(o_gate)

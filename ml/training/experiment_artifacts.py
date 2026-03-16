@@ -37,6 +37,7 @@ CJK_FONT_CANDIDATES = [
     "SimHei",
     "Microsoft YaHei",
 ]
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 
 def _configure_matplotlib_fonts() -> None:
@@ -55,7 +56,7 @@ _configure_matplotlib_fonts()
 def write_json(path: str | Path, payload: dict[str, Any]) -> Path:
     destination = Path(path)
     destination.parent.mkdir(parents=True, exist_ok=True)
-    destination.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+    destination.write_text(json.dumps(relativize_payload(payload), ensure_ascii=False, indent=2), encoding="utf-8")
     return destination
 
 
@@ -105,15 +106,37 @@ def write_plot_metadata(
         "key": key,
         "title": title,
         "description": description,
-        "path": str(image),
+        "path": serialize_path(image),
         "generated_at": datetime.utcnow().isoformat(),
     }
     if extra:
         payload.update(extra)
     metadata_path = image.with_suffix(".json")
     write_json(metadata_path, payload)
-    payload["metadata_path"] = str(metadata_path)
+    payload["metadata_path"] = serialize_path(metadata_path)
     return payload
+
+
+def serialize_path(path: str | Path) -> str:
+    candidate = Path(path)
+    resolved = candidate.resolve() if candidate.exists() else (PROJECT_ROOT / candidate).resolve() if not candidate.is_absolute() else candidate
+    try:
+        return str(resolved.relative_to(PROJECT_ROOT))
+    except ValueError:
+        return str(candidate)
+
+
+def relativize_payload(value: Any) -> Any:
+    if isinstance(value, dict):
+        return {key: relativize_payload(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [relativize_payload(item) for item in value]
+    if isinstance(value, str) and str(PROJECT_ROOT) in value:
+        try:
+            return str(Path(value).resolve().relative_to(PROJECT_ROOT))
+        except Exception:
+            return value
+    return value
 
 
 def plot_metric_summary(summary: dict[str, Any], output_path: str | Path, *, title: str, description: str) -> dict[str, Any]:

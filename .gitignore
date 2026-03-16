@@ -1,6 +1,9 @@
 .DS_Store
+**/.DS_Store
 .pytest_cache/
+**/.pytest_cache/
 __pycache__/
+**/__pycache__/
 *.py[cod]
 *.so
 .venv/
@@ -9,6 +12,7 @@ venv/
 .vscode/
 frontend/node_modules/
 frontend/dist/
+frontend/[{]src/
 backend/.pytest_cache/
 data/bhms.db
 *.log
@@ -20,3 +24,5 @@ data/raw/nasa/5. Battery Data Set/
 data/raw/nasa/
 data/uploads/
 data/models/logs/
+data/models/**/search/
+data/models/**/optimized/

@@ -31,6 +31,9 @@ class RULPredictorConfig:
     max_rul: float = 2000.0
     dropout: float = 0.1
     max_seq_len: int = 5000
+    transformer_parallel: bool = False
+    pooling_mode: str = "mean"
+    pooling_hidden_dim: int = 128
 
 
 class FeatureFusion(nn.Module):
@@ -50,6 +53,30 @@ class FeatureFusion(nn.Module):
         return self.dropout(self.fusion_norm(fused))
 
 
+class TemporalAttentionPooling(nn.Module):
+    def __init__(self, input_dim: int, hidden_dim: int, dropout: float = 0.1):
+        super().__init__()
+        self.score = nn.Sequential(
+            nn.LayerNorm(input_dim),
+            nn.Linear(input_dim, hidden_dim),
+            nn.Tanh(),
+            nn.Dropout(dropout),
+            nn.Linear(hidden_dim, 1),
+        )
+        self.mix = nn.Sequential(nn.Linear(input_dim * 2, input_dim), nn.Sigmoid())
+        self.output_norm = nn.LayerNorm(input_dim)
+        self.dropout = nn.Dropout(dropout)
+
+    def forward(self, sequence: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        logits = self.score(sequence)
+        weights = torch.softmax(logits, dim=1)
+        context = torch.sum(weights * sequence, dim=1)
+        recent = sequence[:, -1, :]
+        gate = self.mix(torch.cat([context, recent], dim=-1))
+        pooled = gate * recent + (1.0 - gate) * context
+        return self.dropout(self.output_norm(pooled)), weights.squeeze(-1)
+
+
 class RULPredictor(nn.Module):
     def __init__(self, config: RULPredictorConfig):
         super().__init__()
@@ -57,6 +84,8 @@ class RULPredictor(nn.Module):
         self.use_xlstm = config.use_xlstm
         self.use_transformer = config.use_transformer
         self.use_dual_path = self.use_xlstm and self.use_transformer
+        self.transformer_parallel = config.transformer_parallel
+        self.pooling_mode = config.pooling_mode.lower()
         self.input_norm = nn.LayerNorm(config.input_dim)
         self.input_proj = nn.Linear(config.input_dim, config.d_model)
         self.input_dropout = nn.Dropout(config.dropout)
@@ -92,7 +121,11 @@ class RULPredictor(nn.Module):
                 nn.GELU(),
                 nn.Dropout(config.dropout),
             )
-        self.temporal_pool = nn.AdaptiveAvgPool1d(1)
+        if self.pooling_mode == "attention":
+            pooling_hidden_dim = max(8, config.pooling_hidden_dim)
+            self.temporal_pool = TemporalAttentionPooling(config.fusion_dim, pooling_hidden_dim, config.dropout)
+        else:
+            self.temporal_pool = nn.AdaptiveAvgPool1d(1)
         self.predictor = nn.Sequential(
             nn.LayerNorm(config.fusion_dim),
             nn.Linear(config.fusion_dim, config.fusion_dim // 2),
@@ -119,7 +152,7 @@ class RULPredictor(nn.Module):
         new_xlstm_states = xlstm_states
         if self.xlstm is not None:
             xlstm_out, new_xlstm_states = self.xlstm(x, xlstm_states)
-        trans_input = xlstm_out if self.xlstm is not None else x
+        trans_input = x if self.transformer_parallel or self.xlstm is None else xlstm_out
         trans_out = trans_input
         attn_weights = []
         if self.transformer is not None:
@@ -129,7 +162,11 @@ class RULPredictor(nn.Module):
         else:
             primary_path = xlstm_out if self.xlstm is not None else trans_out
             fused_feat = self.single_path_adapter(primary_path)
-        pooled = self.temporal_pool(fused_feat.transpose(1, 2)).squeeze(-1)
+        pooling_weights = None
+        if self.pooling_mode == "attention":
+            pooled, pooling_weights = self.temporal_pool(fused_feat)
+        else:
+            pooled = self.temporal_pool(fused_feat.transpose(1, 2)).squeeze(-1)
         rul_pred = F.relu(self.predictor(pooled))
         features = None
         if return_features:
@@ -138,6 +175,7 @@ class RULPredictor(nn.Module):
                 "trans_out": trans_out,
                 "fused_feat": fused_feat,
                 "pooled_feat": pooled,
+                "pooling_weights": pooling_weights,
                 "attn_weights": attn_weights,
                 "xlstm_states": new_xlstm_states,
             }
@@ -161,5 +199,4 @@ class RULLoss(nn.Module):
         linear = error - quadratic
         return (0.5 * quadratic.pow(2) + self.delta * linear).mean()
 
-
-__all__ = ["FeatureFusion", "RULPredictor", "RULPredictorConfig", "RULLoss"]
+__all__ = ["FeatureFusion", "RULPredictor", "RULPredictorConfig", "RULLoss", "TemporalAttentionPooling"]

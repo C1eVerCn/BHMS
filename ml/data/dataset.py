@@ -86,6 +86,7 @@ class RULDataModule:
         num_workers: int = 0,
         output_dir: str | Path | None = None,
         reuse_existing_split: bool = True,
+        seed: int = 42,
     ):
         self.csv_path = Path(csv_path)
         self.source = source.lower()
@@ -94,6 +95,7 @@ class RULDataModule:
         self.feature_cols = list(feature_cols or DEFAULT_FEATURE_COLUMNS)
         self.num_workers = num_workers
         self.reuse_existing_split = reuse_existing_split
+        self.seed = seed
         self.output_dir = Path(output_dir) if output_dir is not None else self.csv_path.parent
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self.data = pd.read_csv(self.csv_path)
@@ -143,6 +145,8 @@ class RULDataModule:
         return NormalizationStats(means=means, stds=stds)
 
     def train_loader(self) -> DataLoader:
+        generator = torch.Generator()
+        generator.manual_seed(self.seed)
         return DataLoader(
             self.train_dataset,
             batch_size=self.batch_size,
@@ -150,6 +154,7 @@ class RULDataModule:
             drop_last=False,
             num_workers=self.num_workers,
             pin_memory=torch.cuda.is_available(),
+            generator=generator,
         )
 
     def val_loader(self) -> DataLoader:

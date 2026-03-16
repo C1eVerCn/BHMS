@@ -3,10 +3,10 @@
   "model_type": "hybrid",
   "model_version": "kaggle-capacity_only-seed-7",
   "best_val_loss": 13.880266845226288,
-  "best_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/ablation/capacity_only/seed-7/hybrid_best.pt",
-  "final_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/ablation/capacity_only/seed-7/hybrid_final.pt",
+  "best_checkpoint": "data/models/kaggle/hybrid/ablation/capacity_only/seed-7/hybrid_best.pt",
+  "final_checkpoint": "data/models/kaggle/hybrid/ablation/capacity_only/seed-7/hybrid_final.pt",
   "data_summary": {
-    "csv_path": "/Users/chris/Documents/trae_projects/BHMS/data/processed/kaggle/kaggle_cycle_summary.csv",
+    "csv_path": "data/processed/kaggle/kaggle_cycle_summary.csv",
     "source": "kaggle",
     "seq_len": 24,
     "batch_size": 8,

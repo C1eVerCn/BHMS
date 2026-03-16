@@ -9,7 +9,7 @@
 - 容量骤降
 
 ## 三、GraphRAG 检索说明
-电池容量衰减速度超出正常老化范围，剩余寿命快速下降。 当前样本电池信息：{"battery_id": "nasa::nasa_pcoe::B0054", "canonical_battery_id": "nasa::nasa_pcoe::B0054", "source": "nasa", "dataset_name": "nasa_pcoe", "source_battery_id": "B0054", "chemistry": "NASA Li-ion", "nominal_capacity": 0.7399351039859233, "cycle_count": 103, "latest_capacity": 0.0, "initial_capacity": 0.7399351039859233, "health_score": 0.0, "status": "critical", "last_update": "2010-09-30T15:32:33.078000", "dataset_path": "/Users/chris/Documents/trae_projects/BHMS/data/processed/nasa/nasa_cycle_summary.csv", "include_in_training": 1}。
+电池容量衰减速度超出正常老化范围，剩余寿命快速下降。 当前样本电池信息：{"battery_id": "nasa::nasa_pcoe::B0054", "canonical_battery_id": "nasa::nasa_pcoe::B0054", "source": "nasa", "dataset_name": "nasa_pcoe", "source_battery_id": "B0054", "chemistry": "NASA Li-ion", "nominal_capacity": 0.7399351039859233, "cycle_count": 103, "latest_capacity": 0.0, "initial_capacity": 0.7399351039859233, "health_score": 0.0, "status": "critical", "last_update": "2010-09-30T15:32:33.078000", "dataset_path": "data/processed/nasa/nasa_cycle_summary.csv", "include_in_training": 1}。
 
 ## 四、候选故障排序
 - 容量衰减异常：得分 0.597，匹配症状 容量骤降

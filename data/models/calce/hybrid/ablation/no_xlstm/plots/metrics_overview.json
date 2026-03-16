@@ -2,6 +2,6 @@
   "key": "metrics_overview",
   "title": "CALCE no_xlstm metrics",
   "description": "Aggregate mean/std metrics for the ablation variant.",
-  "path": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/ablation/no_xlstm/plots/metrics_overview.png",
+  "path": "data/models/calce/hybrid/ablation/no_xlstm/plots/metrics_overview.png",
   "generated_at": "2026-03-15T08:29:24.572509"
 }

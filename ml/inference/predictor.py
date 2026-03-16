@@ -12,6 +12,8 @@ import numpy as np
 
 from ml.data.nasa_preprocessor import DEFAULT_FEATURE_COLUMNS
 
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+
 
 @dataclass
 class AttentionHeatmap:
@@ -563,6 +565,14 @@ class RULInferenceService:
         return f"遮挡 {feature_name} 后，模型输出相对基线{effect}了 RUL 估计。"
 
     def _resolve_checkpoint(self, source: str, model_name: str) -> Path:
+        summary_candidates = [
+            self.model_dir / source / model_name / "optimized-config" / "optimized_multi_seed_summary.json",
+            self.model_dir / source / model_name / f"{model_name}_multi_seed_summary.json",
+        ]
+        for summary_path in summary_candidates:
+            resolved = self._resolve_checkpoint_from_summary(summary_path)
+            if resolved is not None:
+                return resolved
         candidates = [
             self.model_dir / source / model_name / f"{model_name}_best.pt",
             self.model_dir / source / model_name / f"{model_name}_final.pt",
@@ -572,6 +582,55 @@ class RULInferenceService:
             if candidate.exists():
                 return candidate
         raise FileNotFoundError(f"未找到来源 {source} 的模型权重: {model_name}")
+
+    @staticmethod
+    def _resolve_checkpoint_from_summary(summary_path: Path) -> Optional[Path]:
+        if not summary_path.exists():
+            return None
+        try:
+            payload = json.loads(summary_path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            return None
+
+        best_checkpoint = payload.get("best_checkpoint") or {}
+        explicit_path = best_checkpoint.get("path") if isinstance(best_checkpoint, dict) else None
+        if explicit_path:
+            candidate = RULInferenceService._resolve_reference_path(summary_path, explicit_path)
+            if candidate is not None:
+                return candidate
+
+        per_seed_runs = payload.get("per_seed_runs") or []
+        ranked_runs = []
+        for run in per_seed_runs:
+            metrics = run.get("metrics") or {}
+            checkpoint_path = run.get("best_checkpoint") or run.get("final_checkpoint")
+            rmse = metrics.get("rmse")
+            if checkpoint_path is None or rmse is None:
+                continue
+            ranked_runs.append((float(rmse), checkpoint_path))
+        ranked_runs.sort(key=lambda item: item[0])
+        for _, checkpoint_path in ranked_runs:
+            candidate = RULInferenceService._resolve_reference_path(summary_path, checkpoint_path)
+            if candidate is not None:
+                return candidate
+        return None
+
+    @staticmethod
+    def _resolve_reference_path(summary_path: Path, raw_path: str | Path) -> Optional[Path]:
+        candidate = Path(raw_path)
+        if candidate.is_absolute():
+            return candidate if candidate.exists() else None
+
+        search_roots = [PROJECT_ROOT, summary_path.parent, *summary_path.parents]
+        seen: set[Path] = set()
+        for root in search_roots:
+            resolved = (root / candidate).resolve()
+            if resolved in seen:
+                continue
+            seen.add(resolved)
+            if resolved.exists():
+                return resolved
+        return None
 
     @staticmethod
     def sequence_from_cycle_points(points: Iterable[dict[str, float]], feature_cols: Optional[Sequence[str]] = None) -> np.ndarray:

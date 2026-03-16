@@ -4,14 +4,14 @@
       "key": "ablation_overview",
       "title": "KAGGLE ablation overview",
       "description": "Aggregate RMSE for each hybrid ablation variant.",
-      "path": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/plots/ablation_overview.png",
+      "path": "data/models/kaggle/plots/ablation_overview.png",
       "generated_at": "2026-03-15T08:29:25.835494"
     },
     {
       "key": "dataset_split",
       "title": "KAGGLE dataset split",
       "description": "Battery counts in the fixed train/validation/test split.",
-      "path": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/plots/dataset_split.png",
+      "path": "data/models/kaggle/plots/dataset_split.png",
       "generated_at": "2026-03-15T08:29:25.903574",
       "split_snapshot": {
         "train_batteries": [
@@ -32,14 +32,14 @@
       "key": "experiment_ablations",
       "title": "KAGGLE ablation summary",
       "description": "Aggregate RMSE comparison for the configured ablation variants.",
-      "path": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/plots/experiment_ablations.png",
+      "path": "data/models/kaggle/plots/experiment_ablations.png",
       "generated_at": "2026-03-15T08:29:25.936674"
     },
     {
       "key": "experiment_summary",
       "title": "KAGGLE model comparison",
       "description": "Aggregate multi-seed metric comparison between Bi-LSTM and Hybrid.",
-      "path": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/plots/experiment_summary.png",
+      "path": "data/models/kaggle/plots/experiment_summary.png",
       "generated_at": "2026-03-15T08:29:25.877203"
     }
   ],

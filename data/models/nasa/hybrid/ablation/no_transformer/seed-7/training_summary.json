@@ -3,10 +3,10 @@
   "model_type": "hybrid",
   "model_version": "nasa-no_transformer-seed-7",
   "best_val_loss": 0.5967796743134386,
-  "best_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/ablation/no_transformer/seed-7/hybrid_best.pt",
-  "final_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/nasa/hybrid/ablation/no_transformer/seed-7/hybrid_final.pt",
+  "best_checkpoint": "data/models/nasa/hybrid/ablation/no_transformer/seed-7/hybrid_best.pt",
+  "final_checkpoint": "data/models/nasa/hybrid/ablation/no_transformer/seed-7/hybrid_final.pt",
   "data_summary": {
-    "csv_path": "/Users/chris/Documents/trae_projects/BHMS/data/processed/nasa/nasa_cycle_summary.csv",
+    "csv_path": "data/processed/nasa/nasa_cycle_summary.csv",
     "source": "nasa",
     "seq_len": 30,
     "batch_size": 16,

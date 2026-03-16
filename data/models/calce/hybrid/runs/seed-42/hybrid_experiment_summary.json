@@ -3,10 +3,10 @@
   "model_type": "hybrid",
   "model_version": "calce-hybrid-seed-42",
   "best_val_loss": 5.391170249382655,
-  "best_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/runs/seed-42/hybrid_best.pt",
-  "final_checkpoint": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/runs/seed-42/hybrid_final.pt",
+  "best_checkpoint": "data/models/calce/hybrid/runs/seed-42/hybrid_best.pt",
+  "final_checkpoint": "data/models/calce/hybrid/runs/seed-42/hybrid_final.pt",
   "data_summary": {
-    "csv_path": "/Users/chris/Documents/trae_projects/BHMS/data/processed/calce/calce_cycle_summary.csv",
+    "csv_path": "data/processed/calce/calce_cycle_summary.csv",
     "source": "calce",
     "seq_len": 24,
     "batch_size": 8,
@@ -721,9 +721,9 @@
   "suite_kind": "multi_seed",
   "variant_key": "hybrid",
   "seed": 42,
-  "artifact_dir": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/runs/seed-42",
-  "log_dir": "/Users/chris/Documents/trae_projects/BHMS/data/models/logs/calce/hybrid/runs/seed-42",
-  "config_path": "/Users/chris/Documents/trae_projects/BHMS/configs/calce_hybrid.yaml",
+  "artifact_dir": "data/models/calce/hybrid/runs/seed-42",
+  "log_dir": "data/models/logs/calce/hybrid/runs/seed-42",
+  "config_path": "configs/calce_hybrid.yaml",
   "config_snapshot": {
     "data": {
       "csv_path": "data/processed/calce/calce_cycle_summary.csv",
@@ -818,8 +818,8 @@
     "min_delta": 0.0001,
     "loss_type": "huber",
     "huber_delta": 1.0,
-    "checkpoint_dir": "/Users/chris/Documents/trae_projects/BHMS/data/models",
-    "log_dir": "/Users/chris/Documents/trae_projects/BHMS/data/models/logs",
+    "checkpoint_dir": "data/models",
+    "log_dir": "data/models/logs",
     "device": "auto",
     "use_amp": false,
     "max_grad_norm": 1.0,
@@ -834,5 +834,5 @@
     "last_train_loss": 3.6577192586043785,
     "last_val_loss": 5.586636783679326
   },
-  "test_details_path": "/Users/chris/Documents/trae_projects/BHMS/data/models/calce/hybrid/runs/seed-42/test_details.json"
+  "test_details_path": "data/models/calce/hybrid/runs/seed-42/test_details.json"
 }

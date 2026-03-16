@@ -23,8 +23,8 @@
     "min_delta": 0.0001,
     "loss_type": "huber",
     "huber_delta": 1.0,
-    "checkpoint_dir": "/Users/chris/Documents/trae_projects/BHMS/data/models",
-    "log_dir": "/Users/chris/Documents/trae_projects/BHMS/data/models/logs",
+    "checkpoint_dir": "data/models",
+    "log_dir": "data/models/logs",
     "device": "auto",
     "use_amp": false,
     "max_grad_norm": 1.0,
@@ -35,7 +35,7 @@
     "artifact_subdir": "runs/seed-21"
   },
   "data_summary": {
-    "csv_path": "/Users/chris/Documents/trae_projects/BHMS/data/processed/nasa/nasa_cycle_summary.csv",
+    "csv_path": "data/processed/nasa/nasa_cycle_summary.csv",
     "source": "nasa",
     "seq_len": 30,
     "batch_size": 16,

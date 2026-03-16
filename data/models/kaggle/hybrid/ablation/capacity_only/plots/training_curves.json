@@ -2,6 +2,6 @@
   "key": "training_curves",
   "title": "KAGGLE capacity_only training curves",
   "description": "Train/validation loss for the ablation variant.",
-  "path": "/Users/chris/Documents/trae_projects/BHMS/data/models/kaggle/hybrid/ablation/capacity_only/plots/training_curves.png",
+  "path": "data/models/kaggle/hybrid/ablation/capacity_only/plots/training_curves.png",
   "generated_at": "2026-03-15T08:29:25.804408"
 }
