@@ -18,6 +18,7 @@
 - 已完成基线提交：`chore: snapshot xlstm-hybrid baseline and streamline repo`
 - 阶段 2 已开始：新增多源 source registry，扩展 `hust / matr / oxford / pulsebat` adapter 与元数据字段
 - 阶段 3 已开始：新增生命周期数据模块、`LifecycleHybridPredictor`、`LifecycleBiLSTMPredictor` 与生命周期训练骨架
+- 阶段 4 已开始：GraphRAG 已可消费 lifecycle evidence / model evidence，并支持风险窗口、机理节点和未来退化排序依据
 
 ## 1. 外部趋势与执行依据
 

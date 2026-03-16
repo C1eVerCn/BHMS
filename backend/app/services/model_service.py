@@ -19,7 +19,7 @@ class PredictionService:
         self.repository = repository or BHMSRepository()
         self.settings = settings or get_settings()
         self.inference_service = RULInferenceService(self.settings.model_dir)
-        self.anomaly_detector = AnomalyDetector(use_statistical=True, use_isolation_forest=False, thresholds=AnomalyThreshold())
+        self.anomaly_detector = AnomalyDetector(use_statistical=True, use_isolation_forest=True, thresholds=AnomalyThreshold())
         self.diagnosis_engine = GraphRAGEngine(
             knowledge_path=self.settings.knowledge_path,
             graph_backend=self.settings.graph_backend,
@@ -137,6 +137,9 @@ class PredictionService:
             raise BHMSException(f"未找到电池 {battery_id}", status_code=404, code="battery_not_found")
         if not anomalies:
             anomalies = self.repository.list_anomalies(battery_id, limit=5)
+        latest_prediction = self.repository.list_predictions(battery_id, limit=1)
+        lifecycle_evidence = self._build_lifecycle_evidence(battery, latest_prediction[0] if latest_prediction else None)
+        model_evidence = self._build_model_evidence(latest_prediction[0] if latest_prediction else None)
         if not anomalies:
             diagnosis = {
                 "fault_type": "未发现明显故障",
@@ -170,7 +173,12 @@ class PredictionService:
                 **diagnosis,
                 "diagnosis_time": datetime.utcnow().isoformat(),
             }
-        diagnosis = self.diagnosis_engine.diagnose(anomalies=anomalies, battery_info=battery_info or battery)
+        diagnosis = self.diagnosis_engine.diagnose(
+            anomalies=anomalies,
+            battery_info=battery_info or battery,
+            lifecycle_evidence=lifecycle_evidence,
+            model_evidence=model_evidence,
+        )
         record_id = self.repository.insert_diagnosis(
             {
                 "battery_id": battery_id,
@@ -191,6 +199,56 @@ class PredictionService:
             }
         )
         return {"id": record_id, "battery_id": battery_id, **diagnosis.to_dict(), "diagnosis_time": datetime.utcnow().isoformat()}
+
+    def _build_lifecycle_evidence(self, battery: dict[str, Any], prediction: Optional[dict[str, Any]]) -> dict[str, Any]:
+        projection = ((prediction or {}).get("projection")) or (((prediction or {}).get("payload")) or {}).get("projection") or {}
+        forecast_points = projection.get("forecast_points") or []
+        predicted_eol_cycle = projection.get("predicted_eol_cycle")
+        last_actual_cycle = None
+        if forecast_points:
+            first_point = forecast_points[0]
+            last_actual_cycle = float(first_point.get("cycle", 0.0))
+        future_capacity_fade_pattern = "stable_decline"
+        accelerated_window = None
+        if len(forecast_points) >= 3:
+            capacities = np.asarray([float(item.get("capacity", 0.0) or 0.0) for item in forecast_points], dtype=float)
+            slopes = np.diff(capacities)
+            if slopes.size and float(np.min(slopes)) < float(np.mean(slopes) * 1.35):
+                future_capacity_fade_pattern = "accelerated_tail_fade"
+                accelerated_index = int(np.argmin(slopes))
+                start_cycle = forecast_points[max(0, accelerated_index)]["cycle"]
+                end_cycle = forecast_points[min(len(forecast_points) - 1, accelerated_index + 2)]["cycle"]
+                accelerated_window = f"{start_cycle}-{end_cycle}"
+        health_score = float(battery.get("health_score", 0.0) or 0.0)
+        temperature_risk = "high" if health_score < 65 else "medium" if health_score < 80 else "low"
+        resistance_risk = "high" if health_score < 60 else "medium" if health_score < 78 else "low"
+        voltage_risk = "medium" if health_score < 75 else "low"
+        predicted_knee_cycle = None
+        if predicted_eol_cycle is not None and last_actual_cycle is not None:
+            span = max(5.0, float(predicted_eol_cycle) - last_actual_cycle)
+            predicted_knee_cycle = round(last_actual_cycle + span * 0.35, 2)
+        return {
+            "predicted_knee_cycle": predicted_knee_cycle,
+            "predicted_eol_cycle": predicted_eol_cycle,
+            "accelerated_degradation_window": accelerated_window,
+            "future_capacity_fade_pattern": future_capacity_fade_pattern,
+            "temperature_risk": temperature_risk,
+            "resistance_risk": resistance_risk,
+            "voltage_risk": voltage_risk,
+        }
+
+    @staticmethod
+    def _build_model_evidence(prediction: Optional[dict[str, Any]]) -> dict[str, Any]:
+        payload = (prediction or {}).get("payload") or {}
+        explanation = payload.get("explanation") or {}
+        feature_contributions = explanation.get("feature_contributions") or []
+        window_contributions = explanation.get("window_contributions") or []
+        confidence_factors = (explanation.get("confidence_summary") or {}).get("factors") or []
+        return {
+            "top_features": [str(item.get("feature")) for item in feature_contributions[:3] if item.get("feature")],
+            "critical_windows": [str(item.get("window_label")) for item in window_contributions[:3] if item.get("window_label")],
+            "confidence_factors": [str(item) for item in confidence_factors[:3]],
+        }
 
     def get_prediction_report(self, prediction_id: int) -> str:
         prediction = self.repository.get_prediction(prediction_id)
