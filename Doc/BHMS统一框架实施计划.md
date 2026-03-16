@@ -12,6 +12,13 @@
 
 本文件是后续阶段更新的唯一主计划文档。后续每完成一个阶段，只增量更新本文件，不再新开重复规划文档。
 
+## 当前进展（2026-03-17）
+
+- 阶段 1 已完成：主计划文档落地、主文档集合收口、旧文档与旧脚本清理、实验路径改为仓库相对路径、基线提交已完成
+- 已完成基线提交：`chore: snapshot xlstm-hybrid baseline and streamline repo`
+- 阶段 2 已开始：新增多源 source registry，扩展 `hust / matr / oxford / pulsebat` adapter 与元数据字段
+- 阶段 3 已开始：新增生命周期数据模块、`LifecycleHybridPredictor`、`LifecycleBiLSTMPredictor` 与生命周期训练骨架
+
 ## 1. 外部趋势与执行依据
 
 ### 1.1 2023+ 文献趋势
