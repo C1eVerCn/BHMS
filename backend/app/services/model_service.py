@@ -89,6 +89,68 @@ class PredictionService:
             "report_markdown": report_markdown,
         }
 
+    def predict_lifecycle(
+        self,
+        battery_id: str,
+        model_name: str = "hybrid",
+        seq_len: int = 30,
+        historical_data: Optional[list[dict[str, Any]]] = None,
+    ) -> dict[str, Any]:
+        prediction = self.predict_rul(
+            battery_id=battery_id,
+            model_name=model_name,
+            seq_len=seq_len,
+            historical_data=historical_data,
+        )
+        battery = self.repository.get_battery(battery_id)
+        if battery is None:
+            raise BHMSException(f"未找到电池 {battery_id}", status_code=404, code="battery_not_found")
+        lifecycle_evidence = self._build_lifecycle_evidence(battery, prediction)
+        model_evidence = self._build_model_evidence(prediction)
+        trajectory = self._build_lifecycle_trajectory(
+            prediction["projection"],
+            initial_capacity=float(battery.get("initial_capacity") or battery.get("nominal_capacity") or 1.0),
+        )
+        return {
+            "battery_id": battery_id,
+            "model_name": prediction["model_name"],
+            "model_version": prediction["model_version"],
+            "model_source": prediction["model_source"],
+            "prediction_time": prediction["prediction_time"],
+            "predicted_rul": prediction["predicted_rul"],
+            "predicted_knee_cycle": lifecycle_evidence.get("predicted_knee_cycle"),
+            "predicted_eol_cycle": lifecycle_evidence.get("predicted_eol_cycle"),
+            "trajectory": trajectory,
+            "risk_windows": self._build_risk_windows(lifecycle_evidence),
+            "future_risks": lifecycle_evidence,
+            "model_evidence": model_evidence,
+            "projection": prediction["projection"],
+            "explanation": prediction.get("explanation"),
+            "report_markdown": prediction["report_markdown"],
+        }
+
+    def explain_mechanism(
+        self,
+        battery_id: str,
+        anomalies: Optional[list[dict[str, Any]]] = None,
+        battery_info: Optional[dict[str, Any]] = None,
+    ) -> dict[str, Any]:
+        anomaly_list = anomalies or self.repository.list_anomalies(battery_id, limit=5)
+        if not anomaly_list:
+            anomaly_result = self.detect_anomaly(battery_id)
+            anomaly_list = anomaly_result["events"]
+        diagnosis = self.diagnose(battery_id=battery_id, anomalies=anomaly_list, battery_info=battery_info)
+        battery = self.repository.get_battery(battery_id)
+        latest_prediction = self.repository.list_predictions(battery_id, limit=1)
+        lifecycle_evidence = self._build_lifecycle_evidence(battery or {}, latest_prediction[0] if latest_prediction else None)
+        model_evidence = self._build_model_evidence(latest_prediction[0] if latest_prediction else None)
+        return {
+            **diagnosis,
+            "lifecycle_evidence": lifecycle_evidence,
+            "model_evidence": model_evidence,
+            "graph_backend": self.diagnosis_engine.active_backend,
+        }
+
     def detect_anomaly(self, battery_id: str, current_data: Optional[dict[str, Any]] = None, baseline_capacity: Optional[float] = None) -> dict[str, Any]:
         battery = self.repository.get_battery(battery_id)
         if battery is None:
@@ -249,6 +311,43 @@ class PredictionService:
             "critical_windows": [str(item.get("window_label")) for item in window_contributions[:3] if item.get("window_label")],
             "confidence_factors": [str(item) for item in confidence_factors[:3]],
         }
+
+    @staticmethod
+    def _build_lifecycle_trajectory(projection: dict[str, Any], *, initial_capacity: float) -> list[dict[str, Any]]:
+        safe_initial_capacity = max(initial_capacity, 1e-6)
+        items = []
+        for point in projection.get("forecast_points", []):
+            capacity = float(point.get("capacity", 0.0) or 0.0)
+            items.append(
+                {
+                    "cycle": float(point.get("cycle", 0.0) or 0.0),
+                    "capacity_ratio": round(capacity / safe_initial_capacity, 4),
+                    "soh": round(capacity / safe_initial_capacity, 4),
+                }
+            )
+        return items
+
+    @staticmethod
+    def _build_risk_windows(lifecycle_evidence: dict[str, Any]) -> list[dict[str, Any]]:
+        window = lifecycle_evidence.get("accelerated_degradation_window")
+        if not window:
+            return []
+        try:
+            start_text, end_text = str(window).split("-", maxsplit=1)
+            start_cycle = float(start_text.strip().split()[-1])
+            end_cycle = float(end_text.strip().split()[0])
+        except Exception:
+            start_cycle, end_cycle = 0.0, 0.0
+        severity = "high" if lifecycle_evidence.get("temperature_risk") == "high" else "medium"
+        return [
+            {
+                "label": "accelerated_degradation",
+                "start_cycle": start_cycle,
+                "end_cycle": end_cycle,
+                "severity": severity,
+                "description": "预测窗口内衰退斜率上升，需优先关注温度与内阻风险。",
+            }
+        ]
 
     def get_prediction_report(self, prediction_id: int) -> str:
         prediction = self.repository.get_prediction(prediction_id)

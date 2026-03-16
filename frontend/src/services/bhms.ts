@@ -16,6 +16,8 @@ import type {
   ExperimentDetail,
   ExperimentOverview,
   KnowledgeSummary,
+  LifecyclePredictionResult,
+  MechanismExplanationResult,
   PaginatedBatteries,
   PredictionResult,
   SystemStatus,
@@ -85,12 +87,20 @@ export function predictRul(payload: { battery_id: string; model_name: string; se
   return request<PredictionResult>({ method: 'POST', url: '/predict/rul', data: payload })
 }
 
+export function predictLifecycle(payload: { battery_id: string; model_name: string; seq_len: number; historical_data?: CyclePoint[] }) {
+  return request<LifecyclePredictionResult>({ method: 'POST', url: '/predict/lifecycle', data: payload, baseURL: '/api/v2' })
+}
+
 export function detectAnomaly(payload: { battery_id: string; current_data?: CyclePoint; baseline_capacity?: number; use_latest?: boolean }) {
   return request<AnomalyDetectionResult>({ method: 'POST', url: '/detect/anomaly', data: payload })
 }
 
 export function diagnoseBattery(payload: { battery_id: string; anomalies: AnomalyEvent[]; battery_info?: Record<string, unknown> }) {
   return request<DiagnosisResult>({ method: 'POST', url: '/diagnose', data: payload })
+}
+
+export function explainMechanism(payload: { battery_id: string; anomalies?: AnomalyEvent[]; battery_info?: Record<string, unknown> }) {
+  return request<MechanismExplanationResult>({ method: 'POST', url: '/explain/mechanism', data: payload, baseURL: '/api/v2' })
 }
 
 export function createTrainingJob(payload: {

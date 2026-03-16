@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from backend.app.api.router import router as api_router
+from backend.app.api.routes.lifecycle import router as lifecycle_router
 from backend.app.core.config import get_settings
 from backend.app.core.database import get_database
 from backend.app.core.exceptions import BHMSException
@@ -41,6 +42,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.include_router(api_router, prefix=settings.api_prefix)
+app.include_router(lifecycle_router, prefix="/api/v2")
 
 
 @app.exception_handler(BHMSException)

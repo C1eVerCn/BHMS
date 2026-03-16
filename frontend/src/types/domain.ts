@@ -6,6 +6,14 @@ export interface CyclePoint {
   source?: string | null
   dataset_name?: string | null
   source_battery_id?: string | null
+  chemistry?: string | null
+  form_factor?: string | null
+  protocol_id?: string | null
+  charge_c_rate?: number | null
+  discharge_c_rate?: number | null
+  ambient_temp?: number | null
+  nominal_capacity?: number | null
+  dataset_license?: string | null
   cycle_number: number
   timestamp?: string | null
   ambient_temperature?: number
@@ -31,7 +39,14 @@ export interface Battery {
   dataset_name?: string | null
   source_battery_id?: string | null
   chemistry?: string | null
+  form_factor?: string | null
+  protocol_id?: string | null
+  charge_c_rate?: number | null
+  discharge_c_rate?: number | null
+  ambient_temp?: number | null
   nominal_capacity?: number | null
+  eol_ratio?: number | null
+  dataset_license?: string | null
   initial_capacity?: number | null
   latest_capacity?: number | null
   cycle_count: number
@@ -72,6 +87,20 @@ export interface PredictionProjection {
   predicted_eol_cycle: number
   confidence_band: ConfidenceBandPoint[]
   projection_method?: string
+}
+
+export interface LifecycleTrajectoryPoint {
+  cycle: number
+  capacity_ratio: number
+  soh: number
+}
+
+export interface RiskWindow {
+  label: string
+  start_cycle: number
+  end_cycle: number
+  severity: string
+  description: string
 }
 
 export interface AttentionHeatmap {
@@ -240,6 +269,30 @@ export interface DiagnosisResult {
   graph_trace: GraphTrace
   decision_basis?: string[]
   report_markdown: string
+}
+
+export interface LifecyclePredictionResult {
+  battery_id: string
+  model_name: string
+  model_version: string
+  model_source: string
+  prediction_time: string
+  predicted_rul: number
+  predicted_knee_cycle?: number | null
+  predicted_eol_cycle?: number | null
+  trajectory: LifecycleTrajectoryPoint[]
+  risk_windows: RiskWindow[]
+  future_risks: Record<string, unknown>
+  model_evidence: Record<string, unknown>
+  projection: PredictionProjection
+  explanation?: PredictionExplanation | null
+  report_markdown: string
+}
+
+export interface MechanismExplanationResult extends DiagnosisResult {
+  lifecycle_evidence: Record<string, unknown>
+  model_evidence: Record<string, unknown>
+  graph_backend: string
 }
 
 export interface BatteryHealth {

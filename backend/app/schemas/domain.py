@@ -126,6 +126,20 @@ class PredictionProjection(BaseModel):
     confidence_band: list[ConfidenceBandPoint] = Field(default_factory=list)
 
 
+class LifecycleTrajectoryPoint(BaseModel):
+    cycle: float
+    capacity_ratio: float
+    soh: float
+
+
+class RiskWindow(BaseModel):
+    label: str
+    start_cycle: float
+    end_cycle: float
+    severity: str
+    description: str
+
+
 class PredictionRecord(BaseModel):
     id: int
     battery_id: str
@@ -153,6 +167,24 @@ class PredictionResult(PredictionRecord):
     prediction_time: str
     projection: PredictionProjection
     explanation: PredictionExplanation
+    report_markdown: str
+
+
+class LifecyclePredictionResult(BaseModel):
+    battery_id: str
+    model_name: str
+    model_version: str
+    model_source: str
+    prediction_time: str
+    predicted_rul: float
+    predicted_knee_cycle: Optional[float] = None
+    predicted_eol_cycle: Optional[float] = None
+    trajectory: list[LifecycleTrajectoryPoint] = Field(default_factory=list)
+    risk_windows: list[RiskWindow] = Field(default_factory=list)
+    future_risks: dict[str, Any] = Field(default_factory=dict)
+    model_evidence: dict[str, Any] = Field(default_factory=dict)
+    projection: PredictionProjection
+    explanation: Optional[PredictionExplanation] = None
     report_markdown: str
 
 
@@ -251,6 +283,12 @@ class DiagnosisResult(BaseModel):
     graph_trace: GraphTrace
     decision_basis: list[str] = Field(default_factory=list)
     report_markdown: str
+
+
+class MechanismExplanationResult(DiagnosisResult):
+    lifecycle_evidence: dict[str, Any] = Field(default_factory=dict)
+    model_evidence: dict[str, Any] = Field(default_factory=dict)
+    graph_backend: str
 
 
 class KnowledgeEntry(BaseModel):
@@ -352,6 +390,13 @@ class RULPredictionRequest(BaseModel):
     historical_data: Optional[list[CyclePoint]] = None
 
 
+class LifecyclePredictionRequest(BaseModel):
+    battery_id: str
+    model_name: str = "hybrid"
+    seq_len: int = Field(default=30, ge=10, le=500)
+    historical_data: Optional[list[CyclePoint]] = None
+
+
 class AnomalyDetectionRequest(BaseModel):
     battery_id: str
     current_data: Optional[CyclePoint] = None
@@ -360,6 +405,12 @@ class AnomalyDetectionRequest(BaseModel):
 
 
 class DiagnosisRequest(BaseModel):
+    battery_id: str
+    anomalies: list[AnomalyEventModel] = Field(default_factory=list)
+    battery_info: Optional[dict[str, Any]] = None
+
+
+class MechanismExplanationRequest(BaseModel):
     battery_id: str
     anomalies: list[AnomalyEventModel] = Field(default_factory=list)
     battery_info: Optional[dict[str, Any]] = None
@@ -376,7 +427,7 @@ class UpdateTrainingCandidateRequest(BaseModel):
 
 
 class CreateTrainingJobRequest(BaseModel):
-    source: Literal["nasa", "calce", "kaggle"]
+    source: Literal["nasa", "calce", "kaggle", "hust", "matr", "oxford", "pulsebat"]
     model_scope: Literal["bilstm", "hybrid", "all"] = "all"
     force_run: bool = False
     job_kind: Literal["baseline", "multi_seed", "ablation", "full_suite"] = "baseline"
