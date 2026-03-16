@@ -14,6 +14,7 @@ import torch
 from torch.utils.data import DataLoader, Dataset
 
 from ml.data.nasa_preprocessor import DEFAULT_FEATURE_COLUMNS, DatasetSplit, NASABatteryPreprocessor
+from ml.data.source_registry import SOURCE_REGISTRY
 
 
 @dataclass(slots=True)
@@ -254,6 +255,8 @@ def create_synthetic_data(
     dataset_name: str = "synthetic_demo",
 ) -> pd.DataFrame:
     rng = np.random.default_rng(42)
+    metadata_defaults = SOURCE_REGISTRY.get(source.lower())
+    metadata = dict((metadata_defaults.metadata_defaults if metadata_defaults else {}))
     frames: list[pd.DataFrame] = []
     for battery_index in range(num_batteries):
         source_battery_id = f"{source.upper()}_{battery_index:03d}"
@@ -275,6 +278,15 @@ def create_synthetic_data(
                 "cycle_number": cycles,
                 "timestamp": [f"2026-01-01T00:{idx % 60:02d}:00" for idx in range(num_cycles)],
                 "ambient_temperature": rng.uniform(20, 30, size=num_cycles),
+                "chemistry": metadata.get("chemistry", "Li-ion"),
+                "form_factor": metadata.get("form_factor", "unknown"),
+                "protocol_id": metadata.get("protocol_id", f"{source.lower()}_synthetic"),
+                "charge_c_rate": metadata.get("charge_c_rate", 1.0),
+                "discharge_c_rate": metadata.get("discharge_c_rate", 1.0),
+                "ambient_temp": metadata.get("ambient_temp", 25.0),
+                "nominal_capacity": initial_capacity,
+                "eol_ratio": 0.8,
+                "dataset_license": metadata.get("dataset_license", "synthetic"),
                 "voltage_mean": 3.7 + rng.normal(0, 0.05, size=num_cycles),
                 "voltage_std": 0.06 + rng.normal(0, 0.01, size=num_cycles),
                 "voltage_min": 3.45 + rng.normal(0, 0.05, size=num_cycles),

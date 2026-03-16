@@ -17,6 +17,10 @@ class Settings:
     raw_nasa_dir: Path
     raw_calce_dir: Path
     raw_kaggle_dir: Path
+    raw_hust_dir: Path
+    raw_matr_dir: Path
+    raw_oxford_dir: Path
+    raw_pulsebat_dir: Path
     processed_dir: Path
     knowledge_path: Path
     model_dir: Path
@@ -45,6 +49,10 @@ def get_settings() -> Settings:
         raw_nasa_dir=data_dir / "raw" / "nasa",
         raw_calce_dir=data_dir / "raw" / "calce",
         raw_kaggle_dir=data_dir / "raw" / "kaggle",
+        raw_hust_dir=data_dir / "raw" / "hust",
+        raw_matr_dir=data_dir / "raw" / "matr",
+        raw_oxford_dir=data_dir / "raw" / "oxford",
+        raw_pulsebat_dir=data_dir / "raw" / "pulsebat",
         processed_dir=data_dir / "processed",
         knowledge_path=data_dir / "knowledge" / "battery_fault_knowledge.json",
         model_dir=data_dir / "models",

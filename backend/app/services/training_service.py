@@ -14,6 +14,7 @@ from backend.app.core.config import Settings, get_settings
 from backend.app.core.exceptions import BHMSException
 from backend.app.services.battery_service import BatteryService
 from backend.app.services.repository import BHMSRepository
+from ml.data.source_registry import list_supported_sources
 from ml.training.experiment_constants import ABLATION_VARIANTS
 
 
@@ -94,7 +95,7 @@ class TrainingService:
         }
 
     def get_overview(self) -> dict[str, Any]:
-        sources = [self.get_experiment_detail(source) for source in ("nasa", "calce", "kaggle")]
+        sources = [self.get_experiment_detail(source) for source in list_supported_sources()]
         warnings = [warning for detail in sources for warning in detail.get("warnings", [])]
         return {
             "generated_at": datetime.utcnow().isoformat(),

@@ -59,16 +59,25 @@ class BHMSRepository:
                 """
                 INSERT INTO batteries (
                     battery_id, canonical_battery_id, source, dataset_name, source_battery_id,
-                    chemistry, nominal_capacity, cycle_count, latest_capacity, initial_capacity,
+                    chemistry, form_factor, protocol_id, charge_c_rate, discharge_c_rate,
+                    ambient_temp, nominal_capacity, eol_ratio, dataset_license,
+                    cycle_count, latest_capacity, initial_capacity,
                     health_score, status, last_update, dataset_path, include_in_training, metadata_json
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(battery_id) DO UPDATE SET
                     canonical_battery_id=excluded.canonical_battery_id,
                     source=excluded.source,
                     dataset_name=excluded.dataset_name,
                     source_battery_id=excluded.source_battery_id,
                     chemistry=excluded.chemistry,
+                    form_factor=excluded.form_factor,
+                    protocol_id=excluded.protocol_id,
+                    charge_c_rate=excluded.charge_c_rate,
+                    discharge_c_rate=excluded.discharge_c_rate,
+                    ambient_temp=excluded.ambient_temp,
                     nominal_capacity=excluded.nominal_capacity,
+                    eol_ratio=excluded.eol_ratio,
+                    dataset_license=excluded.dataset_license,
                     cycle_count=excluded.cycle_count,
                     latest_capacity=excluded.latest_capacity,
                     initial_capacity=excluded.initial_capacity,
@@ -86,7 +95,14 @@ class BHMSRepository:
                     battery.get("dataset_name"),
                     battery.get("source_battery_id"),
                     battery.get("chemistry"),
+                    battery.get("form_factor"),
+                    battery.get("protocol_id"),
+                    battery.get("charge_c_rate"),
+                    battery.get("discharge_c_rate"),
+                    battery.get("ambient_temp"),
                     battery.get("nominal_capacity"),
+                    battery.get("eol_ratio"),
+                    battery.get("dataset_license"),
                     battery.get("cycle_count", 0),
                     battery.get("latest_capacity"),
                     battery.get("initial_capacity"),
@@ -161,7 +177,10 @@ class BHMSRepository:
                        cp.voltage_mean, cp.voltage_std, cp.voltage_min, cp.voltage_max,
                        cp.current_mean, cp.current_std, cp.current_load_mean,
                        cp.temperature_mean, cp.temperature_std, cp.temperature_rise_rate,
-                       cp.internal_resistance, cp.capacity, cp.source_type
+                       cp.internal_resistance, cp.capacity, cp.source_type,
+                       b.chemistry, b.form_factor, b.protocol_id, b.charge_c_rate,
+                       b.discharge_c_rate, b.ambient_temp, b.nominal_capacity,
+                       b.dataset_license
                 FROM cycle_points cp
                 INNER JOIN batteries b ON b.battery_id = cp.battery_id
                 WHERE LOWER(b.source) = ? AND b.include_in_training = 1
@@ -357,7 +376,8 @@ class BHMSRepository:
             rows = connection.execute(
                 """
                 SELECT battery_id, canonical_battery_id, source, dataset_name, source_battery_id,
-                       chemistry, nominal_capacity, cycle_count, latest_capacity,
+                       chemistry, form_factor, protocol_id, charge_c_rate, discharge_c_rate,
+                       ambient_temp, nominal_capacity, eol_ratio, dataset_license, cycle_count, latest_capacity,
                        initial_capacity, health_score, status, last_update, dataset_path,
                        include_in_training
                 FROM batteries
@@ -373,7 +393,8 @@ class BHMSRepository:
             row = connection.execute(
                 """
                 SELECT battery_id, canonical_battery_id, source, dataset_name, source_battery_id,
-                       chemistry, nominal_capacity, cycle_count, latest_capacity,
+                       chemistry, form_factor, protocol_id, charge_c_rate, discharge_c_rate,
+                       ambient_temp, nominal_capacity, eol_ratio, dataset_license, cycle_count, latest_capacity,
                        initial_capacity, health_score, status, last_update, dataset_path,
                        include_in_training
                 FROM batteries WHERE battery_id = ?

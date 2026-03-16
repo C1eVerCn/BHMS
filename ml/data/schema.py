@@ -21,6 +21,18 @@ CANONICAL_METADATA_COLUMNS = [
     "source_type",
 ]
 
+DOMAIN_METADATA_COLUMNS = [
+    "chemistry",
+    "form_factor",
+    "protocol_id",
+    "charge_c_rate",
+    "discharge_c_rate",
+    "ambient_temp",
+    "nominal_capacity",
+    "eol_ratio",
+    "dataset_license",
+]
+
 BATTERY_FEATURE_COLUMNS = [
     "voltage_mean",
     "voltage_std",
@@ -45,7 +57,7 @@ BATTERY_TARGET_COLUMNS = [
     "status",
 ]
 
-BATTERY_SCHEMA_COLUMNS = CANONICAL_METADATA_COLUMNS + BATTERY_FEATURE_COLUMNS + BATTERY_TARGET_COLUMNS
+BATTERY_SCHEMA_COLUMNS = CANONICAL_METADATA_COLUMNS + DOMAIN_METADATA_COLUMNS + BATTERY_FEATURE_COLUMNS + BATTERY_TARGET_COLUMNS
 TRAINING_FEATURE_COLUMNS = [
     "voltage_mean",
     "voltage_std",
@@ -62,6 +74,11 @@ TRAINING_FEATURE_COLUMNS = [
 REQUIRED_CYCLE_COLUMNS = {"cycle_number", "voltage_mean", "current_mean", "temperature_mean", "capacity"}
 NUMERIC_COLUMNS = [
     "ambient_temperature",
+    "charge_c_rate",
+    "discharge_c_rate",
+    "ambient_temp",
+    "nominal_capacity",
+    "eol_ratio",
     "voltage_mean",
     "voltage_std",
     "voltage_min",
@@ -122,9 +139,11 @@ def finalize_cycle_frame(
     source: str,
     dataset_name: str,
     eol_capacity_ratio: float,
+    metadata_defaults: dict[str, object] | None = None,
 ) -> pd.DataFrame:
     normalized = frame.copy()
     normalized.columns = [str(column).strip() for column in normalized.columns]
+    metadata_defaults = dict(metadata_defaults or {})
 
     for column in REQUIRED_CYCLE_COLUMNS:
         if column not in normalized.columns:
@@ -146,6 +165,15 @@ def finalize_cycle_frame(
     defaults = {
         "timestamp": None,
         "ambient_temperature": 0.0,
+        "chemistry": metadata_defaults.get("chemistry", f"{source.upper()} Li-ion"),
+        "form_factor": metadata_defaults.get("form_factor", "unknown"),
+        "protocol_id": metadata_defaults.get("protocol_id", f"{source.lower()}_default"),
+        "charge_c_rate": metadata_defaults.get("charge_c_rate", 1.0),
+        "discharge_c_rate": metadata_defaults.get("discharge_c_rate", 1.0),
+        "ambient_temp": metadata_defaults.get("ambient_temp", 25.0),
+        "nominal_capacity": metadata_defaults.get("nominal_capacity", 0.0),
+        "eol_ratio": metadata_defaults.get("eol_ratio", eol_capacity_ratio),
+        "dataset_license": metadata_defaults.get("dataset_license", "unknown"),
         "voltage_std": 0.0,
         "voltage_min": 0.0,
         "voltage_max": 0.0,
@@ -159,6 +187,8 @@ def finalize_cycle_frame(
     for column, default in defaults.items():
         if column not in normalized.columns:
             normalized[column] = default
+    if "ambient_temp" in normalized.columns and "ambient_temperature" in normalized.columns:
+        normalized["ambient_temp"] = normalized["ambient_temp"].fillna(normalized["ambient_temperature"])
 
     result = enrich_existing_cycle_frame(normalized, eol_capacity_ratio=eol_capacity_ratio)
     for column in BATTERY_SCHEMA_COLUMNS:
@@ -183,6 +213,15 @@ def enrich_existing_cycle_frame(frame: pd.DataFrame, *, eol_capacity_ratio: floa
         group = group.reset_index(drop=True).copy()
         initial_capacity = float(group["capacity"].dropna().iloc[0])
         group["initial_capacity"] = initial_capacity
+        if "nominal_capacity" not in group.columns:
+            group["nominal_capacity"] = initial_capacity
+        group["nominal_capacity"] = pd.to_numeric(group["nominal_capacity"], errors="coerce").fillna(initial_capacity)
+        group.loc[group["nominal_capacity"] <= 0, "nominal_capacity"] = initial_capacity
+        if "ambient_temp" in group.columns:
+            group["ambient_temp"] = pd.to_numeric(group["ambient_temp"], errors="coerce").fillna(group["ambient_temperature"])
+        if "eol_ratio" not in group.columns:
+            group["eol_ratio"] = eol_capacity_ratio
+        group["eol_ratio"] = pd.to_numeric(group["eol_ratio"], errors="coerce").fillna(eol_capacity_ratio)
         group["capacity_ratio"] = group["capacity"] / max(initial_capacity, 1e-6)
         eol_candidates = group.loc[group["capacity_ratio"] <= eol_capacity_ratio, "cycle_number"]
         eol_cycle = int(eol_candidates.iloc[0]) if not eol_candidates.empty else int(group["cycle_number"].max())
@@ -206,6 +245,7 @@ __all__ = [
     "BATTERY_FEATURE_COLUMNS",
     "BATTERY_SCHEMA_COLUMNS",
     "CANONICAL_METADATA_COLUMNS",
+    "DOMAIN_METADATA_COLUMNS",
     "DatasetSplit",
     "NUMERIC_COLUMNS",
     "REQUIRED_CYCLE_COLUMNS",

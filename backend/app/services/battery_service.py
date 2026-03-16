@@ -10,9 +10,10 @@ import pandas as pd
 from backend.app.core.config import Settings, get_settings
 from backend.app.core.exceptions import BHMSException
 from backend.app.services.repository import BHMSRepository
-from ml.data.adapters import CALCEAdapter, KaggleAdapter, NASAAdapter
+from ml.data.adapters import CALCEAdapter, HUSTAdapter, KaggleAdapter, MATRAdapter, NASAAdapter, OxfordAdapter, PulseBatAdapter
 from ml.data.dataset import RULDataModule
 from ml.data.schema import BATTERY_SCHEMA_COLUMNS, enrich_existing_cycle_frame
+from ml.data.source_registry import get_dataset_card, list_supported_sources
 
 
 class BatteryService:
@@ -23,10 +24,14 @@ class BatteryService:
             "nasa": NASAAdapter(eol_capacity_ratio=self.settings.battery_eol_ratio),
             "calce": CALCEAdapter(eol_capacity_ratio=self.settings.battery_eol_ratio),
             "kaggle": KaggleAdapter(eol_capacity_ratio=self.settings.battery_eol_ratio),
+            "hust": HUSTAdapter(eol_capacity_ratio=self.settings.battery_eol_ratio),
+            "matr": MATRAdapter(eol_capacity_ratio=self.settings.battery_eol_ratio),
+            "oxford": OxfordAdapter(eol_capacity_ratio=self.settings.battery_eol_ratio),
+            "pulsebat": PulseBatAdapter(eol_capacity_ratio=self.settings.battery_eol_ratio),
         }
 
     def bootstrap_demo_data(self) -> None:
-        for source in ("nasa", "calce", "kaggle"):
+        for source in list_supported_sources():
             if self.repository.count_canonical_batteries_by_source(source) > 0:
                 continue
             raw_dir = self._source_dir(source)
@@ -94,6 +99,7 @@ class BatteryService:
         battery_ids: list[str] = []
         imported_cycles = 0
         dataset_name = str(frame["dataset_name"].iloc[0]) if not frame.empty else source
+        card = get_dataset_card(source)
         for battery_id, group in frame.groupby("battery_id"):
             group = group.sort_values("cycle_number").reset_index(drop=True)
             battery_ids.append(str(battery_id))
@@ -105,10 +111,17 @@ class BatteryService:
                 "source": source,
                 "dataset_name": str(latest.get("dataset_name", dataset_name)),
                 "source_battery_id": str(latest.get("source_battery_id", battery_id)),
-                "chemistry": self._chemistry_for_source(source),
-                "nominal_capacity": float(initial.get("initial_capacity", initial["capacity"])),
+                "chemistry": str(latest.get("chemistry") or card.metadata_defaults.get("chemistry")),
+                "form_factor": str(latest.get("form_factor") or card.metadata_defaults.get("form_factor")),
+                "protocol_id": str(latest.get("protocol_id") or card.metadata_defaults.get("protocol_id")),
+                "charge_c_rate": float(latest.get("charge_c_rate", card.metadata_defaults.get("charge_c_rate", 1.0))),
+                "discharge_c_rate": float(latest.get("discharge_c_rate", card.metadata_defaults.get("discharge_c_rate", 1.0))),
+                "ambient_temp": float(latest.get("ambient_temp", card.metadata_defaults.get("ambient_temp", 25.0))),
+                "nominal_capacity": float(initial.get("nominal_capacity", initial.get("initial_capacity", initial["capacity"]))),
                 "initial_capacity": float(initial.get("initial_capacity", initial["capacity"])),
                 "latest_capacity": float(latest["capacity"]),
+                "eol_ratio": float(latest.get("eol_ratio", self.settings.battery_eol_ratio)),
+                "dataset_license": str(latest.get("dataset_license") or card.metadata_defaults.get("dataset_license", "unknown")),
                 "cycle_count": int(group["cycle_number"].max()),
                 "health_score": float(latest.get("health_score", 0.0)),
                 "status": str(latest.get("status", "good")),
@@ -120,6 +133,8 @@ class BatteryService:
                     "dataset_name": str(latest.get("dataset_name", dataset_name)),
                     "eol_cycle": int(latest.get("eol_cycle", latest["cycle_number"])),
                     "processed_rows": int(len(group)),
+                    "group": card.group,
+                    "description": card.description,
                 },
             }
             self.repository.upsert_battery(battery_record)
@@ -277,13 +292,16 @@ class BatteryService:
             "nasa": self.settings.raw_nasa_dir,
             "calce": self.settings.raw_calce_dir,
             "kaggle": self.settings.raw_kaggle_dir,
+            "hust": self.settings.raw_hust_dir,
+            "matr": self.settings.raw_matr_dir,
+            "oxford": self.settings.raw_oxford_dir,
+            "pulsebat": self.settings.raw_pulsebat_dir,
         }
         return mapping[source]
 
     @staticmethod
     def _chemistry_for_source(source: str) -> str:
-        return {
-            "nasa": "NASA Li-ion",
-            "calce": "CALCE Li-ion",
-            "kaggle": "Kaggle Li-ion",
-        }.get(source, "Imported Battery")
+        try:
+            return str(get_dataset_card(source).metadata_defaults.get("chemistry", "Imported Battery"))
+        except KeyError:
+            return "Imported Battery"

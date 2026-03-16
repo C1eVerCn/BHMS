@@ -13,6 +13,14 @@ class CyclePoint(BaseModel):
     source: Optional[str] = None
     dataset_name: Optional[str] = None
     source_battery_id: Optional[str] = None
+    chemistry: Optional[str] = None
+    form_factor: Optional[str] = None
+    protocol_id: Optional[str] = None
+    charge_c_rate: Optional[float] = None
+    discharge_c_rate: Optional[float] = None
+    ambient_temp: Optional[float] = None
+    nominal_capacity: Optional[float] = None
+    dataset_license: Optional[str] = None
     cycle_number: int = Field(..., description="循环次数")
     timestamp: Optional[str] = Field(default=None, description="时间戳")
     ambient_temperature: float = 0.0
@@ -38,7 +46,14 @@ class Battery(BaseModel):
     dataset_name: Optional[str] = None
     source_battery_id: Optional[str] = None
     chemistry: Optional[str] = None
+    form_factor: Optional[str] = None
+    protocol_id: Optional[str] = None
+    charge_c_rate: Optional[float] = None
+    discharge_c_rate: Optional[float] = None
+    ambient_temp: Optional[float] = None
     nominal_capacity: Optional[float] = None
+    eol_ratio: Optional[float] = None
+    dataset_license: Optional[str] = None
     initial_capacity: Optional[float] = None
     latest_capacity: Optional[float] = None
     cycle_count: int
