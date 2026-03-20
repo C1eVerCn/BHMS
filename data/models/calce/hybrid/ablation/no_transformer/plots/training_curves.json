@@ -3,5 +3,5 @@
   "title": "CALCE no_transformer training curves",
   "description": "Train/validation loss for the ablation variant.",
   "path": "data/models/calce/hybrid/ablation/no_transformer/plots/training_curves.png",
-  "generated_at": "2026-03-15T08:29:24.805033"
+  "generated_at": "2026-03-17T07:47:30.428333"
 }

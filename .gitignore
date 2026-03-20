@@ -22,7 +22,14 @@ data/bhms.db
 data/raw/nasa/5. Battery Data Set/
 
 data/raw/nasa/
+data/raw/hust/
+data/raw/matr/
+data/raw/oxford/
+data/raw/pulsebat/
+data/raw/tmp/
 data/uploads/
+data/exports/cases/
 data/models/logs/
 data/models/**/search/
 data/models/**/optimized/
+data/models/**/data_profile/

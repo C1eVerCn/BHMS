@@ -3,10 +3,10 @@ import { create } from 'zustand'
 import {
   createTrainingJob,
   detectAnomaly,
-  diagnoseBattery,
   downloadDiagnosisReport,
   downloadPredictionReport,
   exportCaseBundle,
+  explainMechanism,
   getBatteryCycles,
   getBatteryHealth,
   getBatteryHistory,
@@ -22,7 +22,7 @@ import {
   importSourceData,
   listBatteries,
   listTrainingJobs,
-  predictRul,
+  predictLifecycle,
   updateTrainingCandidate,
   uploadBatteryData,
 } from '../services/bhms'
@@ -42,8 +42,11 @@ import type {
   ExperimentDetail,
   ExperimentOverview,
   KnowledgeSummary,
+  LifecyclePredictionResult,
+  MechanismExplanationResult,
   PredictionRecord,
   PredictionResult,
+  SupportedSource,
   SystemStatus,
   TrainingComparison,
   TrainingJob,
@@ -52,7 +55,7 @@ import type {
 
 interface UploadOptions {
   batteryId?: string
-  source?: string
+  source?: SupportedSource | 'auto'
   includeInTraining?: boolean
 }
 
@@ -63,9 +66,11 @@ interface BhmsState {
   batteryHealth: Record<string, BatteryHealth>
   batteryCycles: Record<string, CyclePoint[]>
   batteryHistory: Record<string, BatteryHistory>
-  latestPrediction: Record<string, PredictionResult>
+  latestPrediction: Record<string, PredictionResult | LifecyclePredictionResult>
+  latestLifecyclePrediction: Record<string, LifecyclePredictionResult>
   latestAnomaly: Record<string, AnomalyDetectionResult>
   latestDiagnosis: Record<string, DiagnosisResult>
+  latestMechanismExplanation: Record<string, MechanismExplanationResult>
   trainingJobs: TrainingJob[]
   trainingComparison: Record<string, TrainingComparison>
   trainingOverview: ExperimentOverview | null
@@ -89,17 +94,19 @@ interface BhmsState {
   selectBattery: (batteryId: string | null) => void
   loadBatteryContext: (batteryId: string) => Promise<void>
   uploadFile: (file: File, options?: UploadOptions) => Promise<UploadSummary>
-  importSource: (source: 'nasa' | 'calce' | 'kaggle', includeInTraining?: boolean) => Promise<UploadSummary>
+  importSource: (source: SupportedSource, includeInTraining?: boolean) => Promise<UploadSummary>
   markTrainingCandidate: (batteryId: string, includeInTraining: boolean) => Promise<Battery>
-  runPrediction: (batteryId: string, modelName: string, seqLen: number) => Promise<PredictionResult>
-  runDiagnosisWorkflow: (batteryId: string) => Promise<{ anomaly: AnomalyDetectionResult; diagnosis: DiagnosisResult }>
+  runLifecyclePrediction: (batteryId: string, modelName: string, seqLen: number) => Promise<LifecyclePredictionResult>
+  runPrediction: (batteryId: string, modelName: string, seqLen: number) => Promise<LifecyclePredictionResult>
+  runMechanismExplanation: (batteryId: string) => Promise<MechanismExplanationResult>
+  runDiagnosisWorkflow: (batteryId: string) => Promise<{ anomaly: AnomalyDetectionResult; diagnosis: MechanismExplanationResult }>
   loadTrainingJobs: (source?: string) => Promise<void>
   loadTrainingComparison: (source: string) => Promise<void>
   loadTrainingOverview: () => Promise<void>
   loadExperimentDetail: (source: string) => Promise<void>
   loadAblationSummary: (source: string) => Promise<void>
   startTrainingJob: (
-    source: 'nasa' | 'calce' | 'kaggle',
+    source: SupportedSource,
     modelScope: 'bilstm' | 'hybrid' | 'all',
     jobKind?: 'baseline' | 'multi_seed' | 'ablation' | 'full_suite',
     forceRun?: boolean,
@@ -115,16 +122,20 @@ interface BhmsState {
   clearError: () => void
 }
 
-function hydratePrediction(record?: PredictionRecord): PredictionResult | undefined {
-  if (!record || !record.projection || !record.explanation || !record.model_version || !record.model_source) return undefined
+function hydratePrediction(record?: PredictionRecord): LifecyclePredictionResult | undefined {
+  if (!record || !record.projection || !record.model_version || !record.model_source) return undefined
   return {
     ...record,
     model_version: record.model_version,
     model_source: record.model_source,
     fallback_used: Boolean(record.fallback_used),
     prediction_time: record.prediction_time ?? record.created_at,
+    trajectory: record.trajectory ?? [],
+    risk_windows: record.risk_windows ?? [],
+    future_risks: record.future_risks ?? {},
+    model_evidence: record.model_evidence ?? {},
     projection: record.projection,
-    explanation: record.explanation,
+    explanation: record.explanation ?? null,
     report_markdown: record.report_markdown ?? '',
   }
 }
@@ -145,6 +156,7 @@ function hydrateDiagnosis(record?: DiagnosisRecord): DiagnosisResult | undefined
     diagnosis_time: record.created_at,
     candidate_faults: record.candidate_faults ?? [],
     graph_trace: record.graph_trace,
+    decision_basis: record.decision_basis ?? [],
     report_markdown: record.report_markdown ?? '',
   }
 }
@@ -157,8 +169,10 @@ export const useBhmsStore = create<BhmsState>((set, get) => ({
   batteryCycles: {},
   batteryHistory: {},
   latestPrediction: {},
+  latestLifecyclePrediction: {},
   latestAnomaly: {},
   latestDiagnosis: {},
+  latestMechanismExplanation: {},
   trainingJobs: [],
   trainingComparison: {},
   trainingOverview: null,
@@ -215,6 +229,9 @@ export const useBhmsStore = create<BhmsState>((set, get) => ({
         batteryHealth: { ...state.batteryHealth, [batteryId]: health },
         batteryCycles: { ...state.batteryCycles, [batteryId]: cycles.items },
         batteryHistory: { ...state.batteryHistory, [batteryId]: history },
+        latestLifecyclePrediction: hydratedPrediction
+          ? { ...state.latestLifecyclePrediction, [batteryId]: hydratedPrediction }
+          : state.latestLifecyclePrediction,
         latestPrediction: hydratedPrediction ? { ...state.latestPrediction, [batteryId]: hydratedPrediction } : state.latestPrediction,
         latestDiagnosis: hydratedDiagnosis ? { ...state.latestDiagnosis, [batteryId]: hydratedDiagnosis } : state.latestDiagnosis,
         latestAnomaly: {
@@ -291,20 +308,44 @@ export const useBhmsStore = create<BhmsState>((set, get) => ({
       set({ actionLoading: false })
     }
   },
-  runPrediction: async (batteryId, modelName, seqLen) => {
+  runLifecyclePrediction: async (batteryId, modelName, seqLen) => {
     set({ actionLoading: true, error: null })
     try {
-      const prediction = await predictRul({ battery_id: batteryId, model_name: modelName, seq_len: seqLen })
+      const prediction = await predictLifecycle({ battery_id: batteryId, model_name: modelName, seq_len: seqLen })
       const history = await getBatteryHistory(batteryId)
       const health = await getBatteryHealth(batteryId)
       set((state) => ({
+        latestLifecyclePrediction: { ...state.latestLifecyclePrediction, [batteryId]: prediction },
         latestPrediction: { ...state.latestPrediction, [batteryId]: prediction },
         batteryHistory: { ...state.batteryHistory, [batteryId]: history },
         batteryHealth: { ...state.batteryHealth, [batteryId]: health },
       }))
       return prediction
     } catch (error) {
-      const message = error instanceof Error ? error.message : '预测失败'
+      const message = error instanceof Error ? error.message : '生命周期预测失败'
+      set({ error: message })
+      throw error
+    } finally {
+      set({ actionLoading: false })
+    }
+  },
+  runPrediction: async (batteryId, modelName, seqLen) => get().runLifecyclePrediction(batteryId, modelName, seqLen),
+  runMechanismExplanation: async (batteryId) => {
+    set({ actionLoading: true, error: null })
+    try {
+      const anomaly = get().latestAnomaly[batteryId]
+      const explanation = await explainMechanism({ battery_id: batteryId, anomalies: anomaly?.events })
+      const history = await getBatteryHistory(batteryId)
+      const health = await getBatteryHealth(batteryId)
+      set((state) => ({
+        latestMechanismExplanation: { ...state.latestMechanismExplanation, [batteryId]: explanation },
+        latestDiagnosis: { ...state.latestDiagnosis, [batteryId]: explanation },
+        batteryHistory: { ...state.batteryHistory, [batteryId]: history },
+        batteryHealth: { ...state.batteryHealth, [batteryId]: health },
+      }))
+      return explanation
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '机理解释失败'
       set({ error: message })
       throw error
     } finally {
@@ -315,18 +356,20 @@ export const useBhmsStore = create<BhmsState>((set, get) => ({
     set({ actionLoading: true, error: null })
     try {
       const anomaly = await detectAnomaly({ battery_id: batteryId, use_latest: true })
-      const diagnosis = await diagnoseBattery({ battery_id: batteryId, anomalies: anomaly.events })
+      set((state) => ({ latestAnomaly: { ...state.latestAnomaly, [batteryId]: anomaly } }))
+      const diagnosis = await explainMechanism({ battery_id: batteryId, anomalies: anomaly.events })
       const history = await getBatteryHistory(batteryId)
       const health = await getBatteryHealth(batteryId)
       set((state) => ({
         latestAnomaly: { ...state.latestAnomaly, [batteryId]: anomaly },
+        latestMechanismExplanation: { ...state.latestMechanismExplanation, [batteryId]: diagnosis },
         latestDiagnosis: { ...state.latestDiagnosis, [batteryId]: diagnosis },
         batteryHistory: { ...state.batteryHistory, [batteryId]: history },
         batteryHealth: { ...state.batteryHealth, [batteryId]: health },
       }))
       return { anomaly, diagnosis }
     } catch (error) {
-      const message = error instanceof Error ? error.message : '诊断失败'
+      const message = error instanceof Error ? error.message : '机理解释失败'
       set({ error: message })
       throw error
     } finally {

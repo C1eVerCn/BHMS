@@ -16,6 +16,7 @@ from backend.app.core.exceptions import BHMSException
 from backend.app.services.model_service import PredictionService
 from backend.app.services.repository import BHMSRepository
 from backend.app.services.training_service import TrainingService
+from ml.data.source_registry import get_dataset_card, list_supported_sources
 from ml.training.experiment_artifacts import write_placeholder_png
 
 try:
@@ -31,7 +32,7 @@ except ModuleNotFoundError:
     plt = None
     MATPLOTLIB_AVAILABLE = False
 
-SUPPORTED_SOURCES = ("nasa", "calce", "kaggle")
+SUPPORTED_SOURCES = tuple(list_supported_sources())
 PROFILE_FEATURES = (
     "capacity",
     "voltage_mean",
@@ -72,6 +73,7 @@ class InsightService:
 
     def get_dataset_profile(self, source: str) -> dict[str, Any]:
         source = self._validate_source(source)
+        card = get_dataset_card(source)
         processed_dir = self.settings.processed_dir / source
         dataset_summary = self._load_json(processed_dir / f"{source}_dataset_summary.json") or {}
         feature_config = self._load_json(processed_dir / f"{source}_feature_config.json") or {}
@@ -189,6 +191,9 @@ class InsightService:
                 for row in dataset_file_rows
             ],
             "demo_files": demo_files,
+            "training_ready": card.training_ready,
+            "ingestion_mode": card.ingestion_mode,
+            "source_group": card.group,
             "generated_at": datetime.utcnow().isoformat(),
         }
 
@@ -259,22 +264,33 @@ class InsightService:
         source_statuses: list[dict[str, Any]] = []
         demo_presets = self.get_demo_presets()
         for source in SUPPORTED_SOURCES:
+            card = get_dataset_card(source)
             profile = self.get_dataset_profile(source)
             comparison = self._load_json(self.settings.model_dir / source / "comparison_summary.json") or {}
             raw_dir = getattr(self.settings, f"raw_{source}_dir")
             raw_files = sorted(item for item in raw_dir.glob("**/*") if item.is_file()) if raw_dir.exists() else []
-            model_risks = self._comparison_risks(comparison)
+            if card.training_ready:
+                model_risks = self._comparison_risks(comparison)
+            else:
+                model_risks = []
             warnings.extend(f"{source.upper()}: {item}" for item in model_risks)
+            if card.ingestion_mode == "enhancement_assets":
+                processed_ready = bool(self._load_json(self.settings.processed_dir / source / f"{source}_dataset_summary.json"))
+            else:
+                processed_ready = bool(profile["split"]) or bool(profile["battery_count"])
             source_statuses.append(
                 {
                     "source": source,
                     "raw_file_count": len(raw_files),
                     "battery_count": profile["battery_count"],
                     "training_candidate_count": profile["training_candidate_count"],
-                    "processed_ready": bool(profile["split"]),
-                    "comparison_ready": profile["comparison_available"],
+                    "processed_ready": processed_ready,
+                    "comparison_ready": profile["comparison_available"] if card.training_ready else False,
                     "demo_preset_count": len([item for item in demo_presets if item["source"] == source]),
-                    "best_model": self._best_model_name(comparison),
+                    "best_model": self._best_model_name(comparison) if card.training_ready else None,
+                    "training_ready": card.training_ready,
+                    "ingestion_mode": card.ingestion_mode,
+                    "source_group": card.group,
                 }
             )
         if not self.settings.knowledge_path.exists():
@@ -292,10 +308,10 @@ class InsightService:
             "source_statuses": source_statuses,
             "demo_acceptance_flow": [
                 "上传未见样本",
-                "立即执行 RUL 预测",
-                "触发异常检测与 GraphRAG 诊断",
-                "导出预测/诊断报告",
-                "进入分析中心查看实验与案例闭环",
+                "立即执行全生命周期预测",
+                "触发异常检测与机理解释",
+                "导出 lifecycle / mechanism 报告",
+                "进入分析中心查看 benchmark 与案例闭环",
             ],
             "warnings": list(dict.fromkeys(warnings)),
             "generated_at": datetime.utcnow().isoformat(),
@@ -347,35 +363,35 @@ class InsightService:
                     "description": f"{battery.get('source', 'unknown').upper()} 来源样本，当前共 {battery.get('cycle_count', 0)} 个循环点。",
                 },
                 {
-                    "key": "prediction-report",
-                    "title": "RUL 预测证据链",
+                    "key": "lifecycle-prediction",
+                    "title": "生命周期预测证据链",
                     "available": prediction is not None,
-                    "description": "包含模型、置信度、EOL 周期和关键特征贡献。",
+                    "description": "包含 trajectory、knee/EOL/RUL、风险窗口与模型证据。",
                 },
                 {
-                    "key": "diagnosis-report",
-                    "title": "GraphRAG 诊断链",
+                    "key": "mechanism-report",
+                    "title": "机理解释与 GraphRAG 证据链",
                     "available": diagnosis is not None,
-                    "description": "包含候选故障、根因链、建议和图谱子图说明。",
+                    "description": "包含候选机理、根因链、建议、未来风险窗口与图谱子图说明。",
                 },
                 {
-                    "key": "experiment-context",
-                    "title": "实验背景",
+                    "key": "benchmark-context",
+                    "title": "benchmark 背景",
                     "available": bool(comparison),
-                    "description": "记录该来源当前可用的模型对比结果与学术风险提示。",
+                    "description": "记录该来源当前可用的 lifecycle 模型对比结果与学术风险提示。",
                 },
                 {
                     "key": "case-export",
-                    "title": "目录化案例导出",
+                    "title": "目录化 lifecycle 案例导出",
                     "available": last_export is not None,
-                    "description": "生成论文附录可复用的 Markdown、JSON 与 PNG 图表目录。",
+                    "description": "生成论文附录可复用的 Markdown、JSON 与生命周期 / GraphRAG / benchmark 图表目录。",
                 },
             ],
             "recommended_story": [
                 f"先说明样本来自 {str(battery.get('source', 'unknown')).upper()} 的 {battery.get('dataset_name') or '--'}，当前位于 {dataset_position['split_name']} 划分。",
-                "再展示容量轨迹、健康分与剩余寿命预测，并指向导出的 RUL 图表。",
-                "随后说明异常症状如何映射为候选故障、根因链与诊断子图。",
-                "最后补充该来源的实验对比结果、论文图表与当前模型局限。",
+                "再展示观测轨迹、未来 trajectory 与 knee/EOL/RUL 关键节点，并指向导出的生命周期图表。",
+                "随后说明未来风险窗口如何映射为候选机理、根因链与 GraphRAG 证据子图。",
+                "最后补充该来源的 benchmark 结果、论文图表与当前模型局限。",
             ],
             "bundle_markdown": bundle_markdown,
             "experiment_context": {
@@ -400,18 +416,26 @@ class InsightService:
         diagnosis = bundle.get("diagnosis")
         experiment_context = bundle.get("experiment_context", {})
 
-        prediction_report = prediction.get("report_markdown") if prediction else "# 电池寿命预测报告\n\n- 暂无预测记录"
-        diagnosis_report = diagnosis.get("report_markdown") if diagnosis else "# 电池故障诊断报告\n\n- 暂无诊断记录"
+        prediction_report = prediction.get("report_markdown") if prediction else "# 全生命周期预测报告\n\n- 暂无生命周期预测记录"
+        diagnosis_report = diagnosis.get("report_markdown") if diagnosis else "# 机理解释报告\n\n- 暂无机理解释记录"
         manifest = {
             "battery_id": battery_id,
             "source": battery.get("source") if battery else None,
             "generated_at": datetime.utcnow().isoformat(),
             "generated_artifacts": generated_artifacts,
             "export_dir": str(export_dir),
+            "asset_status": {
+                "lifecycle_prediction_ready": prediction is not None,
+                "mechanism_explanation_ready": diagnosis is not None,
+                "benchmark_context_ready": bool(experiment_context.get("comparison")),
+            },
         }
 
         file_map = {
             "case_bundle.md": bundle["bundle_markdown"],
+            "lifecycle_prediction_report.md": prediction_report,
+            "mechanism_report.md": diagnosis_report,
+            # Compatibility aliases for one migration round.
             "prediction_report.md": prediction_report,
             "diagnosis_report.md": diagnosis_report,
         }
@@ -431,20 +455,27 @@ class InsightService:
         (export_dir / "experiment_context.json").write_text(json.dumps(experiment_context, ensure_ascii=False, indent=2), encoding="utf-8")
 
         chart_entries = [
-            self._write_rul_projection_chart(charts_dir / "rul_projection.png", prediction, cycles),
+            self._write_lifecycle_trajectory_chart(charts_dir / "lifecycle_trajectory.png", prediction, cycles),
+            self._write_diagnosis_graph_chart(charts_dir / "graphrag_evidence.png", diagnosis),
+            self._write_experiment_summary_chart(charts_dir / "benchmark_summary.png", battery.get("source") if battery else None, experiment_context),
+            # Compatibility aliases for one migration round.
+            self._write_lifecycle_trajectory_chart(charts_dir / "rul_projection.png", prediction, cycles),
             self._write_diagnosis_graph_chart(charts_dir / "diagnosis_graph.png", diagnosis),
             self._write_experiment_summary_chart(charts_dir / "experiment_summary.png", battery.get("source") if battery else None, experiment_context),
         ]
-        manifest["charts"] = chart_entries
+        unique_chart_entries = list({item["path"]: item for item in chart_entries}.values())
+        manifest["charts"] = unique_chart_entries
         manifest["files"] = [
             {"path": str(export_dir / "manifest.json"), "kind": "manifest"},
             {"path": str(export_dir / "case_bundle.md"), "kind": "case_bundle"},
-            {"path": str(export_dir / "prediction_report.md"), "kind": "prediction_report"},
-            {"path": str(export_dir / "diagnosis_report.md"), "kind": "diagnosis_report"},
+            {"path": str(export_dir / "lifecycle_prediction_report.md"), "kind": "lifecycle_prediction_report"},
+            {"path": str(export_dir / "mechanism_report.md"), "kind": "mechanism_report"},
+            {"path": str(export_dir / "prediction_report.md"), "kind": "prediction_report_alias"},
+            {"path": str(export_dir / "diagnosis_report.md"), "kind": "diagnosis_report_alias"},
             {"path": str(export_dir / "sample_profile.json"), "kind": "sample_profile"},
             {"path": str(export_dir / "dataset_profile.json"), "kind": "dataset_profile"},
             {"path": str(export_dir / "experiment_context.json"), "kind": "experiment_context"},
-            *chart_entries,
+            *unique_chart_entries,
         ]
         (export_dir / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
         return {
@@ -467,6 +498,10 @@ class InsightService:
         dataset_position: dict[str, Any],
     ) -> str:
         latest_capacity = battery.get("latest_capacity")
+        prediction_payload = (prediction or {}).get("payload") or {}
+        future_risks = prediction_payload.get("future_risks") or {}
+        risk_windows = prediction_payload.get("risk_windows") or []
+        explanation = (prediction or {}).get("explanation") or {}
         lines = [
             "# BHMS 案例包",
             "",
@@ -498,22 +533,46 @@ class InsightService:
                     f"- 最新 cycle：{last_point.get('cycle_number')}，容量 {float(last_point.get('capacity', 0.0)):.4f}Ah",
                 ]
             )
-        lines.extend(["", "## 四、RUL 预测摘要"])
+        lines.extend(["", "## 四、未来 trajectory 摘要"])
         if prediction:
             lines.extend(
                 [
                     f"- 模型：{prediction.get('model_name', '--')}",
                     f"- 预测 RUL：{float(prediction.get('predicted_rul', 0.0)):.2f} cycles",
+                    f"- 预测 knee 周期：{prediction.get('predicted_knee_cycle', '--')}",
+                    f"- 预测 EOL 周期：{prediction.get('predicted_eol_cycle', '--')}",
                     f"- 置信度：{float(prediction.get('confidence', 0.0)) * 100:.1f}%",
                     f"- Checkpoint：{prediction.get('checkpoint_id', '--')}",
                 ]
             )
-            explanation = prediction.get("explanation") or {}
+            trajectory = prediction.get("trajectory") or []
+            if trajectory:
+                lines.append(
+                    f"- 未来 trajectory 覆盖 {trajectory[0].get('cycle', '--')} -> {trajectory[-1].get('cycle', '--')} cycles，共 {len(trajectory)} 个点。"
+                )
+        else:
+            lines.append("- 尚未生成生命周期预测记录")
+        lines.extend(["", "## 五、风险窗口与机理线索"])
+        if future_risks:
+            lines.extend(
+                [
+                    f"- 衰退模式：{future_risks.get('future_capacity_fade_pattern', '--')}",
+                    f"- 温度风险：{future_risks.get('temperature_risk', '--')}",
+                    f"- 内阻风险：{future_risks.get('resistance_risk', '--')}",
+                    f"- 电压风险：{future_risks.get('voltage_risk', '--')}",
+                ]
+            )
+        else:
+            lines.append("- 当前尚无未来风险摘要")
+        if risk_windows:
+            for item in risk_windows[:4]:
+                lines.append(
+                    f"- 风险窗口 {item.get('label', '--')}: {item.get('start_cycle', '--')} -> {item.get('end_cycle', '--')} ({item.get('severity', '--')})"
+                )
+        if explanation.get("feature_contributions"):
             for item in list(explanation.get("feature_contributions") or [])[:4]:
                 lines.append(f"- 关键特征 {item.get('feature')}: {item.get('description')}")
-        else:
-            lines.append("- 尚未生成 RUL 预测记录")
-        lines.extend(["", "## 五、异常与诊断"])
+        lines.extend(["", "## 六、异常与机理解释"])
         if anomalies:
             lines.extend(f"- 异常症状：{item.get('symptom')} / {item.get('description')}" for item in anomalies[:6])
         else:
@@ -532,8 +591,8 @@ class InsightService:
             for item in list(diagnosis.get("decision_basis") or [])[:3]:
                 lines.append(f"- 排序依据：{item}")
         else:
-            lines.append("- 尚未生成 GraphRAG 诊断记录")
-        lines.extend(["", "## 六、实验背景"])
+            lines.append("- 尚未生成机理解释 / GraphRAG 诊断记录")
+        lines.extend(["", "## 七、benchmark 背景"])
         best_model = self._best_model_name(comparison)
         if best_model:
             lines.append(f"- 当前来源对比结果中表现较优的模型：{best_model}")
@@ -544,11 +603,11 @@ class InsightService:
         lines.extend(
             [
                 "",
-                "## 七、答辩讲解建议",
+                "## 八、建议与答辩讲解",
                 "- 先用样本概况回答“数据来自哪里”。",
-                "- 再用 RUL 预测回答“电池还能用多久”。",
-                "- 用异常与诊断链回答“为什么会变差、应该怎么处理”。",
-                "- 最后用实验背景说明“为什么当前模型设计值得做，但还有哪些局限”。",
+                "- 再用 trajectory + knee/EOL/RUL 回答“未来如何衰退、还能用多久”。",
+                "- 用风险窗口与机理解释回答“为什么会变差、应该怎么处理”。",
+                "- 最后用 benchmark 背景说明“为什么当前模型设计值得做，但还有哪些局限”。",
             ]
         )
         return "\n".join(lines)
@@ -562,7 +621,7 @@ class InsightService:
             raise BHMSException(f"未找到电池 {battery_id}", status_code=404, code="battery_not_found")
         prediction = next(iter(self.repository.list_predictions(battery_id, limit=1)), None)
         if prediction is None:
-            self.prediction_service.predict_rul(
+            self.prediction_service.predict_lifecycle(
                 battery_id=battery_id,
                 model_name="hybrid",
                 seq_len=self.settings.default_seq_len,
@@ -572,7 +631,7 @@ class InsightService:
         if diagnosis is None:
             anomaly_result = self.prediction_service.detect_anomaly(battery_id=battery_id)
             generated["anomaly_generated"] = True
-            self.prediction_service.diagnose(
+            self.prediction_service.explain_mechanism(
                 battery_id=battery_id,
                 anomalies=anomaly_result.get("events", []),
                 battery_info=battery,
@@ -624,7 +683,7 @@ class InsightService:
             }
         return None
 
-    def _write_rul_projection_chart(
+    def _write_lifecycle_trajectory_chart(
         self,
         output_path: Path,
         prediction: Optional[dict[str, Any]],
@@ -633,27 +692,31 @@ class InsightService:
         output_path.parent.mkdir(parents=True, exist_ok=True)
         if not MATPLOTLIB_AVAILABLE:
             write_placeholder_png(output_path)
-            return {"path": str(output_path), "kind": "chart", "key": "rul_projection"}
+            return {"path": str(output_path), "kind": "chart", "key": "lifecycle_trajectory"}
         fig, ax = plt.subplots(figsize=(8, 4.5))
         if prediction and prediction.get("projection"):
             projection = prediction["projection"]
             actual = projection.get("actual_points", [])
             forecast = projection.get("forecast_points", [])
             if actual:
-                ax.plot([item["cycle"] for item in actual], [item["capacity"] for item in actual], label="Actual", color="#1f77b4")
+                ax.plot([item["cycle"] for item in actual], [item["capacity"] for item in actual], label="Observed", color="#1f77b4")
             if forecast:
-                ax.plot([item["cycle"] for item in forecast], [item["capacity"] for item in forecast], label="Forecast", color="#ff7f0e")
+                ax.plot([item["cycle"] for item in forecast], [item["capacity"] for item in forecast], label="Future trajectory", color="#ff7f0e")
             band = projection.get("confidence_band", [])
             if band:
                 x = [item["cycle"] for item in band]
                 lower = [item["lower"] for item in band]
                 upper = [item["upper"] for item in band]
                 ax.fill_between(x, lower, upper, color="#ff7f0e", alpha=0.15, label="Confidence band")
+            if prediction.get("predicted_knee_cycle") is not None:
+                ax.axvline(float(prediction["predicted_knee_cycle"]), color="#34c759", linestyle="--", linewidth=1.6, label="knee")
+            if prediction.get("predicted_eol_cycle") is not None:
+                ax.axvline(float(prediction["predicted_eol_cycle"]), color="#d62728", linestyle=":", linewidth=1.8, label="EOL")
         elif cycles:
             ax.plot([item["cycle_number"] for item in cycles], [item["capacity"] for item in cycles], label="Capacity", color="#1f77b4")
         else:
-            ax.text(0.5, 0.5, "No RUL data", ha="center", va="center", transform=ax.transAxes)
-        ax.set_title("RUL projection")
+            ax.text(0.5, 0.5, "No lifecycle data", ha="center", va="center", transform=ax.transAxes)
+        ax.set_title("Lifecycle trajectory")
         ax.set_xlabel("Cycle")
         ax.set_ylabel("Capacity")
         ax.grid(linestyle="--", alpha=0.25)
@@ -661,19 +724,29 @@ class InsightService:
         fig.tight_layout()
         fig.savefig(output_path, dpi=160)
         plt.close(fig)
-        return {"path": str(output_path), "kind": "chart", "key": "rul_projection"}
+        return {"path": str(output_path), "kind": "chart", "key": "lifecycle_trajectory"}
+
+    def _write_rul_projection_chart(
+        self,
+        output_path: Path,
+        prediction: Optional[dict[str, Any]],
+        cycles: list[dict[str, Any]],
+    ) -> dict[str, Any]:
+        entry = self._write_lifecycle_trajectory_chart(output_path, prediction, cycles)
+        entry["key"] = "rul_projection"
+        return entry
 
     def _write_diagnosis_graph_chart(self, output_path: Path, diagnosis: Optional[dict[str, Any]]) -> dict[str, Any]:
         output_path.parent.mkdir(parents=True, exist_ok=True)
         if not MATPLOTLIB_AVAILABLE:
             write_placeholder_png(output_path)
-            return {"path": str(output_path), "kind": "chart", "key": "diagnosis_graph"}
+            return {"path": str(output_path), "kind": "chart", "key": "graphrag_evidence"}
         fig, ax = plt.subplots(figsize=(8, 5))
         trace = (diagnosis or {}).get("graph_trace") or {}
         nodes = trace.get("nodes", [])
         edges = trace.get("edges", [])
         if not nodes:
-            ax.text(0.5, 0.5, "No diagnosis graph", ha="center", va="center", transform=ax.transAxes)
+            ax.text(0.5, 0.5, "No GraphRAG evidence", ha="center", va="center", transform=ax.transAxes)
         else:
             angles = np.linspace(0, 2 * np.pi, num=len(nodes), endpoint=False)
             positions = {
@@ -689,12 +762,12 @@ class InsightService:
                 x, y = positions[node["id"]]
                 ax.scatter([x], [y], s=900, color="#4c78a8", alpha=0.85)
                 ax.text(x, y, str(node.get("label", "--")), ha="center", va="center", color="white", fontsize=8)
-        ax.set_title("Diagnosis graph")
+        ax.set_title("GraphRAG evidence")
         ax.axis("off")
         fig.tight_layout()
         fig.savefig(output_path, dpi=160)
         plt.close(fig)
-        return {"path": str(output_path), "kind": "chart", "key": "diagnosis_graph"}
+        return {"path": str(output_path), "kind": "chart", "key": "graphrag_evidence"}
 
     def _write_experiment_summary_chart(self, output_path: Path, source: Optional[str], experiment_context: dict[str, Any]) -> dict[str, Any]:
         output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -702,10 +775,10 @@ class InsightService:
             source_plot = self.settings.model_dir / source / "plots" / "experiment_summary.png"
             if source_plot.exists():
                 shutil.copy2(source_plot, output_path)
-                return {"path": str(output_path), "kind": "chart", "key": "experiment_summary"}
+                return {"path": str(output_path), "kind": "chart", "key": "benchmark_summary"}
         if not MATPLOTLIB_AVAILABLE:
             write_placeholder_png(output_path)
-            return {"path": str(output_path), "kind": "chart", "key": "experiment_summary"}
+            return {"path": str(output_path), "kind": "chart", "key": "benchmark_summary"}
         comparison = experiment_context.get("comparison", {}) or {}
         models = comparison.get("models", {})
         fig, ax = plt.subplots(figsize=(8, 4.5))
@@ -714,14 +787,14 @@ class InsightService:
         if labels:
             ax.bar(labels, values, color=["#1f77b4", "#ff7f0e"][: len(labels)])
         else:
-            ax.text(0.5, 0.5, "No experiment summary", ha="center", va="center", transform=ax.transAxes)
-        ax.set_title("Experiment summary")
-        ax.set_ylabel("RMSE")
+            ax.text(0.5, 0.5, "No benchmark summary", ha="center", va="center", transform=ax.transAxes)
+        ax.set_title("Benchmark summary")
+        ax.set_ylabel("Trajectory RMSE")
         ax.grid(axis="y", linestyle="--", alpha=0.25)
         fig.tight_layout()
         fig.savefig(output_path, dpi=160)
         plt.close(fig)
-        return {"path": str(output_path), "kind": "chart", "key": "experiment_summary"}
+        return {"path": str(output_path), "kind": "chart", "key": "benchmark_summary"}
 
     def _validate_source(self, source: str) -> str:
         normalized = source.lower()
@@ -755,8 +828,8 @@ class InsightService:
     @staticmethod
     def _describe_demo_preset(file_name: str, scenario: str, source: str) -> str:
         if scenario == "fault_case":
-            return f"推荐用于展示 {source.upper()} 新样本的异常检测、GraphRAG 检索与完整案例导出。"
-        return f"推荐用于展示 {source.upper()} 未见样本的导入与预测闭环。"
+            return f"推荐用于展示 {source.upper()} 新样本的异常检测、机理解释、GraphRAG 检索与完整案例导出。"
+        return f"推荐用于展示 {source.upper()} 未见样本的导入、生命周期预测与分析闭环。"
 
     @staticmethod
     def _best_model_name(comparison: dict[str, Any]) -> Optional[str]:
@@ -779,9 +852,9 @@ class InsightService:
             r2 = metrics.get("r2")
             mape = metrics.get("mape")
             if isinstance(r2, (int, float)) and float(r2) < 0:
-                risks.append(f"{model_name} 的 R2 仍为负值，说明实验结论更偏演示级。")
+                risks.append(f"{model_name} 的 trajectory R2 仍为负值，说明实验结论更偏演示级。")
             if isinstance(mape, (int, float)) and float(mape) > 100:
-                risks.append(f"{model_name} 的 MAPE 偏高，建议补充多随机种子与消融实验。")
+                risks.append(f"{model_name} 的 trajectory MAPE 偏高，建议补充多随机种子、消融与 transfer 实验。")
         return risks
 
 

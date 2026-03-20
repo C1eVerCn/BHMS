@@ -9,12 +9,9 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_SEEDS = [7, 21, 42]
 
 DEFAULT_CONFIGS = {
-    ("nasa", "bilstm"): PROJECT_ROOT / "configs" / "nasa_bilstm.yaml",
-    ("nasa", "hybrid"): PROJECT_ROOT / "configs" / "nasa_hybrid.yaml",
-    ("calce", "bilstm"): PROJECT_ROOT / "configs" / "calce_bilstm.yaml",
-    ("calce", "hybrid"): PROJECT_ROOT / "configs" / "calce_hybrid.yaml",
-    ("kaggle", "bilstm"): PROJECT_ROOT / "configs" / "kaggle_bilstm.yaml",
-    ("kaggle", "hybrid"): PROJECT_ROOT / "configs" / "kaggle_hybrid.yaml",
+    (source, model_type): PROJECT_ROOT / "configs" / f"{source}_{model_type}.yaml"
+    for source in ("nasa", "calce", "kaggle", "hust", "matr", "oxford", "pulsebat")
+    for model_type in ("bilstm", "hybrid")
 }
 
 ABLATION_VARIANTS = [
@@ -37,11 +34,16 @@ ABLATION_VARIANTS = [
         "model_overrides": {"use_xlstm": True, "use_transformer": False},
     },
     {
-        "key": "capacity_only",
-        "label": "仅容量/循环特征",
-        "description": "只保留容量与循环次数，验证多特征设计是否必要。",
-        "model_overrides": {},
-        "feature_columns": ["capacity", "cycle_number"],
+        "key": "no_domain_embedding",
+        "label": "去掉 domain embedding",
+        "description": "移除 source/chemistry/protocol 条件编码，验证多源域先验的贡献。",
+        "model_overrides": {"use_domain_embeddings": False},
+    },
+    {
+        "key": "no_trajectory_head",
+        "label": "去掉 trajectory head",
+        "description": "关闭未来 trajectory decoder，验证显式轨迹监督对 knee/EOL 的贡献。",
+        "model_overrides": {"use_trajectory_head": False},
     },
 ]
 

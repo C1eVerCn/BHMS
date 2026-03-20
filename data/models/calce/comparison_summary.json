@@ -1,31 +1,66 @@
 {
   "source": "calce",
+  "task_kind": "lifecycle",
   "models": {
     "bilstm": {
-      "best_val_loss": 3.443115223447482,
+      "best_val_loss": 58.06182098388672,
       "test_metrics": {
-        "loss": 9.497929016749064,
-        "rmse": 10.461879650751749,
-        "mae": 9.99099854628245,
-        "mape": 238.04402510325113,
-        "r2": -31.680428167184193,
-        "lr": 0.0002505
+        "loss": 51.54985809326172,
+        "traj_loss": 0.00015597113815601915,
+        "rul_loss": 50.88692092895508,
+        "eol_loss": 51.554073333740234,
+        "knee_loss": 21.92721939086914,
+        "mono_loss": 0.0,
+        "smooth_loss": 7.57876250645495e-08,
+        "domain_loss": 0.02808617614209652,
+        "trajectory_rmse": 0.017661888152360916,
+        "trajectory_mae": 0.014455621130764484,
+        "trajectory_mape": 1.6134196519851685,
+        "trajectory_r2": 0.6948165893554688,
+        "rul_mae": 51.38692855834961,
+        "rul_rmse": 51.80226516723633,
+        "eol_mae": 52.054073333740234,
+        "eol_rmse": 52.46192169189453,
+        "knee_mae": 22.427221298217773,
+        "rmse": 0.017661888152360916,
+        "mae": 0.014455621130764484,
+        "mape": 1.6134196519851685,
+        "r2": 0.6948165893554688,
+        "lr": 0.0003
       },
       "best_checkpoint": "data/models/calce/bilstm/bilstm_best.pt",
-      "final_checkpoint": "data/models/calce/bilstm/bilstm_final.pt"
+      "final_checkpoint": "data/models/calce/bilstm/bilstm_final.pt",
+      "requested_model_type": "bilstm"
     },
     "hybrid": {
-      "best_val_loss": 7.210879151026408,
+      "best_val_loss": 60.797401428222656,
       "test_metrics": {
-        "loss": 10.661060174306234,
-        "rmse": 11.395735144615173,
-        "mae": 11.155665238698324,
-        "mape": 391.7334149678548,
-        "r2": -48.810263415177666,
+        "loss": 54.28612518310547,
+        "traj_loss": 0.0001396261213812977,
+        "rul_loss": 53.3623046875,
+        "eol_loss": 53.19826126098633,
+        "knee_loss": 25.25282859802246,
+        "mono_loss": 0.0,
+        "smooth_loss": 2.493140414117079e-07,
+        "domain_loss": 0.12324464321136475,
+        "trajectory_rmse": 0.01671084202826023,
+        "trajectory_mae": 0.013639968819916248,
+        "trajectory_mape": 1.5199590921401978,
+        "trajectory_r2": 0.7267983555793762,
+        "rul_mae": 53.8623046875,
+        "rul_rmse": 54.257171630859375,
+        "eol_mae": 53.69826126098633,
+        "eol_rmse": 54.09498596191406,
+        "knee_mae": 25.75282859802246,
+        "rmse": 0.01671084202826023,
+        "mae": 0.013639968819916248,
+        "mape": 1.5199590921401978,
+        "r2": 0.7267983555793762,
         "lr": 0.0003
       },
       "best_checkpoint": "data/models/calce/hybrid/hybrid_best.pt",
-      "final_checkpoint": "data/models/calce/hybrid/hybrid_final.pt"
+      "final_checkpoint": "data/models/calce/hybrid/hybrid_final.pt",
+      "requested_model_type": "hybrid"
     }
   }
 }

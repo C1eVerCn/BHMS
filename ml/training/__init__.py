@@ -9,6 +9,7 @@ from .experiment_runner import (
     generate_source_plot_bundle,
     run_training_experiment,
 )
+from .lifecycle_experiment_runner import run_lifecycle_experiment
 from .lifecycle_trainer import LifecycleTrainer, LifecycleTrainingConfig, build_lifecycle_model
 from .trainer import RULTrainer, TrainingConfig
 
@@ -23,5 +24,6 @@ __all__ = [
     "create_ablation_summary",
     "create_multi_seed_summary",
     "generate_source_plot_bundle",
+    "run_lifecycle_experiment",
     "run_training_experiment",
 ]

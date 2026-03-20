@@ -5,22 +5,22 @@
       "title": "CALCE hybrid error distribution",
       "description": "Prediction error histogram for every configured seed.",
       "path": "data/models/calce/hybrid/plots/error_distribution.png",
-      "generated_at": "2026-03-15T08:29:24.494414"
+      "generated_at": "2026-03-17T07:46:27.699226"
     },
     {
       "key": "metrics_overview",
       "title": "CALCE hybrid multi-seed metrics",
       "description": "Mean and std across the configured random seeds.",
       "path": "data/models/calce/hybrid/plots/metrics_overview.png",
-      "generated_at": "2026-03-15T08:29:24.438385"
+      "generated_at": "2026-03-17T07:46:27.639265"
     },
     {
       "key": "training_curves",
       "title": "CALCE hybrid training curves",
       "description": "Train/validation loss curves for the configured seed runs.",
       "path": "data/models/calce/hybrid/plots/training_curves.png",
-      "generated_at": "2026-03-15T08:29:24.538999"
+      "generated_at": "2026-03-17T07:46:27.764207"
     }
   ],
-  "generated_at": "2026-03-15T08:29:24.539398"
+  "generated_at": "2026-03-17T07:46:27.767826"
 }

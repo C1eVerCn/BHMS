@@ -13,6 +13,8 @@ class DatasetCard:
     adapter_kind: str
     group: str
     description: str
+    ingestion_mode: str
+    training_ready: bool
     metadata_defaults: dict[str, Any] = field(default_factory=dict)
 
 
@@ -23,6 +25,8 @@ SOURCE_REGISTRY: dict[str, DatasetCard] = {
         adapter_kind="nasa",
         group="main_lifecycle",
         description="NASA PCoE lithium-ion battery aging benchmark.",
+        ingestion_mode="csv_ready",
+        training_ready=True,
         metadata_defaults={
             "chemistry": "Li-ion",
             "form_factor": "18650 cylindrical",
@@ -39,6 +43,8 @@ SOURCE_REGISTRY: dict[str, DatasetCard] = {
         adapter_kind="csv",
         group="main_lifecycle",
         description="CALCE lithium-ion cycle aging dataset.",
+        ingestion_mode="csv_ready",
+        training_ready=True,
         metadata_defaults={
             "chemistry": "Li-ion",
             "form_factor": "pouch",
@@ -55,6 +61,8 @@ SOURCE_REGISTRY: dict[str, DatasetCard] = {
         adapter_kind="csv",
         group="demo",
         description="Lightweight CSV demo dataset used for local validation.",
+        ingestion_mode="csv_ready",
+        training_ready=True,
         metadata_defaults={
             "chemistry": "Li-ion",
             "form_factor": "unknown",
@@ -68,9 +76,11 @@ SOURCE_REGISTRY: dict[str, DatasetCard] = {
     "hust": DatasetCard(
         source="hust",
         dataset_name="hust_77cell",
-        adapter_kind="csv",
+        adapter_kind="raw_converter",
         group="main_lifecycle",
         description="HUST 77-cell benchmark for lithium-ion lifecycle prediction.",
+        ingestion_mode="raw_converter",
+        training_ready=True,
         metadata_defaults={
             "chemistry": "Li-ion (NCM)",
             "form_factor": "18650 cylindrical",
@@ -84,9 +94,11 @@ SOURCE_REGISTRY: dict[str, DatasetCard] = {
     "matr": DatasetCard(
         source="matr",
         dataset_name="matr_severson",
-        adapter_kind="csv",
+        adapter_kind="raw_converter",
         group="main_lifecycle",
         description="Severson/MATR fast-charging cycle life dataset.",
+        ingestion_mode="raw_converter",
+        training_ready=True,
         metadata_defaults={
             "chemistry": "Li-ion (LFP/graphite)",
             "form_factor": "coin/cylindrical lab cell",
@@ -100,9 +112,11 @@ SOURCE_REGISTRY: dict[str, DatasetCard] = {
     "oxford": DatasetCard(
         source="oxford",
         dataset_name="oxford_degradation_1",
-        adapter_kind="csv",
+        adapter_kind="raw_converter",
         group="trajectory_enhancement",
         description="Oxford Battery Degradation Dataset 1 for trajectory supervision.",
+        ingestion_mode="raw_converter",
+        training_ready=False,
         metadata_defaults={
             "chemistry": "Li-ion",
             "form_factor": "pouch",
@@ -116,9 +130,11 @@ SOURCE_REGISTRY: dict[str, DatasetCard] = {
     "pulsebat": DatasetCard(
         source="pulsebat",
         dataset_name="pulsebat",
-        adapter_kind="csv",
+        adapter_kind="enhancement_assets",
         group="diagnostic_enhancement",
         description="Pulse-driven battery diagnostics dataset for mechanism evidence augmentation.",
+        ingestion_mode="enhancement_assets",
+        training_ready=False,
         metadata_defaults={
             "chemistry": "Li-ion",
             "form_factor": "pouch",
@@ -144,4 +160,28 @@ def list_supported_sources() -> list[str]:
     return sorted(SOURCE_REGISTRY)
 
 
-__all__ = ["DatasetCard", "SOURCE_REGISTRY", "get_dataset_card", "list_supported_sources"]
+def list_training_ready_sources() -> list[str]:
+    return sorted(source for source, card in SOURCE_REGISTRY.items() if card.training_ready)
+
+
+def list_auxiliary_sources() -> list[str]:
+    return sorted(
+        source
+        for source, card in SOURCE_REGISTRY.items()
+        if not card.training_ready and card.ingestion_mode != "enhancement_assets"
+    )
+
+
+def list_enhancement_only_sources() -> list[str]:
+    return sorted(source for source, card in SOURCE_REGISTRY.items() if card.ingestion_mode == "enhancement_assets")
+
+
+__all__ = [
+    "DatasetCard",
+    "SOURCE_REGISTRY",
+    "get_dataset_card",
+    "list_supported_sources",
+    "list_training_ready_sources",
+    "list_auxiliary_sources",
+    "list_enhancement_only_sources",
+]

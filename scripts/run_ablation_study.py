@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run hybrid ablation studies for a BHMS source."""
+"""Run lifecycle hybrid ablation studies for a BHMS source."""
 
 from __future__ import annotations
 
@@ -12,6 +12,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
+from ml.data.source_registry import get_dataset_card, list_supported_sources
 from ml.training.experiment_artifacts import (
     aggregate_metrics,
     plot_error_distribution,
@@ -30,6 +31,7 @@ from ml.training.experiment_runner import (
     resolve_path,
     run_training_experiment,
 )
+from ml.training.lifecycle_experiment_runner import run_lifecycle_experiment
 
 
 def parse_seeds(raw: str | None) -> list[int]:
@@ -107,14 +109,18 @@ def build_variant_summary(
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Run BHMS hybrid ablation study")
-    parser.add_argument("--source", choices=["nasa", "calce", "kaggle"], required=True)
+    parser = argparse.ArgumentParser(description="Run BHMS lifecycle hybrid ablation study")
+    parser.add_argument("--source", choices=list_supported_sources(), required=True)
+    parser.add_argument("--task", choices=["lifecycle", "rul"], default="lifecycle")
     parser.add_argument("--config", default=None)
     parser.add_argument("--seeds", default=None, help="Comma-separated seeds, default: 7,21,42")
     parser.add_argument("--force", action="store_true")
     args = parser.parse_args()
 
     source = args.source.lower()
+    card = get_dataset_card(source)
+    if not card.training_ready:
+        raise SystemExit(f"{source} is marked as {card.ingestion_mode} and is excluded from lifecycle ablation studies.")
     config_path = args.config or str(default_config_for(source, "hybrid"))
     summary_path = resolve_path(f"data/models/{source}/ablation_summary.json")
     if summary_path.exists() and not args.force:
@@ -123,11 +129,12 @@ def main() -> None:
 
     seeds = parse_seeds(args.seeds)
     full_summary = load_json(resolve_path(f"data/models/{source}/hybrid/hybrid_multi_seed_summary.json"))
+    runner = run_lifecycle_experiment if args.task == "lifecycle" else run_training_experiment
     if not full_summary:
         seed_runs = []
         for seed in seeds:
             seed_runs.append(
-                run_training_experiment(
+                runner(
                     source,
                     "hybrid",
                     config_path=config_path,
@@ -151,7 +158,7 @@ def main() -> None:
         {
             "key": "full_hybrid",
             "label": "完整 Hybrid",
-            "description": "复用主实验的 Hybrid 多随机种子结果。",
+            "description": "复用主实验的 lifecycle hybrid 多随机种子结果。",
             "status": "available",
             "seeds": full_summary.get("seeds", seeds),
             "per_seed_runs": full_summary.get("per_seed_runs", []),
@@ -171,7 +178,7 @@ def main() -> None:
             if variant.get("feature_columns"):
                 config_overrides["data"] = {"feature_columns": list(variant["feature_columns"])}
             per_seed.append(
-                run_training_experiment(
+                runner(
                     source,
                     "hybrid",
                     config_path=config_path,

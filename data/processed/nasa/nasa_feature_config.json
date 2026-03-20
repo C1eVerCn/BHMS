@@ -1,5 +1,7 @@
 {
-  "source": "nasa",
+  "sources": [
+    "nasa"
+  ],
   "feature_columns": [
     "voltage_mean",
     "voltage_std",
@@ -13,5 +15,6 @@
     "capacity",
     "cycle_number"
   ],
-  "target_column": "RUL"
+  "target_column": "capacity_ratio",
+  "task_kind": "lifecycle"
 }

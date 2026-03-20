@@ -20,13 +20,9 @@ from backend.app.services.battery_service import BatteryService  # noqa: E402
 from backend.app.services.insight_service import InsightService  # noqa: E402
 from backend.app.services.repository import BHMSRepository  # noqa: E402
 from ml.data.schema import finalize_cycle_frame  # noqa: E402
-from ml.training.experiment_runner import (  # noqa: E402
-    ABLATION_VARIANTS,
-    create_ablation_summary,
-    create_multi_seed_summary,
-    generate_source_plot_bundle,
-    run_training_experiment,
-)
+from ml.training.experiment_constants import ABLATION_VARIANTS  # noqa: E402
+from ml.training.experiment_runner import create_ablation_summary, create_multi_seed_summary, generate_source_plot_bundle  # noqa: E402
+from ml.training.lifecycle_experiment_runner import run_lifecycle_experiment  # noqa: E402
 from scripts.run_ablation_study import build_variant_summary  # noqa: E402
 
 
@@ -77,7 +73,7 @@ def _write_config(tmp_path: Path, source: str, model_type: str, csv_path: Path) 
     config = {
         "data": {
             "csv_path": str(csv_path),
-            "seq_len": 10,
+            "sources": [source],
             "feature_columns": [
                 "voltage_mean",
                 "voltage_std",
@@ -91,11 +87,20 @@ def _write_config(tmp_path: Path, source: str, model_type: str, csv_path: Path) 
                 "capacity",
                 "cycle_number",
             ],
+            "target_config": {
+                "observation_ratios": [0.2, 0.3, 0.4],
+                "default_observation_ratio": 0.3,
+                "encoder_len": 24,
+                "future_len": 32,
+                "target_column": "capacity_ratio",
+            },
         },
         "model": {
             "hidden_dim": 16,
             "num_layers": 1,
             "dropout": 0.05,
+            "use_domain_embeddings": True,
+            "use_trajectory_head": True,
         }
         if model_type == "bilstm"
         else {
@@ -104,6 +109,8 @@ def _write_config(tmp_path: Path, source: str, model_type: str, csv_path: Path) 
             "transformer_layers": 1,
             "fusion_dim": 16,
             "dropout": 0.05,
+            "use_domain_embeddings": True,
+            "use_trajectory_head": True,
         },
         "training": {
             "num_epochs": 2,
@@ -136,7 +143,7 @@ def test_multi_seed_summary_contains_mean_std_runs_and_plots(tmp_path: Path):
     summaries = []
     for seed in (7, 21, 42):
         summaries.append(
-            run_training_experiment(
+            run_lifecycle_experiment(
                 "calce",
                 "bilstm",
                 config_path=config_path,
@@ -182,7 +189,7 @@ def test_ablation_summary_contains_real_variants_and_delta(tmp_path: Path):
     full_runs = []
     for seed in (7, 21, 42):
         full_runs.append(
-            run_training_experiment(
+            run_lifecycle_experiment(
                 "nasa",
                 "hybrid",
                 config_path=config_path,
@@ -226,7 +233,7 @@ def test_ablation_summary_contains_real_variants_and_delta(tmp_path: Path):
             if variant.get("feature_columns"):
                 config_overrides["data"] = {"feature_columns": list(variant["feature_columns"])}
             per_seed.append(
-                run_training_experiment(
+                run_lifecycle_experiment(
                     "nasa",
                     "hybrid",
                     config_path=config_path,
@@ -245,14 +252,12 @@ def test_ablation_summary_contains_real_variants_and_delta(tmp_path: Path):
 
     assert summary["available"] is True
     variant_keys = {item["key"] for item in summary["variants"]}
-    assert {"full_hybrid", "no_xlstm", "no_transformer", "capacity_only"} <= variant_keys
+    assert {"full_hybrid", "no_xlstm", "no_transformer", "no_domain_embedding", "no_trajectory_head"} <= variant_keys
     assert all("aggregate_metrics" in item for item in summary["variants"])
     assert all("delta_vs_full" in item for item in summary["variants"])
     assert Path(summary["artifact_paths"]["summary"]).exists()
     assert "voltage_mean" in feature_config["feature_columns"]
-    assert Path(
-        settings.model_dir / "nasa" / "hybrid" / "ablation" / "capacity_only" / "seed-7" / "data_profile" / "capacity_only_feature_config.json"
-    ).exists()
+    assert Path(settings.model_dir / "nasa" / "hybrid" / "ablation" / "no_domain_embedding" / "seed-7" / "data_profile" / "no_domain_embedding_feature_config.json").exists()
 
 
 def test_case_bundle_export_auto_generates_missing_reports_and_directory(tmp_path: Path):
@@ -294,12 +299,12 @@ def test_case_bundle_export_auto_generates_missing_reports_and_directory(tmp_pat
     assert export_dir.exists()
     assert (export_dir / "manifest.json").exists()
     assert (export_dir / "case_bundle.md").exists()
-    assert (export_dir / "prediction_report.md").exists()
-    assert (export_dir / "diagnosis_report.md").exists()
+    assert (export_dir / "lifecycle_prediction_report.md").exists()
+    assert (export_dir / "mechanism_report.md").exists()
     assert (export_dir / "sample_profile.json").exists()
     assert (export_dir / "dataset_profile.json").exists()
     assert (export_dir / "experiment_context.json").exists()
-    assert (export_dir / "charts" / "rul_projection.png").exists()
-    assert (export_dir / "charts" / "diagnosis_graph.png").exists()
-    assert (export_dir / "charts" / "experiment_summary.png").exists()
+    assert (export_dir / "charts" / "lifecycle_trajectory.png").exists()
+    assert (export_dir / "charts" / "graphrag_evidence.png").exists()
+    assert (export_dir / "charts" / "benchmark_summary.png").exists()
     assert result["bundle_snapshot"]["last_export"] is not None

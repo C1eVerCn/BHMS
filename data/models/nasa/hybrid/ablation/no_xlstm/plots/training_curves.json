@@ -3,5 +3,5 @@
   "title": "NASA no_xlstm training curves",
   "description": "Train/validation loss for the ablation variant.",
   "path": "data/models/nasa/hybrid/ablation/no_xlstm/plots/training_curves.png",
-  "generated_at": "2026-03-15T08:29:23.792655"
+  "generated_at": "2026-03-17T07:52:40.970850"
 }

@@ -19,6 +19,7 @@ from backend.app.services.insight_service import InsightService  # noqa: E402
 from backend.app.services.model_service import PredictionService  # noqa: E402
 from backend.app.services.repository import BHMSRepository  # noqa: E402
 from backend.app.services.training_service import TrainingService  # noqa: E402
+from ml.data.source_registry import list_supported_sources  # noqa: E402
 from ml.data.schema import finalize_cycle_frame  # noqa: E402
 
 
@@ -93,12 +94,14 @@ def test_prediction_and_diagnosis_return_explainable_payloads(tmp_path: Path):
     summary = battery_service.import_frame(frame, source='kaggle', dataset_path=csv_path, include_in_training=True)
     battery_id = summary['battery_ids'][0]
 
-    prediction = prediction_service.predict_rul(battery_id=battery_id, model_name='hybrid', seq_len=20)
+    prediction = prediction_service.predict_lifecycle(battery_id=battery_id, model_name='hybrid', seq_len=20)
     assert prediction['projection']['forecast_points']
+    assert prediction['trajectory']
+    assert prediction['future_risks']
     assert prediction['explanation']['feature_contributions']
-    assert '电池寿命预测报告' in prediction['report_markdown']
+    assert '全生命周期预测报告' in prediction['report_markdown']
 
-    diagnosis = prediction_service.diagnose(
+    diagnosis = prediction_service.explain_mechanism(
         battery_id=battery_id,
         anomalies=[{'symptom': '温度异常', 'severity': 'high', 'description': '平均温度升高明显', 'code': 'temperature_anomaly'}],
         battery_info={'battery_id': battery_id, 'source': 'kaggle'},
@@ -107,6 +110,7 @@ def test_prediction_and_diagnosis_return_explainable_payloads(tmp_path: Path):
     assert diagnosis['graph_trace']['nodes']
     assert diagnosis['decision_basis']
     assert diagnosis['candidate_faults'][0]['rule_id']
+    assert 'lifecycle_evidence' in diagnosis
     assert '电池故障诊断报告' in diagnosis['report_markdown']
 
 
@@ -128,7 +132,7 @@ def test_training_overview_aggregates_experiment_assets(tmp_path: Path):
     detail = training_service.get_experiment_detail('calce')
     ablation = training_service.get_ablation_summary('calce')
 
-    assert len(overview['sources']) == 3
+    assert len(overview['sources']) == len(list_supported_sources())
     calce_overview = next(item for item in overview['sources'] if item['source'] == 'calce')
     assert calce_overview['dataset_batteries'] == 4
     assert detail['dataset_summary']['num_batteries'] == 4
@@ -154,8 +158,8 @@ def test_insight_service_exposes_profile_case_bundle_and_system_status(tmp_path:
     battery_service.prepare_training_dataset('calce', seq_len=12, batch_size=4)
     battery_id = summary['battery_ids'][0]
 
-    prediction_service.predict_rul(battery_id=battery_id, model_name='hybrid', seq_len=20)
-    prediction_service.diagnose(
+    prediction_service.predict_lifecycle(battery_id=battery_id, model_name='hybrid', seq_len=20)
+    prediction_service.explain_mechanism(
         battery_id=battery_id,
         anomalies=[{'symptom': '温度异常', 'severity': 'high', 'description': '平均温度升高明显', 'code': 'temperature_anomaly'}],
         battery_info={'battery_id': battery_id, 'source': 'calce'},
@@ -173,5 +177,6 @@ def test_insight_service_exposes_profile_case_bundle_and_system_status(tmp_path:
     assert bundle['diagnosis'] is not None
     assert bundle['diagnosis'].get('decision_basis')
     assert 'BHMS 案例包' in bundle['bundle_markdown']
+    assert '未来 trajectory 摘要' in bundle['bundle_markdown']
     assert status['database_ready'] is True
-    assert '导出预测/诊断报告' in status['demo_acceptance_flow']
+    assert '导出 lifecycle / mechanism 报告' in status['demo_acceptance_flow']

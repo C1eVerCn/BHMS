@@ -1,31 +1,66 @@
 {
   "source": "nasa",
+  "task_kind": "lifecycle",
   "models": {
     "bilstm": {
-      "best_val_loss": 0.6047635511918501,
+      "best_val_loss": 10.958437283833822,
       "test_metrics": {
-        "loss": 32.068589225411415,
-        "rmse": 35.06854870915413,
-        "mae": 32.55826556682587,
-        "mape": 97.93481206893921,
-        "r2": -55.922711223363876,
-        "lr": 0.00039715242044697206
+        "loss": 37.35579411188761,
+        "traj_loss": 0.06037299086650213,
+        "rul_loss": 35.4097843170166,
+        "eol_loss": 36.33492867151896,
+        "knee_loss": 20.187681833902996,
+        "mono_loss": 0.0,
+        "smooth_loss": 7.0900683842486006e-09,
+        "domain_loss": 0.09635238846143086,
+        "trajectory_rmse": 0.3039486805597941,
+        "trajectory_mae": 0.20170524095495543,
+        "trajectory_mape": 3624776.3872044883,
+        "trajectory_r2": -1.117768128712972,
+        "rul_mae": 35.85748370488485,
+        "rul_rmse": 38.859091440836586,
+        "eol_mae": 36.83492883046468,
+        "eol_rmse": 39.478357791900635,
+        "knee_mae": 20.521015167236328,
+        "rmse": 0.3039486805597941,
+        "mae": 0.20170524095495543,
+        "mape": 3624776.3872044883,
+        "r2": -1.117768128712972,
+        "lr": 0.0003
       },
       "best_checkpoint": "data/models/nasa/bilstm/bilstm_best.pt",
-      "final_checkpoint": "data/models/nasa/bilstm/bilstm_final.pt"
+      "final_checkpoint": "data/models/nasa/bilstm/bilstm_final.pt",
+      "requested_model_type": "bilstm"
     },
     "hybrid": {
-      "best_val_loss": 0.0,
+      "best_val_loss": 10.867894331614176,
       "test_metrics": {
-        "loss": 32.06891740858555,
-        "rmse": 35.06944790482521,
-        "mae": 32.55859375,
-        "mape": 97.93526792526245,
-        "r2": -55.92281038314104,
-        "lr": 0.00015049999999999997
+        "loss": 38.7011137008667,
+        "traj_loss": 0.060352583415806293,
+        "rul_loss": 36.81723928451538,
+        "eol_loss": 36.91133769353231,
+        "knee_loss": 21.854382514953613,
+        "mono_loss": 0.0,
+        "smooth_loss": 2.4634983238532488e-08,
+        "domain_loss": 0.040104045222202934,
+        "trajectory_rmse": 0.30380106965700787,
+        "trajectory_mae": 0.2016872043410937,
+        "trajectory_mape": 3623172.6372044883,
+        "trajectory_r2": -1.1175331075986226,
+        "rul_mae": 37.31718476613363,
+        "rul_rmse": 40.01703198750814,
+        "eol_mae": 37.411337534586586,
+        "eol_rmse": 40.25574747721354,
+        "knee_mae": 22.187715848286945,
+        "rmse": 0.30380106965700787,
+        "mae": 0.2016872043410937,
+        "mape": 3623172.6372044883,
+        "r2": -1.1175331075986226,
+        "lr": 0.0003
       },
       "best_checkpoint": "data/models/nasa/hybrid/hybrid_best.pt",
-      "final_checkpoint": "data/models/nasa/hybrid/hybrid_final.pt"
+      "final_checkpoint": "data/models/nasa/hybrid/hybrid_final.pt",
+      "requested_model_type": "hybrid"
     }
   }
 }

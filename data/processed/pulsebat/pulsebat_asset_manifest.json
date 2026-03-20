@@ -1,0 +1,93 @@
+{
+  "source": "pulsebat",
+  "dataset_name": "pulsebat",
+  "ingestion_mode": "enhancement_assets",
+  "training_ready": false,
+  "asset_count": 14,
+  "assets": [
+    {
+      "key": "Pulse-Voltage-Response-Generation-main::README.md",
+      "kind": "readme",
+      "path": "Pulse-Voltage-Response-Generation-main/README.md",
+      "size_bytes": 31978
+    },
+    {
+      "key": "Pulse-Voltage-Response-Generation-main::Resources::NMC 2.1Ah Feature U1-U21 Description.png",
+      "kind": "resource_figure",
+      "path": "Pulse-Voltage-Response-Generation-main/Resources/NMC 2.1Ah Feature U1-U21 Description.png",
+      "size_bytes": 95614
+    },
+    {
+      "key": "Pulse-Voltage-Response-Generation-main::Resources::SOH Distribution.png",
+      "kind": "resource_figure",
+      "path": "Pulse-Voltage-Response-Generation-main/Resources/SOH Distribution.png",
+      "size_bytes": 87152
+    },
+    {
+      "key": "Pulse-Voltage-Response-Generation-main::Unexpected Situations Handling::LMO_C_10_B_2_SOC_5-55_Part_1-1_ID_PIP15827A00221240.xlsx",
+      "kind": "unexpected_workbook",
+      "path": "Pulse-Voltage-Response-Generation-main/Unexpected Situations Handling/LMO_C_10_B_2_SOC_5-55_Part_1-1_ID_PIP15827A00221240.xlsx",
+      "size_bytes": 484807
+    },
+    {
+      "key": "Pulse-Voltage-Response-Generation-main::Unexpected Situations Handling::LMO_C_25_B_101_SOC_5-50_Part_1-1_ID_515092901207.xlsx",
+      "kind": "unexpected_workbook",
+      "path": "Pulse-Voltage-Response-Generation-main/Unexpected Situations Handling/LMO_C_25_B_101_SOC_5-50_Part_1-1_ID_515092901207.xlsx",
+      "size_bytes": 440674
+    },
+    {
+      "key": "Pulse-Voltage-Response-Generation-main::Unexpected Situations Handling::LMO_C_25_B_155_SOC_5-45_Part_1-1_ID_515093001608.xlsx",
+      "kind": "unexpected_workbook",
+      "path": "Pulse-Voltage-Response-Generation-main/Unexpected Situations Handling/LMO_C_25_B_155_SOC_5-45_Part_1-1_ID_515093001608.xlsx",
+      "size_bytes": 396327
+    },
+    {
+      "key": "Pulse-Voltage-Response-Generation-main::Unexpected Situations Handling::LMO_C_25_B_17_SOC_5-55_Part_1-1_ID_515091902419.xlsx",
+      "kind": "unexpected_workbook",
+      "path": "Pulse-Voltage-Response-Generation-main/Unexpected Situations Handling/LMO_C_25_B_17_SOC_5-55_Part_1-1_ID_515091902419.xlsx",
+      "size_bytes": 480351
+    },
+    {
+      "key": "Pulse-Voltage-Response-Generation-main::Unexpected Situations Handling::LMO_C_25_B_24_SOC_5-75_Part_1-1_ID_515093002348.xlsx",
+      "kind": "unexpected_workbook",
+      "path": "Pulse-Voltage-Response-Generation-main/Unexpected Situations Handling/LMO_C_25_B_24_SOC_5-75_Part_1-1_ID_515093002348.xlsx",
+      "size_bytes": 652631
+    },
+    {
+      "key": "Pulse-Voltage-Response-Generation-main::Unexpected Situations Handling::LMO_C_25_B_28_SOC_5-50_Part_1-1_ID_515092501338.xlsx",
+      "kind": "unexpected_workbook",
+      "path": "Pulse-Voltage-Response-Generation-main/Unexpected Situations Handling/LMO_C_25_B_28_SOC_5-50_Part_1-1_ID_515092501338.xlsx",
+      "size_bytes": 437198
+    },
+    {
+      "key": "Pulse-Voltage-Response-Generation-main::Unexpected Situations Handling::LMO_C_25_B_32_SOC_5-55_Part_1-1_ID_515093002151.xlsx",
+      "kind": "unexpected_workbook",
+      "path": "Pulse-Voltage-Response-Generation-main/Unexpected Situations Handling/LMO_C_25_B_32_SOC_5-55_Part_1-1_ID_515093002151.xlsx",
+      "size_bytes": 479673
+    },
+    {
+      "key": "Pulse-Voltage-Response-Generation-main::Unexpected Situations Handling::LMO_C_25_B_45_SOC_5-55_Part_1-1_ID_515093000552.xlsx",
+      "kind": "unexpected_workbook",
+      "path": "Pulse-Voltage-Response-Generation-main/Unexpected Situations Handling/LMO_C_25_B_45_SOC_5-55_Part_1-1_ID_515093000552.xlsx",
+      "size_bytes": 522140
+    },
+    {
+      "key": "Pulse-Voltage-Response-Generation-main::step_1_extract workstep sheet.py",
+      "kind": "upstream_script",
+      "path": "Pulse-Voltage-Response-Generation-main/step_1_extract workstep sheet.py",
+      "size_bytes": 2905
+    },
+    {
+      "key": "Pulse-Voltage-Response-Generation-main::step_2_feature extraction_adjustable.py",
+      "kind": "upstream_script",
+      "path": "Pulse-Voltage-Response-Generation-main/step_2_feature extraction_adjustable.py",
+      "size_bytes": 7690
+    },
+    {
+      "key": "Pulse-Voltage-Response-Generation-main::step_3_feature collection_adjustable.py",
+      "kind": "upstream_script",
+      "path": "Pulse-Voltage-Response-Generation-main/step_3_feature collection_adjustable.py",
+      "size_bytes": 3441
+    }
+  ]
+}

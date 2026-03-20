@@ -14,7 +14,7 @@ from backend.app.core.config import Settings, get_settings
 from backend.app.core.exceptions import BHMSException
 from backend.app.services.battery_service import BatteryService
 from backend.app.services.repository import BHMSRepository
-from ml.data.source_registry import list_supported_sources
+from ml.data.source_registry import get_dataset_card, list_supported_sources
 from ml.training.experiment_constants import ABLATION_VARIANTS
 
 
@@ -33,6 +33,15 @@ class TrainingService:
         seed_count: int = 3,
     ) -> dict[str, Any]:
         source = source.lower()
+        if source not in list_supported_sources():
+            raise BHMSException(f"暂不支持的数据源: {source}", status_code=400, code="unsupported_source")
+        card = get_dataset_card(source)
+        if not card.training_ready:
+            raise BHMSException(
+                f"来源 {source} 当前为 {card.ingestion_mode}，不支持创建 lifecycle 训练任务",
+                status_code=400,
+                code="source_not_training_ready",
+            )
         baseline = self._load_comparison_file(source)
         job_id = self.repository.insert_training_job(
             {
@@ -77,6 +86,15 @@ class TrainingService:
 
     def get_comparison(self, source: str) -> dict[str, Any]:
         source = source.lower()
+        card = get_dataset_card(source)
+        if not card.training_ready:
+            return {
+                "source": source,
+                "previous": None,
+                "current": None,
+                "latest_job": None,
+                "runs": [],
+            }
         latest_job = self.repository.latest_completed_training_job(source)
         current = self._load_comparison_file(source)
         previous = latest_job.get("baseline") if latest_job else None
@@ -108,21 +126,60 @@ class TrainingService:
                     "headline": detail.get("headline"),
                     "warnings": detail.get("warnings", []),
                     "plot_count": len(detail.get("plots", [])),
+                    "training_ready": detail.get("training_ready", True),
+                    "ingestion_mode": detail.get("ingestion_mode"),
+                    "source_role": detail.get("source_role", "training_ready"),
                 }
                 for detail in sources
             ],
             "summary_notes": [
-                "该概览优先显示多随机种子与消融资产是否齐备，以及论文图表是否已经生成。",
-                "若某个来源仍缺少 multi-seed 或 ablation 产物，详细页会保留可直接执行的命令提示。",
-                "R2 为负值或 MAPE 过高时，系统会在 headline 与 warnings 中显式标记实验风险。",
+                "该概览优先显示 lifecycle within-source、多随机种子、消融与 benchmark 资产是否齐备。",
+                "若某个来源仍缺少 multi-seed、ablation 或 comparison 产物，详细页会保留可直接执行的命令提示。",
+                "当前优先指标默认兼容为 trajectory RMSE/R2；若 R2 为负或误差过高，系统会显式标记实验风险。",
             ],
             "warnings": list(dict.fromkeys(warnings)),
         }
 
     def get_experiment_detail(self, source: str) -> dict[str, Any]:
         source = source.lower()
+        card = get_dataset_card(source)
         dataset_summary = self._load_json_file(self.settings.processed_dir / source / f"{source}_dataset_summary.json") or {}
         comparison = self.get_comparison(source)
+        if not card.training_ready:
+            source_role = "enhancement_only" if card.ingestion_mode == "enhancement_assets" else "auxiliary"
+            headline = "增强资产源，仅供机制增强" if source_role == "enhancement_only" else "辅助轨迹源，不进入主训练基准"
+            key_findings = (
+                [
+                    "该来源仅生成 enhancement 资产索引，供 GraphRAG/机理侧检索使用。",
+                    "不会进入 prepare_training_dataset、baseline comparison 或 benchmark 排名。",
+                ]
+                if source_role == "enhancement_only"
+                else [
+                    "该来源已转换为标准 cycle summary，可供 trajectory 辅助分析与案例展示。",
+                    "不会自动加入 lifecycle 主训练候选池。",
+                ]
+            )
+            return {
+                "source": source,
+                "dataset_summary": dataset_summary,
+                "comparison": comparison,
+                "models": {},
+                "best_model": None,
+                "headline": headline,
+                "academic_status": "增强资产源" if source_role == "enhancement_only" else "辅助轨迹源",
+                "warnings": [],
+                "key_findings": key_findings,
+                "plots": [],
+                "artifact_paths": {
+                    "source_dir": str(self.settings.model_dir / source),
+                    "plots_dir": str(self.settings.model_dir / source / "plots"),
+                },
+                "recommended_commands": {},
+                "training_ready": False,
+                "ingestion_mode": card.ingestion_mode,
+                "source_group": card.group,
+                "source_role": source_role,
+            }
         model_details = {
             model_type: self._build_model_detail(source, model_type)
             for model_type in ("bilstm", "hybrid")
@@ -148,14 +205,30 @@ class TrainingService:
                 "plots_dir": str(self.settings.model_dir / source / "plots"),
             },
             "recommended_commands": {
-                "multi_seed_hybrid": f"python scripts/run_multi_seed_experiment.py --source {source} --model hybrid --config configs/{source}_hybrid.yaml --force",
-                "multi_seed_bilstm": f"python scripts/run_multi_seed_experiment.py --source {source} --model bilstm --config configs/{source}_bilstm.yaml --force",
-                "ablation_study": f"python scripts/run_ablation_study.py --source {source} --config configs/{source}_hybrid.yaml --force",
+                "multi_seed_hybrid": f"python scripts/run_multi_seed_experiment.py --source {source} --model hybrid --task lifecycle --config configs/{source}_hybrid.yaml --force",
+                "multi_seed_bilstm": f"python scripts/run_multi_seed_experiment.py --source {source} --model bilstm --task lifecycle --config configs/{source}_bilstm.yaml --force",
+                "ablation_study": f"python scripts/run_ablation_study.py --source {source} --task lifecycle --config configs/{source}_hybrid.yaml --force",
             },
+            "training_ready": card.training_ready,
+            "ingestion_mode": card.ingestion_mode,
+            "source_group": card.group,
+            "source_role": "training_ready",
         }
 
     def get_ablation_summary(self, source: str) -> dict[str, Any]:
         source = source.lower()
+        card = get_dataset_card(source)
+        if not card.training_ready:
+            return {
+                "source": source,
+                "available": False,
+                "notes": [
+                    f"{source.upper()} 当前被标记为 {card.ingestion_mode}，不会进入 lifecycle hybrid 消融。",
+                    "如需使用该来源，请优先查看 processed 资产或 enhancement 索引，而非 benchmark 训练结果。",
+                ],
+                "recommended_command": None,
+                "variants": [],
+            }
         path = self.settings.model_dir / source / "ablation_summary.json"
         payload = self._load_json_file(path)
         if payload is not None:
@@ -167,9 +240,9 @@ class TrainingService:
             "available": False,
             "notes": [
                 "当前来源尚未生成 ablation_summary.json。",
-                "建议先确保 hybrid 多随机种子结果齐备，再运行三组 Hybrid 消融。",
+                "建议先确保 lifecycle hybrid 多随机种子结果齐备，再运行 lifecycle hybrid 消融。",
             ],
-            "recommended_command": f"python scripts/run_ablation_study.py --source {source} --config configs/{source}_hybrid.yaml --force",
+            "recommended_command": f"python scripts/run_ablation_study.py --source {source} --task lifecycle --config configs/{source}_hybrid.yaml --force",
             "variants": [
                 {
                     "key": item["key"],
@@ -203,11 +276,41 @@ class TrainingService:
             if job_kind in {"baseline", "full_suite"}:
                 if effective_scope in {"all", "bilstm"}:
                     self.repository.update_training_job(job_id, current_stage="baseline_bilstm", log_excerpt=self._collapse_logs(logs))
-                    logs.append(self._run_command([sys.executable, "scripts/train_models.py", "--source", source, "--model", "bilstm", "--config", self._config_for(source, "bilstm")]))
+                    logs.append(
+                        self._run_command(
+                            [
+                                sys.executable,
+                                "scripts/train_models.py",
+                                "--source",
+                                source,
+                                "--model",
+                                "bilstm",
+                                "--task",
+                                "lifecycle",
+                                "--config",
+                                self._config_for(source, "bilstm"),
+                            ]
+                        )
+                    )
                     suite_progress.append("baseline_bilstm")
                 if effective_scope in {"all", "hybrid"}:
                     self.repository.update_training_job(job_id, current_stage="baseline_hybrid", log_excerpt=self._collapse_logs(logs))
-                    logs.append(self._run_command([sys.executable, "scripts/train_models.py", "--source", source, "--model", "hybrid", "--config", self._config_for(source, "hybrid")]))
+                    logs.append(
+                        self._run_command(
+                            [
+                                sys.executable,
+                                "scripts/train_models.py",
+                                "--source",
+                                source,
+                                "--model",
+                                "hybrid",
+                                "--task",
+                                "lifecycle",
+                                "--config",
+                                self._config_for(source, "hybrid"),
+                            ]
+                        )
+                    )
                     suite_progress.append("baseline_hybrid")
                 if effective_scope == "all":
                     self.repository.update_training_job(job_id, current_stage="compare_models", log_excerpt=self._collapse_logs(logs))
@@ -230,6 +333,8 @@ class TrainingService:
                         source,
                         "--model",
                         model_type,
+                        "--task",
+                        "lifecycle",
                         "--config",
                         self._config_for(source, model_type),
                         "--seeds",
@@ -249,6 +354,8 @@ class TrainingService:
                     "scripts/run_ablation_study.py",
                     "--source",
                     source,
+                    "--task",
+                    "lifecycle",
                     "--config",
                     self._config_for(source, "hybrid"),
                     "--seeds",
@@ -350,18 +457,18 @@ class TrainingService:
     def _model_assessment(model_type: str, metrics: dict[str, Any], multi_seed_summary: Optional[dict[str, Any]]) -> str:
         rmse = metrics.get("rmse")
         r2 = metrics.get("r2")
-        model_label = "Hybrid" if model_type == "hybrid" else "Bi-LSTM"
+        model_label = "Lifecycle Hybrid" if model_type == "hybrid" else "Lifecycle Bi-LSTM"
         if not metrics:
-            return f"{model_label} 还没有形成可解读的测试指标。"
+            return f"{model_label} 还没有形成可解读的生命周期测试指标。"
         if isinstance(r2, (int, float)) and float(r2) < 0:
             if multi_seed_summary:
-                return f"{model_label} 已形成多随机种子资产，但聚合 R2 仍为负，说明泛化结论仍偏弱。"
-            return f"{model_label} 已能跑通，但当前 R2 为负，仍偏演示级结果。"
+                return f"{model_label} 已形成多随机种子资产，但聚合 trajectory R2 仍为负，说明泛化结论仍偏弱。"
+            return f"{model_label} 已能跑通，但当前 trajectory R2 为负，仍偏演示级结果。"
         if multi_seed_summary:
-            return f"{model_label} 已补充多随机种子摘要，可直接支撑论文实验分析。"
+            return f"{model_label} 已补充多随机种子摘要，可直接支撑生命周期实验分析。"
         if isinstance(rmse, (int, float)):
-            return f"{model_label} 已形成单次实验结果，建议继续补充多随机种子与消融实验。"
-        return f"{model_label} 指标仍不完整，建议重新生成实验摘要。"
+            return f"{model_label} 已形成单次实验结果，建议继续补充多随机种子、消融与 transfer 实验。"
+        return f"{model_label} 指标仍不完整，建议重新生成生命周期实验摘要。"
 
     def _source_plots(self, source: str) -> list[dict[str, Any]]:
         manifest_path = self.settings.model_dir / source / "plots" / "plot_manifest.json"
@@ -437,11 +544,11 @@ class TrainingService:
     @staticmethod
     def _detail_headline(best_model: Optional[str], improvement: Optional[float], warnings: list[str]) -> str:
         if not best_model:
-            return "当前来源尚未形成稳定的实验对比摘要。"
-        label = "Hybrid" if best_model == "hybrid" else "Bi-LSTM"
+            return "当前来源尚未形成稳定的生命周期实验对比摘要。"
+        label = "Lifecycle Hybrid" if best_model == "hybrid" else "Lifecycle Bi-LSTM"
         if improvement is not None:
             direction = "提升" if improvement >= 0 else "下降"
-            return f"{label} 当前在该来源上相对基线 {direction} {abs(improvement):.3f}%（按 RMSE 口径）。"
+            return f"{label} 当前在该来源上相对基线 {direction} {abs(improvement):.3f}%（按 trajectory RMSE 口径）。"
         if warnings:
             return f"{label} 当前暂列最优，但仍有实验风险需要补强。"
         return f"{label} 当前在该来源上表现最优。"
@@ -472,7 +579,7 @@ class TrainingService:
             findings.append(f"当前按优先指标表现更优的模型是 {best_model}。")
         if improvement is not None:
             direction = "降低" if improvement >= 0 else "升高"
-            findings.append(f"Hybrid 相对 Bi-LSTM 的 RMSE {direction}了 {abs(improvement):.3f}%。")
+            findings.append(f"Lifecycle Hybrid 相对 Lifecycle Bi-LSTM 的 trajectory RMSE {direction}了 {abs(improvement):.3f}%。")
         for model_name, payload in model_details.items():
             findings.append(payload["assessment"])
             if payload.get("multi_seed_available"):
@@ -480,7 +587,7 @@ class TrainingService:
                 mean = aggregate.get("mean", {})
                 std = aggregate.get("std", {})
                 findings.append(
-                    f"{model_name} 多随机种子聚合：RMSE {mean.get('rmse')} ± {std.get('rmse')}，R2 {mean.get('r2')} ± {std.get('r2')}。"
+                    f"{model_name} 多随机种子聚合：trajectory RMSE {mean.get('rmse')} ± {std.get('rmse')}，R2 {mean.get('r2')} ± {std.get('r2')}。"
                 )
         return findings
 

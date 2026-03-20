@@ -1,0 +1,15 @@
+{
+  "train_batteries": [
+    "oxford::oxford_degradation_1::Cell1",
+    "oxford::oxford_degradation_1::Cell2",
+    "oxford::oxford_degradation_1::Cell3",
+    "oxford::oxford_degradation_1::Cell4"
+  ],
+  "val_batteries": [
+    "oxford::oxford_degradation_1::Cell5"
+  ],
+  "test_batteries": [
+    "oxford::oxford_degradation_1::Cell6",
+    "oxford::oxford_degradation_1::Cell7"
+  ]
+}

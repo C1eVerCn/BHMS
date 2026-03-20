@@ -20,6 +20,7 @@ import type {
   MechanismExplanationResult,
   PaginatedBatteries,
   PredictionResult,
+  SupportedSource,
   SystemStatus,
   TrainingComparison,
   TrainingJob,
@@ -75,7 +76,7 @@ export async function uploadBatteryData(file: File, options?: { batteryId?: stri
   })
 }
 
-export function importSourceData(source: 'nasa' | 'calce' | 'kaggle', batteryIds?: string[], includeInTraining = false) {
+export function importSourceData(source: SupportedSource, batteryIds?: string[], includeInTraining = false) {
   return request<UploadSummary>({
     method: 'POST',
     url: '/data/import-source',
@@ -104,7 +105,7 @@ export function explainMechanism(payload: { battery_id: string; anomalies?: Anom
 }
 
 export function createTrainingJob(payload: {
-  source: 'nasa' | 'calce' | 'kaggle'
+  source: SupportedSource
   model_scope: 'bilstm' | 'hybrid' | 'all'
   force_run?: boolean
   job_kind?: 'baseline' | 'multi_seed' | 'ablation' | 'full_suite'

@@ -200,6 +200,15 @@ class RULDataModule:
                 "test": len(self.test_dataset),
             },
         }
+        card = SOURCE_REGISTRY.get(self.source)
+        if card is not None:
+            payload.update(
+                {
+                    "ingestion_mode": card.ingestion_mode,
+                    "training_ready": card.training_ready,
+                    "source_group": card.group,
+                }
+            )
         if provenance:
             payload["provenance"] = dict(provenance)
         return payload

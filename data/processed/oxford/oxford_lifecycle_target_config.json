@@ -1,0 +1,11 @@
+{
+  "observation_ratios": [
+    0.2,
+    0.3,
+    0.4
+  ],
+  "default_observation_ratio": 0.3,
+  "encoder_len": 64,
+  "future_len": 64,
+  "target_column": "capacity_ratio"
+}

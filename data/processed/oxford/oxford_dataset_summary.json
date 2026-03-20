@@ -1,0 +1,76 @@
+{
+  "csv_path": "data/processed/oxford/oxford_cycle_summary.csv",
+  "source": "oxford",
+  "seq_len": 30,
+  "batch_size": 16,
+  "feature_columns": [
+    "voltage_mean",
+    "voltage_std",
+    "voltage_min",
+    "voltage_max",
+    "current_mean",
+    "current_std",
+    "temperature_mean",
+    "temperature_std",
+    "temperature_rise_rate",
+    "capacity",
+    "cycle_number"
+  ],
+  "split": {
+    "train_batteries": [
+      "oxford::oxford_degradation_1::Cell1",
+      "oxford::oxford_degradation_1::Cell2",
+      "oxford::oxford_degradation_1::Cell3",
+      "oxford::oxford_degradation_1::Cell4"
+    ],
+    "val_batteries": [
+      "oxford::oxford_degradation_1::Cell5"
+    ],
+    "test_batteries": [
+      "oxford::oxford_degradation_1::Cell6",
+      "oxford::oxford_degradation_1::Cell7"
+    ]
+  },
+  "normalization": {
+    "means": {
+      "voltage_mean": 3.799796341230675,
+      "voltage_std": 0.22633672766255253,
+      "voltage_min": 2.699966205474453,
+      "voltage_max": 4.199984808029197,
+      "current_mean": -0.0028714658599683085,
+      "current_std": 0.33820999508517513,
+      "temperature_mean": 39.77017498487681,
+      "temperature_std": 0.4172811035028074,
+      "temperature_rise_rate": 0.06682014783541425,
+      "capacity": 0.6390191946405162,
+      "cycle_number": 3785.401459854015
+    },
+    "stds": {
+      "voltage_mean": 0.009053961664243406,
+      "voltage_std": 0.004675871975727106,
+      "voltage_min": 0.00010113420731751322,
+      "voltage_max": 8.759561329413388e-05,
+      "current_mean": 0.0008976365093961718,
+      "current_std": 0.00740237952171527,
+      "temperature_mean": 2.9272738038504857,
+      "temperature_std": 1.1458346341530365,
+      "temperature_rise_rate": 0.08837596994998692,
+      "capacity": 0.04878403287732391,
+      "cycle_number": 2335.5094521054248
+    }
+  },
+  "num_batteries": 7,
+  "num_samples": {
+    "train": 158,
+    "val": 17,
+    "test": 65
+  },
+  "ingestion_mode": "raw_converter",
+  "training_ready": false,
+  "source_group": "trajectory_enhancement",
+  "provenance": {
+    "kind": "repo_baseline",
+    "source_root": "data/raw/oxford",
+    "generated_by": "scripts/refresh_processed_baselines.py"
+  }
+}

@@ -3,5 +3,5 @@
   "title": "NASA no_transformer training curves",
   "description": "Train/validation loss for the ablation variant.",
   "path": "data/models/nasa/hybrid/ablation/no_transformer/plots/training_curves.png",
-  "generated_at": "2026-03-15T08:29:23.987073"
+  "generated_at": "2026-03-17T07:54:16.386765"
 }

@@ -1,6 +1,7 @@
 data:
   csv_path: data/processed/kaggle/kaggle_cycle_summary.csv
-  seq_len: 24
+  sources:
+    - kaggle
   feature_columns:
     - voltage_mean
     - voltage_std
@@ -13,16 +14,28 @@ data:
     - temperature_rise_rate
     - capacity
     - cycle_number
+  target_config:
+    observation_ratios:
+      - 0.2
+      - 0.3
+      - 0.4
+    default_observation_ratio: 0.3
+    encoder_len: 64
+    future_len: 64
+    target_column: capacity_ratio
 model:
-  d_model: 48
+  d_model: 32
   xlstm_layers: 1
   transformer_layers: 1
-  fusion_dim: 48
+  fusion_dim: 32
   dropout: 0.1
+  use_xlstm: true
+  use_transformer: true
+  use_domain_embeddings: true
+  use_trajectory_head: true
 training:
-  num_epochs: 30
-  batch_size: 8
+  num_epochs: 24
+  batch_size: 6
   learning_rate: 0.0003
   weight_decay: 0.001
-  patience: 12
-  model_version: kaggle-hybrid-v1
+  model_version: kaggle-lifecycle-hybrid-v1

@@ -11,10 +11,11 @@ import type {
   CaseBundleExportResult,
   DatasetProfile,
   DiagnosisRecord,
-  DiagnosisResult,
   ExperimentDetail,
+  LifecyclePredictionResult,
+  MechanismExplanationResult,
   PredictionRecord,
-  PredictionResult,
+  SupportedSource,
   SystemStatus,
   TrainingComparison,
 } from '../types/domain'
@@ -22,10 +23,6 @@ import {
   formatFeatureLabel,
   formatModelLabel,
   formatSourceLabel,
-  formatTrainingStageLabel,
-  formatTrainingJobKindLabel,
-  formatTrainingScopeLabel,
-  formatTrainingStatusLabel,
   replaceTechnicalTerms,
 } from '../utils/display'
 
@@ -36,8 +33,8 @@ const Analysis: React.FC = () => {
   const selectedBatteryId = useBhmsStore((state) => state.selectedBatteryId)
   const selectBattery = useBhmsStore((state) => state.selectBattery)
   const loadBatteryContext = useBhmsStore((state) => state.loadBatteryContext)
-  const latestPrediction = useBhmsStore((state) => (selectedBatteryId ? state.latestPrediction[selectedBatteryId] : undefined))
-  const latestDiagnosis = useBhmsStore((state) => (selectedBatteryId ? state.latestDiagnosis[selectedBatteryId] : undefined))
+  const latestPrediction = useBhmsStore((state) => (selectedBatteryId ? state.latestLifecyclePrediction[selectedBatteryId] : undefined))
+  const latestMechanismExplanation = useBhmsStore((state) => (selectedBatteryId ? state.latestMechanismExplanation[selectedBatteryId] : undefined))
   const batteryCycles = useBhmsStore((state) => (selectedBatteryId ? state.batteryCycles[selectedBatteryId] ?? [] : []))
   const batteryHistory = useBhmsStore((state) => (selectedBatteryId ? state.batteryHistory[selectedBatteryId] : undefined))
   const trainingJobs = useBhmsStore((state) => state.trainingJobs)
@@ -65,7 +62,7 @@ const Analysis: React.FC = () => {
   const getDiagnosisReportText = useBhmsStore((state) => state.getDiagnosisReportText)
   const trainingLoading = useBhmsStore((state) => state.trainingLoading)
   const insightLoading = useBhmsStore((state) => state.insightLoading)
-  const [activeTab, setActiveTab] = useState('rul')
+  const [activeTab, setActiveTab] = useState('trajectory')
   const [modelScope, setModelScope] = useState<'all' | 'bilstm' | 'hybrid'>('all')
   const [jobKind, setJobKind] = useState<'baseline' | 'multi_seed' | 'ablation' | 'full_suite'>('full_suite')
 
@@ -113,10 +110,10 @@ const Analysis: React.FC = () => {
   }, [loadCaseBundle, selectedBatteryId])
 
   const prediction = latestPrediction ?? hydratePredictionFromHistory(batteryHistory?.predictions?.[0])
-  const diagnosis = latestDiagnosis ?? hydrateDiagnosisFromHistory(batteryHistory?.diagnoses?.[0])
+  const mechanism = latestMechanismExplanation ?? hydrateMechanismFromHistory(batteryHistory?.diagnoses?.[0])
 
-  const rulChartOption = useMemo(() => buildRulOption(prediction, batteryCycles), [batteryCycles, prediction])
-  const graphOption = useMemo(() => buildGraphOption(diagnosis), [diagnosis])
+  const lifecycleChartOption = useMemo(() => buildLifecycleOption(prediction, batteryCycles), [batteryCycles, prediction])
+  const graphOption = useMemo(() => buildGraphOption(mechanism), [mechanism])
 
   const pills = [
     { label: '当前电池', value: selectedBatteryId ?? '未选择', tone: 'teal' as const },
@@ -127,16 +124,16 @@ const Analysis: React.FC = () => {
   return (
     <div className="page-shell">
       <PageHero
-        kicker="Analysis Center"
-        title="解释、图谱、实验、画像、案例，都放到同一个工作台"
-        description="这里统一承载 RUL 证据链、GraphRAG 诊断、实验结论、数据画像与案例导出，直接服务答辩演示。"
+        kicker="Lifecycle Analysis Center"
+        title="生命周期轨迹、机理解释、benchmark、案例包都放到同一个工作台"
+        description="这里统一承载 lifecycle 证据链、GraphRAG 解释、实验结论、数据画像与案例导出，直接服务答辩演示。"
         pills={pills}
         aside={
           <InsightCard
             compact
             label="工作台状态"
             value={trainingLoading || insightLoading ? '刷新中' : 'Ready'}
-            description="建议先跑预测/诊断，再进入分析中心查看完整证据链与案例材料。"
+            description="建议先跑 lifecycle 预测 / 机理解释，再进入分析工作台查看完整证据链与案例材料。"
           />
         }
       />
@@ -169,18 +166,18 @@ const Analysis: React.FC = () => {
         onChange={setActiveTab}
         items={[
           {
-            key: 'rul',
-            label: 'RUL 分析',
+            key: 'trajectory',
+            label: '生命周期轨迹',
             children: (
               <div className="analysis-grid">
                 <div>
                   <ChartPanel
-                    title="历史轨迹与完整寿命投影"
-                    option={rulChartOption}
+                    title="观测轨迹与 future trajectory"
+                    option={lifecycleChartOption}
                     hasData={Boolean(prediction?.projection?.actual_points.length || batteryCycles.length)}
                     height={400}
-                    emptyTitle="暂无预测结果"
-                    emptyDescription="先在 RUL 预测页执行预测，再回到这里查看完整轨迹与证据链。"
+                    emptyTitle="暂无生命周期结果"
+                    emptyDescription="先在生命周期预测页执行预测，再回到这里查看 trajectory 与关键节点。"
                     style={{ marginBottom: 18 }}
                   />
 
@@ -199,11 +196,11 @@ const Analysis: React.FC = () => {
                           )}
                         />
                       ) : (
-                        <EmptyStateBlock compact title="暂无特征贡献" description="先执行预测，再查看结构化证据链。" className="panel-empty-state" />
+                        <EmptyStateBlock compact title="暂无特征贡献" description="先执行生命周期预测，再查看结构化证据链。" className="panel-empty-state" />
                       )}
                     </PanelCard>
 
-                    <PanelCard title="关键时间窗口贡献">
+                    <PanelCard title="关键时间窗口">
                       {prediction?.explanation?.window_contributions?.length ? (
                         <List
                           dataSource={prediction.explanation.window_contributions}
@@ -221,48 +218,42 @@ const Analysis: React.FC = () => {
                 </div>
 
                 <div>
-                  <PanelCard title="预测证据链" style={{ marginBottom: 18 }}>
+                  <PanelCard title="生命周期证据链" style={{ marginBottom: 18 }}>
                     {prediction ? (
                       <Descriptions column={1} size="small" className="details-grid">
                         <Descriptions.Item label="模型">{formatModelLabel(prediction.model_name)}</Descriptions.Item>
                         <Descriptions.Item label="预测 RUL">{prediction.predicted_rul.toFixed(1)} cycles</Descriptions.Item>
-                        <Descriptions.Item label="置信度">{(prediction.confidence * 100).toFixed(1)}%</Descriptions.Item>
-                        <Descriptions.Item label="Checkpoint">{prediction.checkpoint_id ?? '--'}</Descriptions.Item>
-                        <Descriptions.Item label="EOL 周期">{prediction.projection.predicted_eol_cycle.toFixed(1)}</Descriptions.Item>
-                        <Descriptions.Item label="投影方法">{prediction.projection.projection_method ?? 'linear'}</Descriptions.Item>
+                        <Descriptions.Item label="knee 周期">{prediction.predicted_knee_cycle?.toFixed(1) ?? '--'}</Descriptions.Item>
+                        <Descriptions.Item label="EOL 周期">{prediction.predicted_eol_cycle?.toFixed(1) ?? '--'}</Descriptions.Item>
+                        <Descriptions.Item label="风险窗口">{prediction.risk_windows.length}</Descriptions.Item>
+                        <Descriptions.Item label="衰退模式">{String(prediction.future_risks.future_capacity_fade_pattern ?? '--')}</Descriptions.Item>
                       </Descriptions>
                     ) : (
-                      <EmptyStateBlock compact title="暂无预测证据" description="执行一次预测后，这里会展示模型与轨迹解释。" className="panel-empty-state" />
+                      <EmptyStateBlock compact title="暂无生命周期证据" description="执行一次生命周期预测后，这里会展示模型与轨迹解释。" className="panel-empty-state" />
                     )}
                   </PanelCard>
 
-                  <PanelCard title="注意力热力图与置信度说明">
+                  <PanelCard title="风险窗口与报告导出">
                     {prediction ? (
                       <Space direction="vertical" size={16} style={{ width: '100%' }}>
-                        {prediction.explanation.attention_heatmap ? (
-                          <Alert
-                            type="info"
-                            showIcon
-                            message="已生成注意力热力图辅助解释"
-                            description={prediction.explanation.attention_heatmap.disclaimer}
+                        {prediction.risk_windows.length ? (
+                          <List
+                            size="small"
+                            dataSource={prediction.risk_windows}
+                            renderItem={(item) => <List.Item>{`${item.label}: ${item.start_cycle} -> ${item.end_cycle} (${item.severity})`}</List.Item>}
                           />
                         ) : (
-                          <Alert type="info" showIcon message="当前模型未返回注意力热力图" />
+                          <Alert type="info" showIcon message="当前预测未标记额外风险窗口" />
                         )}
-                        <List
-                          size="small"
-                          dataSource={((prediction.explanation.confidence_summary.factors as string[] | undefined) ?? []).slice(0, 4)}
-                          renderItem={(item) => <List.Item>{replaceTechnicalTerms(item)}</List.Item>}
-                        />
                         <Button
                           icon={<DownloadOutlined />}
-                          onClick={() => void downloadTextReport(prediction.id, prediction.report_markdown, getPredictionReportText, 'prediction-report')}
+                          onClick={() => void downloadTextReport(prediction.id, prediction.report_markdown, getPredictionReportText, 'lifecycle-prediction-report')}
                         >
-                          导出预测报告
+                          导出生命周期报告
                         </Button>
                       </Space>
                     ) : (
-                      <EmptyStateBlock compact title="暂无可导出报告" description="先执行预测。" className="panel-empty-state" />
+                      <EmptyStateBlock compact title="暂无可导出报告" description="先执行生命周期预测。" className="panel-empty-state" />
                     )}
                   </PanelCard>
                 </div>
@@ -270,44 +261,35 @@ const Analysis: React.FC = () => {
             ),
           },
           {
-            key: 'graph',
-            label: 'GraphRAG 诊断',
+            key: 'mechanism',
+            label: '机理解释',
             children: (
               <div className="analysis-grid">
                 <div>
                   <ChartPanel
-                    title="GraphRAG 子图可视化"
+                    title="GraphRAG 证据子图"
                     option={graphOption}
-                    hasData={Boolean(diagnosis?.graph_trace?.nodes?.length)}
+                    hasData={Boolean(mechanism?.graph_trace?.nodes?.length)}
                     height={420}
-                    emptyTitle="暂无图谱诊断"
-                    emptyDescription="先在故障诊断页执行一次 GraphRAG 诊断，再回到这里查看检索子图。"
+                    emptyTitle="暂无机理解释"
+                    emptyDescription="先在机理解释页执行一次流程，再回到这里查看 GraphRAG 子图。"
                     style={{ marginBottom: 18 }}
                   />
 
                   <div className="detail-grid detail-grid--two">
-                    <PanelCard title="候选故障排序">
-                      {diagnosis?.candidate_faults?.length ? (
+                    <PanelCard title="候选机理排序">
+                      {mechanism?.candidate_faults?.length ? (
                         <List
-                          dataSource={diagnosis.candidate_faults}
+                          dataSource={mechanism.candidate_faults}
                           renderItem={(item: CandidateFault) => (
                             <List.Item>
                               <List.Item.Meta
-                                title={
-                                  <Space size={8} wrap>
-                                    <span>{item.name}</span>
-                                    <span>score {item.score.toFixed(3)}</span>
-                                    {item.rule_id ? <Text code>{item.rule_id}</Text> : null}
-                                  </Space>
-                                }
+                                avatar={<RadarChartOutlined />}
+                                title={`${item.name} · score ${item.score.toFixed(3)}`}
                                 description={
                                   <Space direction="vertical" size={2} style={{ width: '100%' }}>
                                     <Text type="secondary">{item.description}</Text>
                                     <Text type="secondary">匹配症状：{item.matched_symptoms.join('、') || '无'}</Text>
-                                    <Text type="secondary">
-                                      覆盖率 {typeof item.symptom_coverage === 'number' ? item.symptom_coverage.toFixed(3) : '--'}，
-                                      适用来源 {item.source_scope?.join('、') || '--'}
-                                    </Text>
                                     {item.confidence_basis?.length ? <Text type="secondary">排序依据：{item.confidence_basis.join('；')}</Text> : null}
                                   </Space>
                                 }
@@ -316,57 +298,64 @@ const Analysis: React.FC = () => {
                           )}
                         />
                       ) : (
-                        <EmptyStateBlock compact title="暂无候选故障" description="GraphRAG 检索后会显示 Top-K 候选故障。" className="panel-empty-state" />
+                        <EmptyStateBlock compact title="暂无候选机理" description="GraphRAG 检索后会显示 Top-K 候选机理。" className="panel-empty-state" />
                       )}
                     </PanelCard>
 
-                    <PanelCard title="图谱排序依据">
-                      {diagnosis?.graph_trace?.ranking_basis?.length ? (
-                        <List size="small" dataSource={diagnosis.graph_trace.ranking_basis} renderItem={(item) => <List.Item>{item}</List.Item>} />
+                    <PanelCard title="未来风险与模型证据">
+                      {mechanism ? (
+                        <Space direction="vertical" size={12} style={{ width: '100%' }}>
+                          <List
+                            size="small"
+                            dataSource={[
+                              `future fade pattern: ${String(mechanism.lifecycle_evidence.future_capacity_fade_pattern ?? '--')}`,
+                              `temperature / resistance / voltage: ${String(mechanism.lifecycle_evidence.temperature_risk ?? '--')} / ${String(
+                                mechanism.lifecycle_evidence.resistance_risk ?? '--',
+                              )} / ${String(mechanism.lifecycle_evidence.voltage_risk ?? '--')}`,
+                              `top features: ${((mechanism.model_evidence.top_features as string[]) ?? []).join('、') || '--'}`,
+                              `critical windows: ${((mechanism.model_evidence.critical_windows as string[]) ?? []).join('、') || '--'}`,
+                            ]}
+                            renderItem={(item) => <List.Item>{item}</List.Item>}
+                          />
+                        </Space>
                       ) : (
-                        <EmptyStateBlock compact title="暂无排序依据" description="执行诊断后显示。" className="panel-empty-state" />
+                        <EmptyStateBlock compact title="暂无未来风险摘要" description="机理解释后会显示未来风险与模型证据。" className="panel-empty-state" />
                       )}
                     </PanelCard>
                   </div>
                 </div>
 
                 <div>
-                  <PanelCard title="故障归因摘要" style={{ marginBottom: 18 }}>
-                    {diagnosis ? (
+                  <PanelCard title="机理解释摘要" style={{ marginBottom: 18 }}>
+                    {mechanism ? (
                       <Space direction="vertical" size={14} style={{ width: '100%' }}>
                         <Alert
-                          type={diagnosis.severity === 'critical' || diagnosis.severity === 'high' ? 'error' : 'warning'}
+                          type={mechanism.severity === 'critical' || mechanism.severity === 'high' ? 'error' : 'warning'}
                           showIcon
-                          message={`${diagnosis.fault_type} · 置信度 ${(diagnosis.confidence * 100).toFixed(1)}%`}
-                          description={diagnosis.description}
+                          message={`${mechanism.fault_type} · 置信度 ${(mechanism.confidence * 100).toFixed(1)}%`}
+                          description={mechanism.description}
                         />
                         <Title level={5}>根因链</Title>
-                        <List size="small" dataSource={diagnosis.root_causes} renderItem={(item) => <List.Item>{item}</List.Item>} />
+                        <List size="small" dataSource={mechanism.root_causes} renderItem={(item) => <List.Item>{item}</List.Item>} />
                         <Title level={5}>处理建议</Title>
-                        <List size="small" dataSource={diagnosis.recommendations} renderItem={(item) => <List.Item>{item}</List.Item>} />
-                        {diagnosis.decision_basis?.length ? (
-                          <>
-                            <Title level={5}>为什么优先判断为该故障</Title>
-                            <List size="small" dataSource={diagnosis.decision_basis} renderItem={(item) => <List.Item>{item}</List.Item>} />
-                          </>
-                        ) : null}
+                        <List size="small" dataSource={mechanism.recommendations} renderItem={(item) => <List.Item>{item}</List.Item>} />
                         <Button
                           icon={<DownloadOutlined />}
-                          onClick={() => void downloadTextReport(diagnosis.id, diagnosis.report_markdown, getDiagnosisReportText, 'diagnosis-report')}
+                          onClick={() => void downloadTextReport(mechanism.id, mechanism.report_markdown, getDiagnosisReportText, 'mechanism-report')}
                         >
-                          导出诊断报告
+                          导出机理解释报告
                         </Button>
                       </Space>
                     ) : (
-                      <EmptyStateBlock compact title="暂无故障归因" description="请先执行 GraphRAG 诊断。" className="panel-empty-state" />
+                      <EmptyStateBlock compact title="暂无机理解释" description="请先执行 GraphRAG 机理解释。" className="panel-empty-state" />
                     )}
                   </PanelCard>
 
-                  <PanelCard title="异常证据条目">
-                    {diagnosis?.evidence?.length ? (
-                      <List size="small" dataSource={diagnosis.evidence} renderItem={(item) => <List.Item>{item}</List.Item>} />
+                  <PanelCard title="证据条目">
+                    {mechanism?.evidence?.length ? (
+                      <List size="small" dataSource={mechanism.evidence} renderItem={(item) => <List.Item>{item}</List.Item>} />
                     ) : (
-                      <EmptyStateBlock compact title="暂无证据条目" description="执行诊断后显示异常摘要和图谱证据。" className="panel-empty-state" />
+                      <EmptyStateBlock compact title="暂无证据条目" description="执行机理解释后显示异常摘要和图谱证据。" className="panel-empty-state" />
                     )}
                   </PanelCard>
                 </div>
@@ -374,8 +363,8 @@ const Analysis: React.FC = () => {
             ),
           },
           {
-            key: 'training',
-            label: '训练与实验',
+            key: 'benchmark',
+            label: 'benchmark',
             children: (
               <div className="analysis-grid">
                 <div>
@@ -384,7 +373,7 @@ const Analysis: React.FC = () => {
                       <Alert
                         type="info"
                         showIcon
-                        message="训练流程支持基线、多随机种子、消融和完整实验套件"
+                        message="训练流程支持 lifecycle 基线、多随机种子、消融和完整实验套件"
                         description="完整套件会按 prepare -> baseline -> multi-seed -> ablation -> plots 的固定顺序执行。"
                       />
                       {sourceOverview ? (
@@ -413,8 +402,8 @@ const Analysis: React.FC = () => {
                           style={{ minWidth: 180 }}
                           options={[
                             { label: '全部模型', value: 'all' },
-                            { label: 'Bi-LSTM', value: 'bilstm' },
-                            { label: 'Hybrid', value: 'hybrid' },
+                            { label: 'Lifecycle Bi-LSTM', value: 'bilstm' },
+                            { label: 'Lifecycle Hybrid', value: 'hybrid' },
                           ]}
                           onChange={setModelScope}
                         />
@@ -422,7 +411,7 @@ const Analysis: React.FC = () => {
                           type="primary"
                           icon={<PlayCircleOutlined />}
                           loading={trainingLoading}
-                          onClick={() => void startTrainingJob(source as 'nasa' | 'calce' | 'kaggle', modelScope, jobKind, false, 3)}
+                          onClick={() => void startTrainingJob(source as SupportedSource, modelScope, jobKind, false, 3)}
                         >
                           发起训练任务
                         </Button>
@@ -430,44 +419,6 @@ const Analysis: React.FC = () => {
                     </Space>
                   </PanelCard>
 
-                  <PanelCard title="训练任务列表" style={{ marginBottom: 18 }}>
-                    {trainingJobs.length ? (
-                      <List
-                        dataSource={trainingJobs}
-                        renderItem={(item) => (
-                          <List.Item>
-                            <List.Item.Meta
-                              title={`#${item.id} · ${formatTrainingJobKindLabel(item.job_kind ?? String(item.metadata?.job_kind ?? '--'))} · ${formatTrainingStatusLabel(item.status)}`}
-                              description={
-                                <>
-                                  <div>模型范围：{formatTrainingScopeLabel(item.model_scope)}</div>
-                                  <div>seed 数：{(item.seed_count ?? Number(item.metadata?.seed_count ?? 0)) || '--'}</div>
-                                  <div>阶段：{formatTrainingStageLabel(item.current_stage ?? '--')}</div>
-                                  <div>创建时间：{new Date(item.created_at).toLocaleString()}</div>
-                                  {item.error_message ? <div>错误：{item.error_message}</div> : null}
-                                </>
-                              }
-                            />
-                          </List.Item>
-                        )}
-                      />
-                    ) : (
-                      <EmptyStateBlock compact title="暂无训练任务" description="在这里发起一次训练任务后，可轮询查看状态和日志摘要。" className="panel-empty-state" />
-                    )}
-                  </PanelCard>
-
-                  <PanelCard title="最新任务日志摘要">
-                    {trainingJobs[0]?.log_excerpt ? (
-                      <Paragraph className="log-block" copyable>
-                        {trainingJobs[0].log_excerpt}
-                      </Paragraph>
-                    ) : (
-                      <EmptyStateBlock compact title="暂无日志" description="训练执行后，这里会显示最近任务的日志摘要。" className="panel-empty-state" />
-                    )}
-                  </PanelCard>
-                </div>
-
-                <div>
                   <PanelCard title="实验概览" style={{ marginBottom: 18 }}>
                     {trainingOverview ? (
                       <Space direction="vertical" size={14} style={{ width: '100%' }}>
@@ -491,73 +442,20 @@ const Analysis: React.FC = () => {
                     )}
                   </PanelCard>
 
-                  <PanelCard title="当前来源实验详情" style={{ marginBottom: 18 }}>
-                    {experimentDetail ? (
-                      <ExperimentDetailPanel comparison={comparison} detail={experimentDetail} />
-                    ) : (
-                      <EmptyStateBlock compact title="暂无实验详情" description="等待 experiments 接口返回后，这里会展示论文级实验摘要。" className="panel-empty-state" />
-                    )}
-                  </PanelCard>
-
-                  <PanelCard title="消融实验与补实验提示">
-                    {ablation ? (
-                      <AblationPanel ablation={ablation} />
-                    ) : (
-                      <EmptyStateBlock compact title="暂无消融结果" description="等待 ablations 接口返回后，这里会显示消融方案与建议命令。" className="panel-empty-state" />
-                    )}
-                  </PanelCard>
-                </div>
-              </div>
-            ),
-          },
-          {
-            key: 'profile',
-            label: '数据画像',
-            children: (
-              <div className="analysis-grid">
-                <div>
-                  <PanelCard title="来源级数据画像" style={{ marginBottom: 18 }}>
-                    {datasetProfile ? (
-                      <DatasetProfilePanel profile={datasetProfile} />
-                    ) : (
-                      <EmptyStateBlock compact title="暂无数据画像" description="等待 profile 接口返回后，这里会展示来源统计与划分信息。" className="panel-empty-state" />
-                    )}
-                  </PanelCard>
-
-                  <PanelCard title="推荐演示样本">
-                    {datasetProfile?.demo_files?.length ? (
-                      <List
-                        dataSource={datasetProfile.demo_files}
-                        renderItem={(item) => (
-                          <List.Item>
-                            <List.Item.Meta
-                              title={`${item.name} · ${item.recommended ? '推荐' : '可选'}`}
-                              description={`${item.description}（${item.path}）`}
-                            />
-                          </List.Item>
-                        )}
-                      />
-                    ) : (
-                      <EmptyStateBlock compact title="暂无演示样本" description="demo_uploads 下的推荐样本会显示在这里。" className="panel-empty-state" />
-                    )}
+                  <PanelCard title="当前来源实验详情">
+                    {experimentDetail ? <ExperimentDetailPanel comparison={comparison} detail={experimentDetail} /> : <EmptyStateBlock compact title="暂无实验详情" description="等待 experiments 接口返回后，这里会展示 benchmark 摘要。" className="panel-empty-state" />}
                   </PanelCard>
                 </div>
 
                 <div>
-                  <PanelCard title="系统状态与标准验收流" style={{ marginBottom: 18 }}>
-                    {systemStatus ? (
-                      <SystemStatusPanel status={systemStatus} />
-                    ) : (
-                      <EmptyStateBlock compact title="暂无系统状态" description="系统状态会在这里展示数据库、知识库和演示链路准备情况。" className="panel-empty-state" />
-                    )}
+                  <PanelCard title="消融实验与数据画像" style={{ marginBottom: 18 }}>
+                    {ablation ? <AblationPanel ablation={ablation} /> : <EmptyStateBlock compact title="暂无消融结果" description="等待 ablations 接口返回后，这里会显示消融方案与建议命令。" className="panel-empty-state" />}
+                    {datasetProfile ? <DatasetProfilePanel profile={datasetProfile} /> : null}
                   </PanelCard>
 
-                  <PanelCard title="知识库覆盖摘要">
-                    {knowledgeSummary ? (
-                      <KnowledgePanel graphBackend={systemStatus?.graph_backend} summary={knowledgeSummary} />
-                    ) : (
-                      <EmptyStateBlock compact title="暂无知识库摘要" description="诊断知识覆盖情况会显示在这里。" className="panel-empty-state" />
-                    )}
+                  <PanelCard title="系统状态与知识库摘要">
+                    {systemStatus ? <SystemStatusPanel status={systemStatus} /> : <EmptyStateBlock compact title="暂无系统状态" description="系统状态会在这里展示数据库、知识库和演示链路准备情况。" className="panel-empty-state" />}
+                    {knowledgeSummary ? <KnowledgePanel graphBackend={systemStatus?.graph_backend} summary={knowledgeSummary} /> : null}
                   </PanelCard>
                 </div>
               </div>
@@ -565,16 +463,12 @@ const Analysis: React.FC = () => {
           },
           {
             key: 'case',
-            label: '案例导出',
+            label: '案例包',
             children: (
               <div className="analysis-grid">
                 <div>
                   <PanelCard title="当前电池案例包" style={{ marginBottom: 18 }}>
-                    {caseBundle ? (
-                      <CaseBundlePanel bundle={caseBundle} />
-                    ) : (
-                      <EmptyStateBlock compact title="暂无案例包" description="选择电池后，系统会自动聚合案例材料。" className="panel-empty-state" />
-                    )}
+                    {caseBundle ? <CaseBundlePanel bundle={caseBundle} /> : <EmptyStateBlock compact title="暂无案例包" description="选择电池后，系统会自动聚合案例材料。" className="panel-empty-state" />}
                   </PanelCard>
 
                   <PanelCard title="案例材料导出">
@@ -584,37 +478,29 @@ const Analysis: React.FC = () => {
                           type="info"
                           showIcon
                           message="案例包用于论文附录和答辩留档"
-                          description="目录化导出会额外生成 JSON 元数据和三张固定 PNG 图表，缺预测/诊断时自动补齐。"
+                          description="目录化导出会生成 lifecycle / mechanism Markdown、JSON 元数据和生命周期 / GraphRAG / benchmark 图表。"
                         />
                         <Space wrap>
-                          <Button
-                            type="primary"
-                            icon={<DownloadOutlined />}
-                            onClick={() => downloadMarkdown(caseBundle.bundle_markdown, `${selectedBatteryId ?? 'battery'}-case-bundle.md`)}
-                          >
+                          <Button type="primary" icon={<DownloadOutlined />} onClick={() => downloadMarkdown(caseBundle.bundle_markdown, `${selectedBatteryId ?? 'battery'}-case-bundle.md`)}>
                             导出案例包
                           </Button>
-                          <Button
-                            icon={<DownloadOutlined />}
-                            loading={insightLoading}
-                            onClick={() => selectedBatteryId && void exportCaseBundleAction(selectedBatteryId, true)}
-                          >
+                          <Button icon={<DownloadOutlined />} loading={insightLoading} onClick={() => selectedBatteryId && void exportCaseBundleAction(selectedBatteryId, true)}>
                             导出目录化案例
                           </Button>
                           {caseBundle.prediction?.id ? (
                             <Button
                               icon={<DownloadOutlined />}
-                              onClick={() => void downloadTextReport(caseBundle.prediction!.id, caseBundle.prediction?.report_markdown ?? '', getPredictionReportText, 'prediction-report')}
+                              onClick={() => void downloadTextReport(caseBundle.prediction!.id, caseBundle.prediction?.report_markdown ?? '', getPredictionReportText, 'lifecycle-prediction-report')}
                             >
-                              导出预测报告
+                              导出生命周期报告
                             </Button>
                           ) : null}
                           {caseBundle.diagnosis?.id ? (
                             <Button
                               icon={<DownloadOutlined />}
-                              onClick={() => void downloadTextReport(caseBundle.diagnosis!.id, caseBundle.diagnosis?.report_markdown ?? '', getDiagnosisReportText, 'diagnosis-report')}
+                              onClick={() => void downloadTextReport(caseBundle.diagnosis!.id, caseBundle.diagnosis?.report_markdown ?? '', getDiagnosisReportText, 'mechanism-report')}
                             >
-                              导出诊断报告
+                              导出机理解释报告
                             </Button>
                           ) : null}
                         </Space>
@@ -624,18 +510,14 @@ const Analysis: React.FC = () => {
                         </Paragraph>
                       </Space>
                     ) : (
-                      <EmptyStateBlock compact title="暂无导出材料" description="当预测和诊断完成后，这里可以一键导出案例包。" className="panel-empty-state" />
+                      <EmptyStateBlock compact title="暂无导出材料" description="当生命周期预测和机理解释完成后，这里可以一键导出案例包。" className="panel-empty-state" />
                     )}
                   </PanelCard>
                 </div>
 
                 <div>
                   <PanelCard title="答辩讲解建议" style={{ marginBottom: 18 }}>
-                    {caseBundle?.recommended_story?.length ? (
-                      <List size="small" dataSource={caseBundle.recommended_story} renderItem={(item) => <List.Item>{item}</List.Item>} />
-                    ) : (
-                      <EmptyStateBlock compact title="暂无讲解脚本" description="案例包生成后会给出推荐讲解顺序。" className="panel-empty-state" />
-                    )}
+                    {caseBundle?.recommended_story?.length ? <List size="small" dataSource={caseBundle.recommended_story} renderItem={(item) => <List.Item>{item}</List.Item>} /> : <EmptyStateBlock compact title="暂无讲解脚本" description="案例包生成后会给出推荐讲解顺序。" className="panel-empty-state" />}
                   </PanelCard>
 
                   <PanelCard title="案例链路完整性">
@@ -644,15 +526,12 @@ const Analysis: React.FC = () => {
                         dataSource={caseBundle.artifacts}
                         renderItem={(item) => (
                           <List.Item>
-                            <List.Item.Meta
-                              title={`${item.title} · ${item.available ? '已就绪' : '待补充'}`}
-                              description={item.description}
-                            />
+                            <List.Item.Meta title={`${item.title} · ${item.available ? '已就绪' : '待补充'}`} description={item.description} />
                           </List.Item>
                         )}
                       />
                     ) : (
-                      <EmptyStateBlock compact title="暂无案例链路" description="案例包会展示样本画像、报告和实验背景是否都已就绪。" className="panel-empty-state" />
+                      <EmptyStateBlock compact title="暂无案例链路" description="案例包会展示样本画像、报告和 benchmark 背景是否都已就绪。" className="panel-empty-state" />
                     )}
                   </PanelCard>
                 </div>
@@ -685,9 +564,9 @@ function ExperimentDetailPanel({ comparison, detail }: { comparison: TrainingCom
               title={`${formatModelLabel(item.model_type)} · ${item.multi_seed_summary ? '多随机种子已具备' : '单次实验'}`}
               description={
                 <Space direction="vertical" size={2}>
-                  <Text>单次 RMSE：{formatMetric(item.test_metrics.rmse)}</Text>
-                  <Text>单次 MAE：{formatMetric(item.test_metrics.mae)}</Text>
-                  <Text>单次 R2：{formatMetric(item.test_metrics.r2)}</Text>
+                  <Text>单次 trajectory RMSE：{formatMetric(item.test_metrics.rmse)}</Text>
+                  <Text>单次 trajectory MAE：{formatMetric(item.test_metrics.mae)}</Text>
+                  <Text>单次 trajectory R2：{formatMetric(item.test_metrics.r2)}</Text>
                   <Text>
                     聚合 RMSE：{formatMetric(item.aggregate_metrics?.mean?.rmse)} ± {formatMetric(item.aggregate_metrics?.std?.rmse)}
                   </Text>
@@ -711,7 +590,7 @@ function ExperimentDetailPanel({ comparison, detail }: { comparison: TrainingCom
           <List size="small" dataSource={detail.plots} renderItem={(item) => <List.Item>{item.title}：{item.path}</List.Item>} />
         </>
       ) : null}
-      <Title level={5}>建议补实验命令</Title>
+      <Title level={5}>建议命令</Title>
       <Paragraph className="log-block" copyable>
         {Object.values(detail.recommended_commands).join('\n')}
       </Paragraph>
@@ -722,23 +601,10 @@ function ExperimentDetailPanel({ comparison, detail }: { comparison: TrainingCom
 function AblationPanel({ ablation }: { ablation: AblationResult }) {
   if (!ablation.available) {
     return (
-      <Space direction="vertical" size={14} style={{ width: '100%' }}>
+      <Space direction="vertical" size={14} style={{ width: '100%', marginBottom: 18 }}>
         <Alert type="warning" showIcon message="当前来源尚未生成 ablation_summary.json" description="系统已给出默认消融方案和建议命令。" />
         <List size="small" dataSource={ablation.notes} renderItem={(item) => <List.Item>{item}</List.Item>} />
-        {ablation.recommended_command ? (
-          <Paragraph className="log-block" copyable>
-            {ablation.recommended_command}
-          </Paragraph>
-        ) : null}
-        <List
-          size="small"
-          dataSource={ablation.variants}
-          renderItem={(item) => (
-            <List.Item>
-              <List.Item.Meta title={item.label} description={`${item.description}${item.feature_columns?.length ? `；特征：${item.feature_columns.join(', ')}` : ''}`} />
-            </List.Item>
-          )}
-        />
+        {ablation.recommended_command ? <Paragraph className="log-block" copyable>{ablation.recommended_command}</Paragraph> : null}
       </Space>
     )
   }
@@ -758,7 +624,6 @@ function AblationPanel({ ablation }: { ablation: AblationResult }) {
                 </Text>
                 <Text>相对 full_hybrid 的 RMSE 变化：{formatMetric(item.delta_vs_full?.rmse)}</Text>
                 <Text>seed 数：{item.seeds?.length ?? 0}</Text>
-                {item.artifact_paths?.variant_dir ? <Text>目录：{String(item.artifact_paths.variant_dir)}</Text> : null}
               </Space>
             }
           />
@@ -770,43 +635,14 @@ function AblationPanel({ ablation }: { ablation: AblationResult }) {
 
 function DatasetProfilePanel({ profile }: { profile: DatasetProfile }) {
   return (
-    <Space direction="vertical" size={16} style={{ width: '100%' }}>
+    <Space direction="vertical" size={16} style={{ width: '100%', marginTop: 18 }}>
       <Descriptions column={1} size="small">
         <Descriptions.Item label="来源">{formatSourceLabel(profile.source)}</Descriptions.Item>
         <Descriptions.Item label="电池数量">{profile.battery_count} 节</Descriptions.Item>
         <Descriptions.Item label="训练候选">{profile.training_candidate_count} 节</Descriptions.Item>
         <Descriptions.Item label="周期点">{profile.cycle_point_count} 条</Descriptions.Item>
-        <Descriptions.Item label="循环窗口">
-          {profile.cycle_window.min_cycle} ~ {profile.cycle_window.max_cycle}
-        </Descriptions.Item>
         <Descriptions.Item label="训练/验证/测试划分">{formatSplitSummary(profile.split)}</Descriptions.Item>
       </Descriptions>
-
-      <Title level={5}>特征范围</Title>
-      <List
-        size="small"
-        dataSource={Object.entries(profile.feature_ranges)}
-        renderItem={([feature, stats]) => (
-          <List.Item>
-            <List.Item.Meta
-              title={formatFeatureLabel(feature)}
-              description={`min ${formatMetric(stats.min)} / avg ${formatMetric(stats.avg)} / max ${formatMetric(stats.max)}`}
-            />
-          </List.Item>
-        )}
-      />
-
-      <Title level={5}>高循环样本</Title>
-      <List
-        size="small"
-        dataSource={profile.top_batteries_by_cycles}
-        renderItem={(item) => (
-          <List.Item>
-            <List.Item.Meta title={item.battery_id} description={`cycles ${item.first_cycle} -> ${item.last_cycle}（共 ${item.cycle_points} 点）`} />
-          </List.Item>
-        )}
-      />
-
       <Title level={5}>可用特征列</Title>
       <Space wrap>
         {profile.available_feature_columns.map((item) => (
@@ -821,7 +657,7 @@ function DatasetProfilePanel({ profile }: { profile: DatasetProfile }) {
 
 function SystemStatusPanel({ status }: { status: SystemStatus }) {
   return (
-    <Space direction="vertical" size={16} style={{ width: '100%' }}>
+    <Space direction="vertical" size={16} style={{ width: '100%', marginBottom: 18 }}>
       <Descriptions column={1} size="small">
         <Descriptions.Item label="图谱后端">{status.graph_backend}</Descriptions.Item>
         <Descriptions.Item label="数据库就绪">{status.database_ready ? '是' : '否'}</Descriptions.Item>
@@ -830,19 +666,6 @@ function SystemStatusPanel({ status }: { status: SystemStatus }) {
       </Descriptions>
       <Title level={5}>标准验收流</Title>
       <List size="small" dataSource={status.demo_acceptance_flow} renderItem={(item) => <List.Item>{item}</List.Item>} />
-      <Title level={5}>来源状态</Title>
-      <List
-        size="small"
-        dataSource={status.source_statuses}
-        renderItem={(item) => (
-          <List.Item>
-            <List.Item.Meta
-              title={`${formatSourceLabel(item.source)} · ${formatModelLabel(item.best_model ?? '--')}`}
-              description={`原始文件 ${item.raw_file_count}，电池 ${item.battery_count}，训练候选 ${item.training_candidate_count}，对比摘要 ${item.comparison_ready ? '已就绪' : '未完成'}`}
-            />
-          </List.Item>
-        )}
-      />
       {status.warnings.length ? <List size="small" dataSource={status.warnings} renderItem={(item) => <List.Item>{item}</List.Item>} /> : null}
     </Space>
   )
@@ -873,25 +696,6 @@ function KnowledgePanel({
         message={`当前知识库包含 ${summary.fault_count} 类故障、${summary.symptom_alias_count} 个症状别名、${summary.rule_count ?? 0} 条规则`}
         description={`GraphRAG 运行后端：${graphBackend ?? 'unknown'}；带阈值提示规则 ${summary.threshold_rule_count ?? 0} 条`}
       />
-      <List
-        size="small"
-        dataSource={Object.entries(summary.categories)}
-        renderItem={([category, count]) => <List.Item>{category}：{count}</List.Item>}
-      />
-      {summary.source_coverage ? (
-        <>
-          <Title level={5}>来源覆盖</Title>
-          <List size="small" dataSource={Object.entries(summary.source_coverage)} renderItem={([source, count]) => <List.Item>{source}：{count}</List.Item>} />
-        </>
-      ) : null}
-      <Title level={5}>高频症状</Title>
-      <List size="small" dataSource={summary.top_symptoms} renderItem={(item) => <List.Item>{item[0]}：{item[1]}</List.Item>} />
-      {summary.evidence_sources?.length ? (
-        <>
-          <Title level={5}>证据来源</Title>
-          <List size="small" dataSource={summary.evidence_sources} renderItem={(item) => <List.Item>{item[0]}：{item[1]}</List.Item>} />
-        </>
-      ) : null}
       <List size="small" dataSource={summary.coverage_notes} renderItem={(item) => <List.Item>{item}</List.Item>} />
     </Space>
   )
@@ -907,34 +711,29 @@ function CaseBundlePanel({ bundle }: { bundle: CaseBundle }) {
         <Descriptions.Item label="健康分">{formatMetric(bundle.health_score)}</Descriptions.Item>
         <Descriptions.Item label="循环次数">{bundle.cycle_count ?? '--'}</Descriptions.Item>
         <Descriptions.Item label="数据划分">{bundle.dataset_position?.split_name ?? '--'}</Descriptions.Item>
-        <Descriptions.Item label="训练池">{bundle.dataset_position?.include_in_training ? '已加入' : '未加入'}</Descriptions.Item>
       </Descriptions>
       {bundle.prediction ? (
         <Alert
           type="info"
           showIcon
-          message={`RUL 预测：${formatMetric(bundle.prediction.predicted_rul)} cycles`}
-          description={`模型 ${formatModelLabel(bundle.prediction.model_name)}，置信度 ${formatMetric(bundle.prediction.confidence * 100)}%`}
+          message={`生命周期预测：RUL ${formatMetric(bundle.prediction.predicted_rul)} cycles`}
+          description={`knee ${formatMetric(bundle.prediction.predicted_knee_cycle)} / EOL ${formatMetric(bundle.prediction.predicted_eol_cycle)}`}
         />
       ) : (
-        <Alert type="warning" showIcon message="当前尚无 RUL 预测记录" />
+        <Alert type="warning" showIcon message="当前尚无生命周期预测记录" />
       )}
       {bundle.diagnosis ? (
         <Alert
           type={bundle.diagnosis.severity === 'critical' || bundle.diagnosis.severity === 'high' ? 'error' : 'warning'}
           showIcon
-          message={`诊断结论：${bundle.diagnosis.fault_type}`}
+          message={`机理解释：${bundle.diagnosis.fault_type}`}
           description={`根因 ${bundle.diagnosis.root_causes.slice(0, 2).join('；') || '--'}`}
         />
       ) : (
-        <Alert type="warning" showIcon message="当前尚无 GraphRAG 诊断记录" />
+        <Alert type="warning" showIcon message="当前尚无机理解释记录" />
       )}
       <Title level={5}>案例依赖资产</Title>
-      <List
-        size="small"
-        dataSource={bundle.artifacts}
-        renderItem={(item) => <List.Item>{item.title}：{item.available ? '已就绪' : '待补充'}，{item.description}</List.Item>}
-      />
+      <List size="small" dataSource={bundle.artifacts} renderItem={(item) => <List.Item>{item.title}：{item.available ? '已就绪' : '待补充'}，{item.description}</List.Item>} />
       {bundle.last_export ? (
         <Alert
           type="success"
@@ -956,22 +755,15 @@ function CaseExportPanel({ exportResult }: { exportResult: CaseBundleExportResul
         message={`目录已导出到 ${exportResult.export_dir}`}
         description={`自动补预测：${exportResult.generated_artifacts.prediction_generated ? '是' : '否'}；自动补诊断：${exportResult.generated_artifacts.diagnosis_generated ? '是' : '否'}`}
       />
-      <List
-        size="small"
-        dataSource={exportResult.files}
-        renderItem={(item) => <List.Item>{item.kind}：{item.path}</List.Item>}
-      />
+      <List size="small" dataSource={exportResult.files} renderItem={(item) => <List.Item>{item.kind}：{item.path}</List.Item>} />
     </Space>
   )
 }
 
-function buildRulOption(prediction: PredictionResult | undefined, batteryCycles: Array<{ cycle_number: number; capacity: number }>) {
+function buildLifecycleOption(prediction: LifecyclePredictionResult | undefined, batteryCycles: Array<{ cycle_number: number; capacity: number }>) {
   const actual = prediction?.projection?.actual_points ?? batteryCycles.map((item) => ({ cycle: item.cycle_number, capacity: item.capacity }))
   const forecast = prediction?.projection?.forecast_points ?? []
   const band = prediction?.projection?.confidence_band ?? []
-  const eolCapacity = prediction?.projection?.eol_capacity ?? 0
-  const lastProjected = forecast.length ? forecast[forecast.length - 1] : undefined
-  const lastActual = actual.length ? actual[actual.length - 1] : undefined
   return {
     backgroundColor: 'transparent',
     tooltip: { trigger: 'axis', backgroundColor: 'rgba(16, 35, 63, 0.92)', borderWidth: 0, textStyle: { color: '#f8fafc' } },
@@ -981,7 +773,7 @@ function buildRulOption(prediction: PredictionResult | undefined, batteryCycles:
     yAxis: { type: 'value', name: '容量(Ah)', axisLabel: { color: '#6b7280' }, splitLine: { lineStyle: { color: 'rgba(16, 35, 63, 0.08)' } } },
     series: [
       {
-        name: '真实历史轨迹',
+        name: '观测轨迹',
         type: 'line',
         smooth: true,
         showSymbol: false,
@@ -989,19 +781,19 @@ function buildRulOption(prediction: PredictionResult | undefined, batteryCycles:
         lineStyle: { color: '#0071e3', width: 3 },
       },
       {
-        name: '寿命投影曲线',
+        name: '未来 trajectory',
         type: 'line',
         smooth: true,
         showSymbol: false,
         data: forecast.map((item) => [item.cycle, item.capacity]),
         lineStyle: { color: '#34c759', width: 3, type: 'dashed' },
-      },
-      {
-        name: 'EOL 阈值',
-        type: 'line',
-        symbol: 'none',
-        data: actual.length || forecast.length ? [[(actual[0] ?? forecast[0]).cycle, eolCapacity], [(lastProjected ?? lastActual)?.cycle ?? 0, eolCapacity]] : [],
-        lineStyle: { color: '#ff9f0a', width: 2, type: 'dotted' },
+        markLine: {
+          symbol: 'none',
+          data: [
+            prediction?.predicted_knee_cycle ? { xAxis: prediction.predicted_knee_cycle, name: 'knee' } : undefined,
+            prediction?.predicted_eol_cycle ? { xAxis: prediction.predicted_eol_cycle, name: 'EOL' } : undefined,
+          ].filter(Boolean),
+        },
       },
       {
         name: '置信带上界',
@@ -1024,7 +816,7 @@ function buildRulOption(prediction: PredictionResult | undefined, batteryCycles:
   }
 }
 
-function buildGraphOption(diagnosis: DiagnosisResult | undefined) {
+function buildGraphOption(diagnosis: MechanismExplanationResult | undefined) {
   const nodes = diagnosis?.graph_trace?.nodes ?? []
   const edges = diagnosis?.graph_trace?.edges ?? []
   return {
@@ -1083,7 +875,6 @@ function ComparisonPanel({ comparison }: { comparison: TrainingComparison | null
                   <Text>当前 RMSE：{formatMetric((current?.test_metrics as Record<string, number> | undefined)?.rmse)}</Text>
                   <Text>当前 MAE：{formatMetric((current?.test_metrics as Record<string, number> | undefined)?.mae)}</Text>
                   <Text>当前 R2：{formatMetric((current?.test_metrics as Record<string, number> | undefined)?.r2)}</Text>
-                  <Text>Checkpoint：{String(current?.best_checkpoint ?? '--')}</Text>
                 </Space>
               }
             />
@@ -1118,20 +909,24 @@ function previewText(value: string, lines: number) {
 }
 
 function hydratePredictionFromHistory(record: PredictionRecord | undefined) {
-  if (!record || !record.projection || !record.explanation || !record.model_version || !record.model_source) return undefined
+  if (!record || !record.projection || !record.model_version || !record.model_source) return undefined
   return {
     ...record,
     model_version: record.model_version,
     model_source: record.model_source,
     fallback_used: Boolean(record.fallback_used),
     prediction_time: record.prediction_time ?? record.created_at,
+    trajectory: record.trajectory ?? [],
+    risk_windows: record.risk_windows ?? [],
+    future_risks: record.future_risks ?? {},
+    model_evidence: record.model_evidence ?? {},
     projection: record.projection,
-    explanation: record.explanation,
+    explanation: record.explanation ?? null,
     report_markdown: record.report_markdown ?? '',
-  } as PredictionResult
+  } as LifecyclePredictionResult
 }
 
-function hydrateDiagnosisFromHistory(record: DiagnosisRecord | undefined): DiagnosisResult | undefined {
+function hydrateMechanismFromHistory(record: DiagnosisRecord | undefined): MechanismExplanationResult | undefined {
   if (!record || !record.graph_trace) return undefined
   return {
     id: record.id,
@@ -1149,6 +944,9 @@ function hydrateDiagnosisFromHistory(record: DiagnosisRecord | undefined): Diagn
     graph_trace: record.graph_trace,
     decision_basis: record.decision_basis ?? [],
     report_markdown: record.report_markdown ?? '',
+    lifecycle_evidence: {},
+    model_evidence: {},
+    graph_backend: 'history',
   }
 }
 
@@ -1163,14 +961,9 @@ function downloadMarkdown(content: string, fileName: string) {
   URL.revokeObjectURL(url)
 }
 
-async function downloadTextReport(
-  recordId: number,
-  fallback: string,
-  getter: (recordId: number) => Promise<string>,
-  prefix: string,
-) {
-  const content = (await getter(recordId)) || fallback
-  downloadMarkdown(content, `${prefix}-${recordId}.md`)
+async function downloadTextReport(id: number, content: string, fetcher: (id: number) => Promise<string>, fileStem: string) {
+  const fallback = content || (await fetcher(id))
+  downloadMarkdown(fallback, `${fileStem}-${id}.md`)
 }
 
 export default Analysis

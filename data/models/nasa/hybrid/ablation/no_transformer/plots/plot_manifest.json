@@ -5,22 +5,22 @@
       "title": "NASA no_transformer error distribution",
       "description": "Prediction error histogram for each seed in the ablation variant.",
       "path": "data/models/nasa/hybrid/ablation/no_transformer/plots/error_distribution.png",
-      "generated_at": "2026-03-15T08:29:23.936677"
+      "generated_at": "2026-03-17T07:54:16.323092"
     },
     {
       "key": "metrics_overview",
       "title": "NASA no_transformer metrics",
       "description": "Aggregate mean/std metrics for the ablation variant.",
       "path": "data/models/nasa/hybrid/ablation/no_transformer/plots/metrics_overview.png",
-      "generated_at": "2026-03-15T08:29:23.825776"
+      "generated_at": "2026-03-17T07:54:16.266150"
     },
     {
       "key": "training_curves",
       "title": "NASA no_transformer training curves",
       "description": "Train/validation loss for the ablation variant.",
       "path": "data/models/nasa/hybrid/ablation/no_transformer/plots/training_curves.png",
-      "generated_at": "2026-03-15T08:29:23.987073"
+      "generated_at": "2026-03-17T07:54:16.386765"
     }
   ],
-  "generated_at": "2026-03-15T08:29:23.987376"
+  "generated_at": "2026-03-17T07:54:16.387580"
 }

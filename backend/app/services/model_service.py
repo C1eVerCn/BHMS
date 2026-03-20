@@ -11,7 +11,7 @@ from backend.app.core.config import Settings, get_settings
 from backend.app.core.exceptions import BHMSException
 from backend.app.services.repository import BHMSRepository
 from kg.graphrag_engine import GraphRAGEngine, GraphTrace
-from ml.inference import AnomalyDetector, AnomalyThreshold, RULInferenceService
+from ml.inference import AnomalyDetector, AnomalyThreshold, LifecycleInferenceService, RULInferenceService
 
 
 class PredictionService:
@@ -19,6 +19,7 @@ class PredictionService:
         self.repository = repository or BHMSRepository()
         self.settings = settings or get_settings()
         self.inference_service = RULInferenceService(self.settings.model_dir)
+        self.lifecycle_inference_service = LifecycleInferenceService(self.settings.model_dir)
         self.anomaly_detector = AnomalyDetector(use_statistical=True, use_isolation_forest=True, thresholds=AnomalyThreshold())
         self.diagnosis_engine = GraphRAGEngine(
             knowledge_path=self.settings.knowledge_path,
@@ -30,63 +31,27 @@ class PredictionService:
         )
 
     def predict_rul(self, battery_id: str, model_name: str = "hybrid", seq_len: int = 30, historical_data: Optional[list[dict[str, Any]]] = None) -> dict[str, Any]:
-        battery = self.repository.get_battery(battery_id)
-        if battery is None:
-            raise BHMSException(f"未找到电池 {battery_id}", status_code=404, code="battery_not_found")
-
-        all_points = historical_data or self.repository.get_cycle_points(battery_id, limit=1000)
-        if len(all_points) < 10:
-            raise BHMSException("历史数据不足，至少需要 10 个周期点", status_code=400, code="insufficient_history")
-        input_points = all_points[-seq_len:]
-        output = self.inference_service.predict(
-            sequence=None,
-            points=input_points,
-            source=battery["source"],
+        prediction = self._predict_lifecycle_payload(
+            battery_id=battery_id,
             model_name=model_name,
-        )
-        projection = self._build_projection(all_points, output.predicted_rul, output.confidence)
-        prediction_time = datetime.utcnow().isoformat()
-        report_markdown = self._build_prediction_report(
-            battery=battery,
-            output=output,
-            projection=projection,
-            prediction_time=prediction_time,
-        )
-        payload = {
-            "fallback_used": output.fallback_used,
-            "model_version": output.model_version,
-            "model_source": output.model_source,
-            "checkpoint_id": output.checkpoint_id,
-            "projection": projection,
-            "explanation": output.explanation.to_dict() if output.explanation else None,
-            "report_markdown": report_markdown,
-            "prediction_time": prediction_time,
-        }
-        record_id = self.repository.insert_prediction(
-            {
-                "battery_id": battery_id,
-                "model_name": output.model_name,
-                "predicted_rul": round(output.predicted_rul, 2),
-                "confidence": output.confidence,
-                "input_seq_len": len(input_points),
-                "source": "api",
-                "payload": payload,
-            }
+            seq_len=seq_len,
+            historical_data=historical_data,
+            request_source="api_v1",
         )
         return {
-            "id": record_id,
-            "battery_id": battery_id,
-            "model_name": output.model_name,
-            "predicted_rul": round(output.predicted_rul, 2),
-            "confidence": round(output.confidence, 3),
-            "model_version": output.model_version,
-            "model_source": output.model_source,
-            "checkpoint_id": output.checkpoint_id,
-            "fallback_used": output.fallback_used,
-            "prediction_time": prediction_time,
-            "projection": projection,
-            "explanation": output.explanation.to_dict() if output.explanation else None,
-            "report_markdown": report_markdown,
+            "id": prediction["id"],
+            "battery_id": prediction["battery_id"],
+            "model_name": prediction["model_name"],
+            "predicted_rul": prediction["predicted_rul"],
+            "confidence": prediction["confidence"],
+            "model_version": prediction["model_version"],
+            "model_source": prediction["model_source"],
+            "checkpoint_id": prediction["checkpoint_id"],
+            "fallback_used": prediction["fallback_used"],
+            "prediction_time": prediction["prediction_time"],
+            "projection": prediction["projection"],
+            "explanation": prediction.get("explanation"),
+            "report_markdown": prediction["report_markdown"],
         }
 
     def predict_lifecycle(
@@ -96,37 +61,135 @@ class PredictionService:
         seq_len: int = 30,
         historical_data: Optional[list[dict[str, Any]]] = None,
     ) -> dict[str, Any]:
-        prediction = self.predict_rul(
+        prediction = self._predict_lifecycle_payload(
             battery_id=battery_id,
             model_name=model_name,
             seq_len=seq_len,
             historical_data=historical_data,
-        )
-        battery = self.repository.get_battery(battery_id)
-        if battery is None:
-            raise BHMSException(f"未找到电池 {battery_id}", status_code=404, code="battery_not_found")
-        lifecycle_evidence = self._build_lifecycle_evidence(battery, prediction)
-        model_evidence = self._build_model_evidence(prediction)
-        trajectory = self._build_lifecycle_trajectory(
-            prediction["projection"],
-            initial_capacity=float(battery.get("initial_capacity") or battery.get("nominal_capacity") or 1.0),
+            request_source="api_v2",
         )
         return {
+            "id": prediction["id"],
             "battery_id": battery_id,
             "model_name": prediction["model_name"],
             "model_version": prediction["model_version"],
             "model_source": prediction["model_source"],
             "prediction_time": prediction["prediction_time"],
             "predicted_rul": prediction["predicted_rul"],
-            "predicted_knee_cycle": lifecycle_evidence.get("predicted_knee_cycle"),
-            "predicted_eol_cycle": lifecycle_evidence.get("predicted_eol_cycle"),
-            "trajectory": trajectory,
-            "risk_windows": self._build_risk_windows(lifecycle_evidence),
-            "future_risks": lifecycle_evidence,
-            "model_evidence": model_evidence,
+            "confidence": prediction["confidence"],
+            "checkpoint_id": prediction["checkpoint_id"],
+            "fallback_used": prediction["fallback_used"],
+            "predicted_knee_cycle": prediction.get("predicted_knee_cycle"),
+            "predicted_eol_cycle": prediction.get("predicted_eol_cycle"),
+            "trajectory": prediction.get("trajectory", []),
+            "risk_windows": prediction.get("risk_windows", []),
+            "future_risks": prediction.get("future_risks", {}),
+            "model_evidence": prediction.get("model_evidence", {}),
+            "uncertainty": prediction.get("uncertainty"),
             "projection": prediction["projection"],
             "explanation": prediction.get("explanation"),
             "report_markdown": prediction["report_markdown"],
+        }
+
+    def _predict_lifecycle_payload(
+        self,
+        *,
+        battery_id: str,
+        model_name: str,
+        seq_len: int,
+        historical_data: Optional[list[dict[str, Any]]],
+        request_source: str,
+    ) -> dict[str, Any]:
+        battery = self.repository.get_battery(battery_id)
+        if battery is None:
+            raise BHMSException(f"未找到电池 {battery_id}", status_code=404, code="battery_not_found")
+        all_points = historical_data or self.repository.get_cycle_points(battery_id, limit=1000)
+        if len(all_points) < 10:
+            raise BHMSException("历史数据不足，至少需要 10 个周期点", status_code=400, code="insufficient_history")
+        input_points = all_points[-seq_len:]
+        lifecycle_output = self.lifecycle_inference_service.predict(
+            sequence=None,
+            points=input_points,
+            source=battery["source"],
+            model_name=model_name,
+            battery_info=battery,
+        )
+        prediction_time = datetime.utcnow().isoformat()
+        explanation = lifecycle_output.explanation.to_dict() if lifecycle_output.explanation else None
+        future_risks = self._build_lifecycle_evidence(
+            battery,
+            {
+                "predicted_knee_cycle": lifecycle_output.predicted_knee_cycle,
+                "predicted_eol_cycle": lifecycle_output.predicted_eol_cycle,
+                "trajectory": lifecycle_output.trajectory,
+                "projection": lifecycle_output.projection,
+            },
+        )
+        model_evidence = self._build_model_evidence(
+            {
+                "explanation": explanation,
+                "payload": {"explanation": explanation},
+            }
+        )
+        risk_windows = self._build_risk_windows(future_risks)
+        report_markdown = self._build_prediction_report(
+            battery=battery,
+            output=lifecycle_output,
+            projection=lifecycle_output.projection,
+            prediction_time=prediction_time,
+            future_risks=future_risks,
+            model_evidence=model_evidence,
+        )
+        payload = {
+            "task_kind": "lifecycle",
+            "fallback_used": lifecycle_output.fallback_used,
+            "model_version": lifecycle_output.model_version,
+            "model_source": lifecycle_output.model_source,
+            "checkpoint_id": lifecycle_output.checkpoint_id,
+            "prediction_time": prediction_time,
+            "projection": lifecycle_output.projection,
+            "explanation": explanation,
+            "report_markdown": report_markdown,
+            "predicted_knee_cycle": lifecycle_output.predicted_knee_cycle,
+            "predicted_eol_cycle": lifecycle_output.predicted_eol_cycle,
+            "trajectory": lifecycle_output.trajectory,
+            "risk_windows": risk_windows,
+            "future_risks": future_risks,
+            "model_evidence": model_evidence,
+            "uncertainty": lifecycle_output.uncertainty,
+        }
+        record_id = self.repository.insert_prediction(
+            {
+                "battery_id": battery_id,
+                "model_name": lifecycle_output.model_name,
+                "predicted_rul": round(lifecycle_output.predicted_rul, 2),
+                "confidence": lifecycle_output.confidence,
+                "input_seq_len": len(input_points),
+                "source": request_source,
+                "payload": payload,
+            }
+        )
+        return {
+            "id": record_id,
+            "battery_id": battery_id,
+            "model_name": lifecycle_output.model_name,
+            "predicted_rul": round(lifecycle_output.predicted_rul, 2),
+            "confidence": round(lifecycle_output.confidence, 3),
+            "model_version": lifecycle_output.model_version,
+            "model_source": lifecycle_output.model_source,
+            "checkpoint_id": lifecycle_output.checkpoint_id,
+            "fallback_used": lifecycle_output.fallback_used,
+            "prediction_time": prediction_time,
+            "projection": lifecycle_output.projection,
+            "explanation": explanation,
+            "report_markdown": report_markdown,
+            "predicted_knee_cycle": lifecycle_output.predicted_knee_cycle,
+            "predicted_eol_cycle": lifecycle_output.predicted_eol_cycle,
+            "trajectory": lifecycle_output.trajectory,
+            "risk_windows": risk_windows,
+            "future_risks": future_risks,
+            "model_evidence": model_evidence,
+            "uncertainty": lifecycle_output.uncertainty,
         }
 
     def explain_mechanism(
@@ -263,30 +326,40 @@ class PredictionService:
         return {"id": record_id, "battery_id": battery_id, **diagnosis.to_dict(), "diagnosis_time": datetime.utcnow().isoformat()}
 
     def _build_lifecycle_evidence(self, battery: dict[str, Any], prediction: Optional[dict[str, Any]]) -> dict[str, Any]:
-        projection = ((prediction or {}).get("projection")) or (((prediction or {}).get("payload")) or {}).get("projection") or {}
+        payload = ((prediction or {}).get("payload")) or {}
+        if payload.get("future_risks"):
+            return dict(payload["future_risks"])
+        projection = ((prediction or {}).get("projection")) or payload.get("projection") or {}
+        trajectory = ((prediction or {}).get("trajectory")) or payload.get("trajectory") or []
         forecast_points = projection.get("forecast_points") or []
-        predicted_eol_cycle = projection.get("predicted_eol_cycle")
+        predicted_eol_cycle = (prediction or {}).get("predicted_eol_cycle") or payload.get("predicted_eol_cycle") or projection.get("predicted_eol_cycle")
+        predicted_knee_cycle = (prediction or {}).get("predicted_knee_cycle") or payload.get("predicted_knee_cycle")
         last_actual_cycle = None
         if forecast_points:
-            first_point = forecast_points[0]
-            last_actual_cycle = float(first_point.get("cycle", 0.0))
+            last_actual_cycle = float(forecast_points[0].get("cycle", 0.0))
+        elif trajectory:
+            last_actual_cycle = float(trajectory[0].get("cycle", 0.0))
         future_capacity_fade_pattern = "stable_decline"
         accelerated_window = None
-        if len(forecast_points) >= 3:
+        if trajectory:
+            capacities = np.asarray([float(item.get("capacity_ratio", item.get("soh", 0.0)) or 0.0) for item in trajectory], dtype=float)
+            cycles = np.asarray([float(item.get("cycle", 0.0) or 0.0) for item in trajectory], dtype=float)
+        else:
             capacities = np.asarray([float(item.get("capacity", 0.0) or 0.0) for item in forecast_points], dtype=float)
+            cycles = np.asarray([float(item.get("cycle", 0.0) or 0.0) for item in forecast_points], dtype=float)
+        if capacities.size >= 3:
             slopes = np.diff(capacities)
             if slopes.size and float(np.min(slopes)) < float(np.mean(slopes) * 1.35):
                 future_capacity_fade_pattern = "accelerated_tail_fade"
                 accelerated_index = int(np.argmin(slopes))
-                start_cycle = forecast_points[max(0, accelerated_index)]["cycle"]
-                end_cycle = forecast_points[min(len(forecast_points) - 1, accelerated_index + 2)]["cycle"]
-                accelerated_window = f"{start_cycle}-{end_cycle}"
+                start_cycle = cycles[max(0, accelerated_index)]
+                end_cycle = cycles[min(len(cycles) - 1, accelerated_index + 2)]
+                accelerated_window = f"{start_cycle:.0f}-{end_cycle:.0f}"
         health_score = float(battery.get("health_score", 0.0) or 0.0)
         temperature_risk = "high" if health_score < 65 else "medium" if health_score < 80 else "low"
         resistance_risk = "high" if health_score < 60 else "medium" if health_score < 78 else "low"
         voltage_risk = "medium" if health_score < 75 else "low"
-        predicted_knee_cycle = None
-        if predicted_eol_cycle is not None and last_actual_cycle is not None:
+        if predicted_knee_cycle is None and predicted_eol_cycle is not None and last_actual_cycle is not None:
             span = max(5.0, float(predicted_eol_cycle) - last_actual_cycle)
             predicted_knee_cycle = round(last_actual_cycle + span * 0.35, 2)
         return {
@@ -302,7 +375,7 @@ class PredictionService:
     @staticmethod
     def _build_model_evidence(prediction: Optional[dict[str, Any]]) -> dict[str, Any]:
         payload = (prediction or {}).get("payload") or {}
-        explanation = payload.get("explanation") or {}
+        explanation = payload.get("explanation") or (prediction or {}).get("explanation") or {}
         feature_contributions = explanation.get("feature_contributions") or []
         window_contributions = explanation.get("window_contributions") or []
         confidence_factors = (explanation.get("confidence_summary") or {}).get("factors") or []
@@ -420,12 +493,22 @@ class PredictionService:
         exp_mse = float(np.mean((recent_capacities - exp_pred) ** 2))
         return "exponential" if exp_mse < linear_mse * 0.92 else "linear"
 
-    def _build_prediction_report(self, battery: dict[str, Any], output, projection: dict[str, Any], prediction_time: str) -> str:
+    def _build_prediction_report(
+        self,
+        battery: dict[str, Any],
+        output,
+        projection: dict[str, Any],
+        prediction_time: str,
+        future_risks: Optional[dict[str, Any]] = None,
+        model_evidence: Optional[dict[str, Any]] = None,
+    ) -> str:
         explanation = output.explanation.to_dict() if output.explanation else {}
+        future_risks = future_risks or {}
+        model_evidence = model_evidence or {}
         lines = [
-            "# 电池寿命预测报告",
+            "# 全生命周期预测报告",
             "",
-            "## 一、预测概览",
+            "## 一、生命周期概览",
             f"- 电池 ID：{battery['battery_id']}",
             f"- 数据来源：{battery.get('source', 'unknown')}",
             f"- 模型：{output.model_name}",
@@ -433,24 +516,43 @@ class PredictionService:
             f"- 置信度：{output.confidence * 100:.1f}%",
             f"- 预测时间：{prediction_time}",
             "",
-            "## 二、寿命轨迹解释",
+            "## 二、生命周期轨迹",
             f"- 当前历史轨迹长度：{len(projection['actual_points'])} 个 cycle",
             f"- 预测 EOL 周期：{projection['predicted_eol_cycle']}",
             f"- EOL 容量阈值：{projection['eol_capacity']}",
             f"- 投影方法：{projection.get('projection_method', 'linear')}",
             "",
-            "## 三、模型证据链",
+            "## 三、knee / 风险窗口",
+            f"- 预测 knee 周期：{future_risks.get('predicted_knee_cycle', '--')}",
+            f"- 衰退模式：{future_risks.get('future_capacity_fade_pattern', '--')}",
+            f"- 温度风险：{future_risks.get('temperature_risk', '--')}",
+            f"- 内阻风险：{future_risks.get('resistance_risk', '--')}",
+            f"- 电压风险：{future_risks.get('voltage_risk', '--')}",
+            "",
+            "## 四、模型证据链",
         ]
         for item in explanation.get("feature_contributions", [])[:5]:
             lines.append(f"- 特征 {item['feature']}：影响值 {item['impact']}，{item['description']}")
-        lines.extend(["", "## 四、关键时间窗口"])
+        if model_evidence.get("top_features"):
+            lines.extend(["", "## 五、辅助证据"])
+            lines.extend(f"- 关键特征：{item}" for item in model_evidence.get("top_features", []))
+            lines.extend(f"- 关键窗口：{item}" for item in model_evidence.get("critical_windows", []))
+        lines.extend(["", "## 六、关键时间窗口"])
         for item in explanation.get("window_contributions", [])[:4]:
             lines.append(f"- {item['window_label']}：影响值 {item['impact']}，{item['description']}")
-        lines.extend(["", "## 五、置信度说明"])
+        lines.extend(["", "## 七、置信度说明"])
         confidence_summary = explanation.get("confidence_summary", {})
         for factor in confidence_summary.get("factors", []):
             lines.append(f"- {factor}")
-        lines.extend(["", "## 六、限制说明", "- 未来容量曲线属于受 RUL 约束的可视化投影，不等同于序列生成模型直接输出。", "- 当前系统展示的是可审计预测证据链，而不是模型内部隐式思维过程。"])
+        lines.extend(
+            [
+                "",
+                "## 八、限制说明",
+                "- 当前系统优先输出可审计的生命周期轨迹、knee/EOL/RUL 与证据链。",
+                "- 若生命周期训练权重缺失，系统会退回到启发式生命周期估计，并显式标记 fallback。",
+                "- 当前解释结果强调可追踪证据，而不是模型内部隐式思维过程。",
+            ]
+        )
         return "\n".join(lines)
 
 

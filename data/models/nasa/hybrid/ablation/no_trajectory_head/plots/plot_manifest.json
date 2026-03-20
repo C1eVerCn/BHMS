@@ -1,0 +1,26 @@
+{
+  "plots": [
+    {
+      "key": "error_distribution",
+      "title": "NASA no_trajectory_head error distribution",
+      "description": "Prediction error histogram for each seed in the ablation variant.",
+      "path": "data/models/nasa/hybrid/ablation/no_trajectory_head/plots/error_distribution.png",
+      "generated_at": "2026-03-17T07:57:51.977061"
+    },
+    {
+      "key": "metrics_overview",
+      "title": "NASA no_trajectory_head metrics",
+      "description": "Aggregate mean/std metrics for the ablation variant.",
+      "path": "data/models/nasa/hybrid/ablation/no_trajectory_head/plots/metrics_overview.png",
+      "generated_at": "2026-03-17T07:57:51.911319"
+    },
+    {
+      "key": "training_curves",
+      "title": "NASA no_trajectory_head training curves",
+      "description": "Train/validation loss for the ablation variant.",
+      "path": "data/models/nasa/hybrid/ablation/no_trajectory_head/plots/training_curves.png",
+      "generated_at": "2026-03-17T07:57:52.030177"
+    }
+  ],
+  "generated_at": "2026-03-17T07:57:52.030520"
+}

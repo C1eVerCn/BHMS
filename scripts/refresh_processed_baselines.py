@@ -14,11 +14,13 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from backend.app.core.config import Settings, get_settings
-from ml.data.adapters import CALCEAdapter, KaggleAdapter, NASAAdapter
+from ml.data import LifecycleDataModule
+from ml.data.adapters import CALCEAdapter, HUSTAdapter, KaggleAdapter, MATRAdapter, NASAAdapter, OxfordAdapter, PulseBatAdapter
 from ml.data.dataset import RULDataModule
+from ml.data.source_registry import get_dataset_card, list_supported_sources
 from ml.data.schema import TRAINING_FEATURE_COLUMNS
 
-SUPPORTED_SOURCES = ("nasa", "calce", "kaggle")
+SUPPORTED_SOURCES = tuple(list_supported_sources())
 
 
 def refresh_processed_baselines(
@@ -52,10 +54,28 @@ def refresh_processed_source(
     seq_len: int,
     batch_size: int,
 ) -> dict[str, Any]:
+    card = get_dataset_card(source)
     adapter = _adapter_for(source, settings)
     raw_dir = _raw_dir_for(source, settings)
     output_dir = settings.processed_dir / source
     output_dir.mkdir(parents=True, exist_ok=True)
+    if card.ingestion_mode == "enhancement_assets":
+        builder = getattr(adapter, "build_enhancement_assets", None)
+        if builder is None:
+            raise ValueError(f"{source} adapter does not implement enhancement asset export")
+        asset_payload = builder(raw_dir, output_dir)
+        return {
+            "source": source,
+            "csv_path": None,
+            "row_count": 0,
+            "battery_count": 0,
+            "metadata_paths": {
+                "asset_manifest": asset_payload["asset_manifest_path"],
+                "dataset_summary": asset_payload["dataset_summary_path"],
+                "feature_index": asset_payload["feature_index_path"],
+            },
+            "data_summary": asset_payload["dataset_summary"],
+        }
     processed_csv = output_dir / f"{source}_cycle_summary.csv"
 
     frame = adapter.process_directory(raw_dir, output_path=processed_csv)
@@ -77,12 +97,23 @@ def refresh_processed_source(
         path_root=settings.project_root,
         provenance=provenance,
     )
+    lifecycle_paths = LifecycleDataModule(
+        csv_path=processed_csv,
+        source=source,
+        batch_size=batch_size,
+        feature_cols=[*TRAINING_FEATURE_COLUMNS, "capacity_ratio"],
+        output_dir=output_dir,
+        reuse_existing_split=False,
+    ).export_metadata(path_root=settings.project_root)
     return {
         "source": source,
         "csv_path": str(processed_csv),
         "row_count": int(len(frame)),
         "battery_count": int(frame["canonical_battery_id"].nunique()),
-        "metadata_paths": metadata_paths,
+        "metadata_paths": {
+            "rul": metadata_paths,
+            "lifecycle": lifecycle_paths,
+        },
         "data_summary": data_module.summary(path_root=settings.project_root, provenance=provenance),
     }
 
@@ -92,6 +123,10 @@ def _adapter_for(source: str, settings: Settings):
         "nasa": NASAAdapter(eol_capacity_ratio=settings.battery_eol_ratio),
         "calce": CALCEAdapter(eol_capacity_ratio=settings.battery_eol_ratio),
         "kaggle": KaggleAdapter(eol_capacity_ratio=settings.battery_eol_ratio),
+        "hust": HUSTAdapter(eol_capacity_ratio=settings.battery_eol_ratio),
+        "matr": MATRAdapter(eol_capacity_ratio=settings.battery_eol_ratio),
+        "oxford": OxfordAdapter(eol_capacity_ratio=settings.battery_eol_ratio),
+        "pulsebat": PulseBatAdapter(eol_capacity_ratio=settings.battery_eol_ratio),
     }
     return mapping[source]
 
@@ -101,6 +136,10 @@ def _raw_dir_for(source: str, settings: Settings) -> Path:
         "nasa": settings.raw_nasa_dir,
         "calce": settings.raw_calce_dir,
         "kaggle": settings.raw_kaggle_dir,
+        "hust": settings.raw_hust_dir,
+        "matr": settings.raw_matr_dir,
+        "oxford": settings.raw_oxford_dir,
+        "pulsebat": settings.raw_pulsebat_dir,
     }
     return mapping[source]
 

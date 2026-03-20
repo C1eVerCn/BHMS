@@ -1,5 +1,6 @@
 {
   "source": "nasa",
+  "task_kind": "lifecycle",
   "model_type": "hybrid",
   "model_version": "nasa-no_xlstm-seed-7",
   "model_config": {
@@ -7,48 +8,48 @@
     "d_model": 64,
     "xlstm_layers": 1,
     "xlstm_heads": 4,
-    "use_xlstm": false,
-    "use_mlstm": true,
-    "use_slstm": true,
     "transformer_layers": 1,
     "transformer_heads": 8,
     "transformer_ff_mult": 4,
-    "use_transformer": true,
     "fusion_dim": 64,
-    "output_dim": 1,
-    "max_rul": 2000.0,
+    "decoder_heads": 4,
+    "future_len": 64,
     "dropout": 0.1,
-    "max_seq_len": 5000
+    "max_seq_len": 512,
+    "domain_embedding_dim": 16,
+    "source_vocab_size": 2,
+    "chemistry_vocab_size": 1,
+    "protocol_vocab_size": 1,
+    "use_xlstm": false,
+    "use_transformer": true,
+    "use_domain_embeddings": true,
+    "use_trajectory_head": true,
+    "use_uncertainty_head": true,
+    "trajectory_scale": 64.0,
+    "pooling_hidden_dim": 128
   },
   "training_config": {
     "source": "nasa",
     "model_type": "hybrid",
-    "num_epochs": 40,
+    "task_kind": "lifecycle",
+    "num_epochs": 30,
     "batch_size": 16,
     "learning_rate": 0.0003,
     "weight_decay": 0.001,
-    "lr_scheduler": "cosine_warm_restarts",
-    "early_stopping": true,
-    "patience": 20,
-    "min_delta": 0.0001,
-    "loss_type": "huber",
-    "huber_delta": 1.0,
+    "device": "auto",
+    "max_grad_norm": 1.0,
     "checkpoint_dir": "data/models",
     "log_dir": "data/models/logs",
-    "device": "auto",
-    "use_amp": false,
-    "max_grad_norm": 1.0,
-    "seed": 7,
+    "artifact_subdir": "ablation/no_xlstm/seed-7",
     "model_version": "nasa-no_xlstm-seed-7",
-    "resume_from": null,
-    "run_name": null,
-    "artifact_subdir": "ablation/no_xlstm/seed-7"
+    "seed": 7,
+    "patience": null
   },
   "data_summary": {
     "csv_path": "data/processed/nasa/nasa_cycle_summary.csv",
-    "source": "nasa",
-    "seq_len": 30,
-    "batch_size": 16,
+    "sources": [
+      "nasa"
+    ],
     "feature_columns": [
       "voltage_mean",
       "voltage_std",
@@ -62,6 +63,17 @@
       "capacity",
       "cycle_number"
     ],
+    "target_config": {
+      "observation_ratios": [
+        0.2,
+        0.3,
+        0.4
+      ],
+      "default_observation_ratio": 0.3,
+      "encoder_len": 64,
+      "future_len": 64,
+      "target_column": "capacity_ratio"
+    },
     "split": {
       "train_batteries": [
         "nasa::nasa_pcoe::B0005",
@@ -132,11 +144,23 @@
         "cycle_number": 53.631610384036144
       }
     },
+    "domain_vocab": {
+      "source_to_id": {
+        "unknown": 0,
+        "nasa": 1
+      },
+      "chemistry_to_id": {
+        "unknown": 0
+      },
+      "protocol_to_id": {
+        "unknown": 0
+      }
+    },
     "num_batteries": 34,
     "num_samples": {
-      "train": 1243,
-      "val": 338,
-      "test": 247
+      "train": 60,
+      "val": 21,
+      "test": 21
     }
   },
   "feature_columns": [
@@ -180,29 +204,84 @@
       "cycle_number": 53.631610384036144
     }
   },
-  "best_val_loss": 0.7666806090961803,
+  "domain_vocab": {
+    "source_to_id": {
+      "unknown": 0,
+      "nasa": 1
+    },
+    "chemistry_to_id": {
+      "unknown": 0
+    },
+    "protocol_to_id": {
+      "unknown": 0
+    }
+  },
+  "target_config": {
+    "observation_ratios": [
+      0.2,
+      0.3,
+      0.4
+    ],
+    "default_observation_ratio": 0.3,
+    "encoder_len": 64,
+    "future_len": 64,
+    "target_column": "capacity_ratio"
+  },
   "test_metrics": {},
   "history": {
     "train": [
       {
-        "loss": 38.6664605262952,
-        "rmse": 59.91753353216709,
-        "mae": 39.109817553789185,
-        "mape": 109.13107480758276,
-        "r2": -0.6345175306002299,
+        "loss": 46.0555624961853,
+        "traj_loss": 2.1083796687889844,
+        "rul_loss": 40.614519119262695,
+        "eol_loss": 42.76060771942139,
+        "knee_loss": 26.089640855789185,
+        "mono_loss": 0.0,
+        "smooth_loss": 0.00028663547527685296,
+        "domain_loss": 0.13242202810943127,
+        "trajectory_rmse": 4.750955769792199,
+        "trajectory_mae": 2.3036070009693503,
+        "trajectory_mape": 55.303386092185974,
+        "trajectory_r2": -0.06294025480747223,
+        "rul_mae": 41.11139392852783,
+        "rul_rmse": 55.68210220336914,
+        "eol_mae": 43.26060962677002,
+        "eol_rmse": 56.22171235084534,
+        "knee_mae": 26.57816457748413,
+        "rmse": 4.750955769792199,
+        "mae": 2.3036070009693503,
+        "mape": 55.303386092185974,
+        "r2": -0.06294025480747223,
         "lr": 0.0003
       }
     ],
     "val": [
       {
-        "loss": 0.7666806090961803,
-        "rmse": 0.9440302523699674,
-        "mae": 0.8462327285246416,
-        "mape": 84.62327298251066,
-        "r2": -85638609.36363636,
+        "loss": 11.028595606486002,
+        "traj_loss": 0.05550563242286444,
+        "rul_loss": 2.2276489535967507,
+        "eol_loss": 13.391729831695557,
+        "knee_loss": 17.962265491485596,
+        "mono_loss": 0.0,
+        "smooth_loss": 2.5936193234580665e-06,
+        "domain_loss": 0.12006943672895432,
+        "trajectory_rmse": 0.2964139034350713,
+        "trajectory_mae": 0.1853835309545199,
+        "trajectory_mape": 592237.4941202799,
+        "trajectory_r2": -0.6414445241292318,
+        "rul_mae": 2.727355480194092,
+        "rul_rmse": 3.2724249760309854,
+        "eol_mae": 13.891729831695557,
+        "eol_rmse": 15.585475126902262,
+        "knee_mae": 18.295598824818928,
+        "rmse": 0.2964139034350713,
+        "mae": 0.1853835309545199,
+        "mape": 592237.4941202799,
+        "r2": -0.6414445241292318,
         "lr": 0.0003
       }
     ],
     "test": []
-  }
+  },
+  "best_val_loss": 11.028595606486002
 }

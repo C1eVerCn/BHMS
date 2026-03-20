@@ -5,22 +5,22 @@
       "title": "CALCE no_transformer error distribution",
       "description": "Prediction error histogram for each seed in the ablation variant.",
       "path": "data/models/calce/hybrid/ablation/no_transformer/plots/error_distribution.png",
-      "generated_at": "2026-03-15T08:29:24.760225"
+      "generated_at": "2026-03-17T07:47:30.366281"
     },
     {
       "key": "metrics_overview",
       "title": "CALCE no_transformer metrics",
       "description": "Aggregate mean/std metrics for the ablation variant.",
       "path": "data/models/calce/hybrid/ablation/no_transformer/plots/metrics_overview.png",
-      "generated_at": "2026-03-15T08:29:24.701301"
+      "generated_at": "2026-03-17T07:47:30.318037"
     },
     {
       "key": "training_curves",
       "title": "CALCE no_transformer training curves",
       "description": "Train/validation loss for the ablation variant.",
       "path": "data/models/calce/hybrid/ablation/no_transformer/plots/training_curves.png",
-      "generated_at": "2026-03-15T08:29:24.805033"
+      "generated_at": "2026-03-17T07:47:30.428333"
     }
   ],
-  "generated_at": "2026-03-15T08:29:24.805360"
+  "generated_at": "2026-03-17T07:47:30.428883"
 }

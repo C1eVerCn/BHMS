@@ -3,5 +3,5 @@
   "title": "NASA ablation summary",
   "description": "Aggregate RMSE comparison for the configured ablation variants.",
   "path": "data/models/nasa/plots/experiment_ablations.png",
-  "generated_at": "2026-03-15T08:29:24.270084"
+  "generated_at": "2026-03-17T07:57:52.290452"
 }

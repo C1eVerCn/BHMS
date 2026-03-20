@@ -1,0 +1,60 @@
+{
+  "source": "pulsebat",
+  "dataset_name": "pulsebat",
+  "ingestion_mode": "enhancement_assets",
+  "training_ready": false,
+  "feature_guides": [
+    {
+      "label": "NMC 2.1Ah Feature U1-U21 Description.png",
+      "path": "Pulse-Voltage-Response-Generation-main/Resources/NMC 2.1Ah Feature U1-U21 Description.png"
+    }
+  ],
+  "upstream_scripts": [
+    {
+      "name": "step_1_extract workstep sheet",
+      "path": "Pulse-Voltage-Response-Generation-main/step_1_extract workstep sheet.py"
+    },
+    {
+      "name": "step_2_feature extraction_adjustable",
+      "path": "Pulse-Voltage-Response-Generation-main/step_2_feature extraction_adjustable.py"
+    },
+    {
+      "name": "step_3_feature collection_adjustable",
+      "path": "Pulse-Voltage-Response-Generation-main/step_3_feature collection_adjustable.py"
+    }
+  ],
+  "unexpected_situations": [
+    {
+      "file_name": "LMO_C_10_B_2_SOC_5-55_Part_1-1_ID_PIP15827A00221240.xlsx",
+      "path": "Pulse-Voltage-Response-Generation-main/Unexpected Situations Handling/LMO_C_10_B_2_SOC_5-55_Part_1-1_ID_PIP15827A00221240.xlsx"
+    },
+    {
+      "file_name": "LMO_C_25_B_101_SOC_5-50_Part_1-1_ID_515092901207.xlsx",
+      "path": "Pulse-Voltage-Response-Generation-main/Unexpected Situations Handling/LMO_C_25_B_101_SOC_5-50_Part_1-1_ID_515092901207.xlsx"
+    },
+    {
+      "file_name": "LMO_C_25_B_155_SOC_5-45_Part_1-1_ID_515093001608.xlsx",
+      "path": "Pulse-Voltage-Response-Generation-main/Unexpected Situations Handling/LMO_C_25_B_155_SOC_5-45_Part_1-1_ID_515093001608.xlsx"
+    },
+    {
+      "file_name": "LMO_C_25_B_17_SOC_5-55_Part_1-1_ID_515091902419.xlsx",
+      "path": "Pulse-Voltage-Response-Generation-main/Unexpected Situations Handling/LMO_C_25_B_17_SOC_5-55_Part_1-1_ID_515091902419.xlsx"
+    },
+    {
+      "file_name": "LMO_C_25_B_24_SOC_5-75_Part_1-1_ID_515093002348.xlsx",
+      "path": "Pulse-Voltage-Response-Generation-main/Unexpected Situations Handling/LMO_C_25_B_24_SOC_5-75_Part_1-1_ID_515093002348.xlsx"
+    },
+    {
+      "file_name": "LMO_C_25_B_28_SOC_5-50_Part_1-1_ID_515092501338.xlsx",
+      "path": "Pulse-Voltage-Response-Generation-main/Unexpected Situations Handling/LMO_C_25_B_28_SOC_5-50_Part_1-1_ID_515092501338.xlsx"
+    },
+    {
+      "file_name": "LMO_C_25_B_32_SOC_5-55_Part_1-1_ID_515093002151.xlsx",
+      "path": "Pulse-Voltage-Response-Generation-main/Unexpected Situations Handling/LMO_C_25_B_32_SOC_5-55_Part_1-1_ID_515093002151.xlsx"
+    },
+    {
+      "file_name": "LMO_C_25_B_45_SOC_5-55_Part_1-1_ID_515093000552.xlsx",
+      "path": "Pulse-Voltage-Response-Generation-main/Unexpected Situations Handling/LMO_C_25_B_45_SOC_5-55_Part_1-1_ID_515093000552.xlsx"
+    }
+  ]
+}

@@ -3,5 +3,5 @@
   "title": "CALCE hybrid training curves",
   "description": "Train/validation loss curves for the configured seed runs.",
   "path": "data/models/calce/hybrid/plots/training_curves.png",
-  "generated_at": "2026-03-15T08:29:24.538999"
+  "generated_at": "2026-03-17T07:46:27.764207"
 }

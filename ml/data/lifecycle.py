@@ -15,6 +15,7 @@ from torch.utils.data import DataLoader, Dataset
 from ml.data.dataset import NormalizationStats, _serialize_path
 from ml.data.nasa_preprocessor import DatasetSplit, NASABatteryPreprocessor
 from ml.data.schema import TRAINING_FEATURE_COLUMNS
+from ml.data.source_registry import SOURCE_REGISTRY
 
 LIFECYCLE_FEATURE_COLUMNS = [*TRAINING_FEATURE_COLUMNS, "capacity_ratio"]
 
@@ -302,7 +303,7 @@ class LifecycleDataModule:
         return self._build_loader(self.test_dataset, shuffle=False)
 
     def summary(self, *, path_root: str | Path | None = None) -> dict[str, Any]:
-        return {
+        payload = {
             "csv_path": _serialize_path(self.csv_path, path_root),
             "sources": self.sources,
             "feature_columns": self.feature_cols,
@@ -317,17 +318,50 @@ class LifecycleDataModule:
                 "test": len(self.test_dataset),
             },
         }
+        if len(self.sources) == 1:
+            card = SOURCE_REGISTRY.get(self.sources[0])
+            if card is not None:
+                payload.update(
+                    {
+                        "ingestion_mode": card.ingestion_mode,
+                        "training_ready": card.training_ready,
+                        "source_group": card.group,
+                    }
+                )
+        return payload
 
-    def export_metadata(self, output_dir: str | Path | None = None, *, path_root: str | Path | None = None) -> dict[str, str]:
+    def export_metadata(
+        self,
+        output_dir: str | Path | None = None,
+        *,
+        file_prefix: str | None = None,
+        path_root: str | Path | None = None,
+    ) -> dict[str, str]:
         summary = self.summary(path_root=path_root)
         target_dir = Path(output_dir) if output_dir is not None else self.output_dir
         target_dir.mkdir(parents=True, exist_ok=True)
-        prefix = self._split_prefix()
+        prefix = (file_prefix or self._split_prefix()).lower()
+        split_path = target_dir / f"{prefix}_split.json"
+        default_feature_config_path = target_dir / f"{prefix}_feature_config.json"
+        feature_config_path = target_dir / f"{prefix}_lifecycle_feature_config.json"
         summary_path = target_dir / f"{prefix}_lifecycle_dataset_summary.json"
         target_config_path = target_dir / f"{prefix}_lifecycle_target_config.json"
+        split_path.write_text(json.dumps(summary["split"], ensure_ascii=False, indent=2), encoding="utf-8")
+        feature_payload = {
+            "sources": self.sources,
+            "feature_columns": self.feature_cols,
+            "target_column": self.target_config.target_column,
+            "task_kind": "lifecycle",
+        }
+        feature_content = json.dumps(feature_payload, ensure_ascii=False, indent=2)
+        feature_config_path.write_text(feature_content, encoding="utf-8")
+        if not default_feature_config_path.exists():
+            default_feature_config_path.write_text(feature_content, encoding="utf-8")
         summary_path.write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
         target_config_path.write_text(json.dumps(self.target_config.to_dict(), ensure_ascii=False, indent=2), encoding="utf-8")
         return {
+            "split": str(split_path),
+            "feature_config": str(feature_config_path),
             "summary": str(summary_path),
             "target_config": str(target_config_path),
         }

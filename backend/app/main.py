@@ -31,7 +31,7 @@ async def lifespan(_: FastAPI):
 app = FastAPI(
     title=settings.app_name,
     version="1.0.0",
-    description="毕业设计 MVP：真实数据导入、RUL 预测、异常检测与诊断闭环。",
+    description="毕业设计系统：真实数据导入、全生命周期预测、机理解释与实验分析闭环。",
     lifespan=lifespan,
 )
 app.add_middleware(

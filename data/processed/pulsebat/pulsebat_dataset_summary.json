@@ -1,0 +1,24 @@
+{
+  "source": "pulsebat",
+  "dataset_name": "pulsebat",
+  "csv_path": null,
+  "feature_columns": [],
+  "split": {},
+  "num_samples": {},
+  "num_batteries": 0,
+  "ingestion_mode": "enhancement_assets",
+  "training_ready": false,
+  "source_group": "diagnostic_enhancement",
+  "asset_count": 14,
+  "asset_categories": {
+    "readme": 1,
+    "resource_figure": 2,
+    "unexpected_workbook": 8,
+    "upstream_script": 3
+  },
+  "provenance": {
+    "kind": "enhancement_assets",
+    "source_root": "data/raw/pulsebat",
+    "generated_by": "pulsebat_asset_builder"
+  }
+}

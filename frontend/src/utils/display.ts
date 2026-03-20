@@ -17,11 +17,17 @@ const sourceLabels: Record<string, string> = {
   nasa: 'NASA',
   calce: 'CALCE',
   kaggle: 'Kaggle',
+  hust: 'HUST',
+  matr: 'MATR',
+  oxford: 'Oxford',
+  pulsebat: 'PulseBat',
 }
 
 const modelLabels: Record<string, string> = {
   hybrid: 'xLSTM-Transformer',
+  lifecycle_hybrid: 'xLSTM-Transformer',
   bilstm: 'Bi-LSTM',
+  lifecycle_bilstm: 'Bi-LSTM',
   heuristic: '启发式',
   auto: '自动',
 }
@@ -45,6 +51,7 @@ const featureLabels: Record<string, string> = {
   internal_resistance: '内阻',
   capacity: '容量',
   cycle_number: '循环次数',
+  capacity_ratio: '容量比例',
 }
 
 const severityLabels: Record<string, string> = {
@@ -164,7 +171,18 @@ export function formatValidationSummary(summary: Record<string, unknown>) {
     items.push({ label: '文件类型', value: summary.file_type.toUpperCase() })
   }
   if (typeof summary.ingestion_mode === 'string') {
-    items.push({ label: '导入方式', value: summary.ingestion_mode === 'uploaded_file' ? '上传文件' : '内置样例' })
+    const ingestionMode = summary.ingestion_mode
+    let label = '内置样例'
+    if (ingestionMode === 'uploaded_file') {
+      label = '上传文件'
+    } else if (String(ingestionMode).includes('raw_converter')) {
+      label = '原始资产转换'
+    } else if (String(ingestionMode).includes('enhancement_assets')) {
+      label = '增强资产建档'
+    } else if (String(ingestionMode).includes('csv_ready')) {
+      label = '标准 CSV 导入'
+    }
+    items.push({ label: '导入方式', value: label })
   }
   if (typeof summary.ready_for_immediate_analysis === 'boolean') {
     items.push({ label: '分析状态', value: summary.ready_for_immediate_analysis ? '可立即分析' : '待补充数据' })

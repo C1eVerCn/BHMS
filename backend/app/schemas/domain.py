@@ -155,6 +155,13 @@ class PredictionRecord(BaseModel):
     checkpoint_id: Optional[str] = None
     fallback_used: Optional[bool] = None
     prediction_time: Optional[str] = None
+    predicted_knee_cycle: Optional[float] = None
+    predicted_eol_cycle: Optional[float] = None
+    trajectory: list[LifecycleTrajectoryPoint] = Field(default_factory=list)
+    risk_windows: list[RiskWindow] = Field(default_factory=list)
+    future_risks: dict[str, Any] = Field(default_factory=dict)
+    model_evidence: dict[str, Any] = Field(default_factory=dict)
+    uncertainty: Optional[float] = None
     projection: Optional[PredictionProjection] = None
     explanation: Optional[PredictionExplanation] = None
     report_markdown: Optional[str] = None
@@ -171,18 +178,23 @@ class PredictionResult(PredictionRecord):
 
 
 class LifecyclePredictionResult(BaseModel):
+    id: int
     battery_id: str
     model_name: str
     model_version: str
     model_source: str
     prediction_time: str
     predicted_rul: float
+    confidence: float
+    checkpoint_id: Optional[str] = None
+    fallback_used: bool = False
     predicted_knee_cycle: Optional[float] = None
     predicted_eol_cycle: Optional[float] = None
     trajectory: list[LifecycleTrajectoryPoint] = Field(default_factory=list)
     risk_windows: list[RiskWindow] = Field(default_factory=list)
     future_risks: dict[str, Any] = Field(default_factory=dict)
     model_evidence: dict[str, Any] = Field(default_factory=dict)
+    uncertainty: Optional[float] = None
     projection: PredictionProjection
     explanation: Optional[PredictionExplanation] = None
     report_markdown: str

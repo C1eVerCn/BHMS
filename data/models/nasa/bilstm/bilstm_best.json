@@ -1,43 +1,48 @@
 {
   "source": "nasa",
+  "task_kind": "lifecycle",
   "model_type": "bilstm",
-  "model_version": "nasa-bilstm-v1",
+  "model_version": "nasa-lifecycle-bilstm-v1",
   "model_config": {
     "input_dim": 11,
     "hidden_dim": 64,
-    "num_layers": 2,
-    "dropout": 0.1,
+    "num_layers": 1,
     "bidirectional": true,
-    "output_dim": 1
+    "future_len": 64,
+    "dropout": 0.1,
+    "decoder_heads": 4,
+    "domain_embedding_dim": 16,
+    "source_vocab_size": 2,
+    "chemistry_vocab_size": 1,
+    "protocol_vocab_size": 1,
+    "use_domain_embeddings": true,
+    "use_trajectory_head": true,
+    "use_uncertainty_head": true,
+    "trajectory_scale": 64.0,
+    "pooling_hidden_dim": 128
   },
   "training_config": {
     "source": "nasa",
     "model_type": "bilstm",
-    "num_epochs": 3,
+    "task_kind": "lifecycle",
+    "num_epochs": 30,
     "batch_size": 16,
-    "learning_rate": 0.0005,
+    "learning_rate": 0.0003,
     "weight_decay": 0.001,
-    "lr_scheduler": "cosine_warm_restarts",
-    "early_stopping": true,
-    "patience": 3,
-    "min_delta": 0.0001,
-    "loss_type": "huber",
-    "huber_delta": 1.0,
+    "device": "auto",
+    "max_grad_norm": 1.0,
     "checkpoint_dir": "data/models",
     "log_dir": "data/models/logs",
-    "device": "auto",
-    "use_amp": false,
-    "max_grad_norm": 1.0,
+    "artifact_subdir": null,
+    "model_version": "nasa-lifecycle-bilstm-v1",
     "seed": 42,
-    "model_version": "nasa-bilstm-v1",
-    "resume_from": null,
-    "run_name": null
+    "patience": null
   },
   "data_summary": {
     "csv_path": "data/processed/nasa/nasa_cycle_summary.csv",
-    "source": "nasa",
-    "seq_len": 30,
-    "batch_size": 16,
+    "sources": [
+      "nasa"
+    ],
     "feature_columns": [
       "voltage_mean",
       "voltage_std",
@@ -51,6 +56,17 @@
       "capacity",
       "cycle_number"
     ],
+    "target_config": {
+      "observation_ratios": [
+        0.2,
+        0.3,
+        0.4
+      ],
+      "default_observation_ratio": 0.3,
+      "encoder_len": 64,
+      "future_len": 64,
+      "target_column": "capacity_ratio"
+    },
     "split": {
       "train_batteries": [
         "nasa::nasa_pcoe::B0005",
@@ -121,11 +137,23 @@
         "cycle_number": 53.631610384036144
       }
     },
+    "domain_vocab": {
+      "source_to_id": {
+        "unknown": 0,
+        "nasa": 1
+      },
+      "chemistry_to_id": {
+        "unknown": 0
+      },
+      "protocol_to_id": {
+        "unknown": 0
+      }
+    },
     "num_batteries": 34,
     "num_samples": {
-      "train": 1243,
-      "val": 338,
-      "test": 247
+      "train": 60,
+      "val": 21,
+      "test": 21
     }
   },
   "feature_columns": [
@@ -169,29 +197,84 @@
       "cycle_number": 53.631610384036144
     }
   },
-  "best_val_loss": 0.6047635511918501,
+  "domain_vocab": {
+    "source_to_id": {
+      "unknown": 0,
+      "nasa": 1
+    },
+    "chemistry_to_id": {
+      "unknown": 0
+    },
+    "protocol_to_id": {
+      "unknown": 0
+    }
+  },
+  "target_config": {
+    "observation_ratios": [
+      0.2,
+      0.3,
+      0.4
+    ],
+    "default_observation_ratio": 0.3,
+    "encoder_len": 64,
+    "future_len": 64,
+    "target_column": "capacity_ratio"
+  },
   "test_metrics": {},
   "history": {
     "train": [
       {
-        "loss": 38.950567367749336,
-        "rmse": 60.71457295540051,
-        "mae": 39.34972585775913,
-        "mape": 96.59804065410907,
-        "r2": -0.6556329742456094,
-        "lr": 0.0005
+        "loss": 47.77328634262085,
+        "traj_loss": 1.9243146711960435,
+        "rul_loss": 42.08332300186157,
+        "eol_loss": 44.25314426422119,
+        "knee_loss": 28.306018471717834,
+        "mono_loss": 0.0,
+        "smooth_loss": 0.0003663290362965199,
+        "domain_loss": 0.2951217647641897,
+        "trajectory_rmse": 4.385558597743511,
+        "trajectory_mae": 2.1435931026935577,
+        "trajectory_mape": 58.56744313240051,
+        "trajectory_r2": -0.05942150950431824,
+        "rul_mae": 42.57780742645264,
+        "rul_rmse": 57.91564583778381,
+        "eol_mae": 44.75222301483154,
+        "eol_rmse": 58.4087119102478,
+        "knee_mae": 28.795461654663086,
+        "rmse": 4.385558597743511,
+        "mae": 2.1435931026935577,
+        "mape": 58.56744313240051,
+        "r2": -0.05942150950431824,
+        "lr": 0.0003
       }
     ],
     "val": [
       {
-        "loss": 0.6047635511918501,
-        "rmse": 0.7204551913521506,
-        "mae": 0.6431013237346302,
-        "mape": 64.31013072620739,
-        "r2": -93033872.54545455,
-        "lr": 0.0005
+        "loss": 10.958437283833822,
+        "traj_loss": 0.05740514459709326,
+        "rul_loss": 2.2553441723187766,
+        "eol_loss": 13.283382415771484,
+        "knee_loss": 17.784907658894856,
+        "mono_loss": 0.0,
+        "smooth_loss": 9.409542158778095e-07,
+        "domain_loss": 0.13779759158690771,
+        "trajectory_rmse": 0.30351851880550385,
+        "trajectory_mae": 0.19519222776095072,
+        "trajectory_mape": 603726.653910319,
+        "trajectory_r2": -0.7414449055989584,
+        "rul_mae": 2.755138874053955,
+        "rul_rmse": 3.3014923731486,
+        "eol_mae": 13.783382733662924,
+        "eol_rmse": 15.463687419891357,
+        "knee_mae": 18.118239720662434,
+        "rmse": 0.30351851880550385,
+        "mae": 0.19519222776095072,
+        "mape": 603726.653910319,
+        "r2": -0.7414449055989584,
+        "lr": 0.0003
       }
     ],
     "test": []
-  }
+  },
+  "best_val_loss": 10.958437283833822
 }

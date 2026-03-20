@@ -1,0 +1,37 @@
+data:
+  csv_path: data/processed/hust/hust_cycle_summary.csv
+  sources:
+    - hust
+  feature_columns:
+    - voltage_mean
+    - voltage_std
+    - voltage_min
+    - voltage_max
+    - current_mean
+    - current_std
+    - temperature_mean
+    - temperature_std
+    - temperature_rise_rate
+    - capacity
+    - cycle_number
+  target_config:
+    observation_ratios:
+      - 0.2
+      - 0.3
+      - 0.4
+    default_observation_ratio: 0.3
+    encoder_len: 64
+    future_len: 64
+    target_column: capacity_ratio
+model:
+  hidden_dim: 64
+  num_layers: 1
+  dropout: 0.1
+  use_domain_embeddings: true
+  use_trajectory_head: true
+training:
+  num_epochs: 30
+  batch_size: 12
+  learning_rate: 0.0003
+  weight_decay: 0.001
+  model_version: hust-lifecycle-bilstm-v1

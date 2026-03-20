@@ -4,7 +4,15 @@ from ml.data.dataset import BatterySequenceDataset, NormalizationStats, RULDataM
 from ml.data.lifecycle import DomainVocab, LIFECYCLE_FEATURE_COLUMNS, LifecycleDataModule, LifecycleSequenceDataset, LifecycleTargetConfig
 from ml.data.nasa_preprocessor import DEFAULT_FEATURE_COLUMNS, DatasetSplit, NASABatteryPreprocessor
 from ml.data.schema import TRAINING_FEATURE_COLUMNS, build_canonical_battery_id, finalize_cycle_frame
-from ml.data.source_registry import SOURCE_REGISTRY, DatasetCard, get_dataset_card, list_supported_sources
+from ml.data.source_registry import (
+    SOURCE_REGISTRY,
+    DatasetCard,
+    get_dataset_card,
+    list_auxiliary_sources,
+    list_enhancement_only_sources,
+    list_supported_sources,
+    list_training_ready_sources,
+)
 
 __all__ = [
     "BatterySequenceDataset",
@@ -25,5 +33,8 @@ __all__ = [
     "build_canonical_battery_id",
     "finalize_cycle_frame",
     "get_dataset_card",
+    "list_auxiliary_sources",
+    "list_enhancement_only_sources",
     "list_supported_sources",
+    "list_training_ready_sources",
 ]

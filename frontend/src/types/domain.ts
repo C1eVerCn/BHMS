@@ -1,4 +1,5 @@
 export type BatteryStatus = 'good' | 'warning' | 'critical' | 'unknown'
+export type SupportedSource = 'nasa' | 'calce' | 'kaggle' | 'hust' | 'matr' | 'oxford' | 'pulsebat'
 
 export interface CyclePoint {
   battery_id: string
@@ -149,8 +150,15 @@ export interface PredictionRecord {
   checkpoint_id?: string | null
   fallback_used?: boolean
   prediction_time?: string | null
+  predicted_knee_cycle?: number | null
+  predicted_eol_cycle?: number | null
+  trajectory?: LifecycleTrajectoryPoint[]
+  risk_windows?: RiskWindow[]
+  future_risks?: Record<string, unknown>
+  model_evidence?: Record<string, unknown>
+  uncertainty?: number | null
   projection?: PredictionProjection
-  explanation?: PredictionExplanation
+  explanation?: PredictionExplanation | null
   report_markdown?: string | null
 }
 
@@ -159,8 +167,12 @@ export interface PredictionResult extends PredictionRecord {
   model_source: string
   fallback_used: boolean
   prediction_time: string
+  trajectory: LifecycleTrajectoryPoint[]
+  risk_windows: RiskWindow[]
+  future_risks: Record<string, unknown>
+  model_evidence: Record<string, unknown>
   projection: PredictionProjection
-  explanation: PredictionExplanation
+  explanation: PredictionExplanation | null
   report_markdown: string
 }
 
@@ -272,18 +284,23 @@ export interface DiagnosisResult {
 }
 
 export interface LifecyclePredictionResult {
+  id: number
   battery_id: string
   model_name: string
   model_version: string
   model_source: string
   prediction_time: string
   predicted_rul: number
+  confidence: number
+  checkpoint_id?: string | null
+  fallback_used: boolean
   predicted_knee_cycle?: number | null
   predicted_eol_cycle?: number | null
   trajectory: LifecycleTrajectoryPoint[]
   risk_windows: RiskWindow[]
   future_risks: Record<string, unknown>
   model_evidence: Record<string, unknown>
+  uncertainty?: number | null
   projection: PredictionProjection
   explanation?: PredictionExplanation | null
   report_markdown: string
@@ -532,6 +549,9 @@ export interface DatasetProfile {
   comparison_available: boolean
   dataset_files: DatasetFileRecord[]
   demo_files: DemoPreset[]
+  training_ready?: boolean
+  ingestion_mode?: string
+  source_group?: string
   generated_at: string
 }
 
@@ -561,6 +581,9 @@ export interface SourceStatus {
   comparison_ready: boolean
   demo_preset_count: number
   best_model?: string | null
+  training_ready?: boolean
+  ingestion_mode?: string
+  source_group?: string
 }
 
 export interface SystemStatus {

@@ -1,0 +1,7 @@
+{
+  "key": "metrics_overview",
+  "title": "CALCE no_trajectory_head metrics",
+  "description": "Aggregate mean/std metrics for the ablation variant.",
+  "path": "data/models/calce/hybrid/ablation/no_trajectory_head/plots/metrics_overview.png",
+  "generated_at": "2026-03-17T07:48:31.044563"
+}

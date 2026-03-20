@@ -20,10 +20,10 @@ const { useBreakpoint } = Grid
 const menuItems = [
   { key: '/', icon: <DashboardOutlined />, label: '总览' },
   { key: '/batteries', icon: <DatabaseOutlined />, label: '电池' },
-  { key: '/prediction', icon: <LineChartOutlined />, label: '预测' },
-  { key: '/diagnosis', icon: <AlertOutlined />, label: '诊断' },
-  { key: '/analysis', icon: <ApartmentOutlined />, label: '分析' },
-  { key: '/upload', icon: <CloudUploadOutlined />, label: '导入' },
+  { key: '/prediction', icon: <LineChartOutlined />, label: '生命周期预测' },
+  { key: '/diagnosis', icon: <AlertOutlined />, label: '机理解释' },
+  { key: '/analysis', icon: <ApartmentOutlined />, label: '分析工作台' },
+  { key: '/upload', icon: <CloudUploadOutlined />, label: '数据接入' },
 ]
 
 interface AppSiderProps {
@@ -48,7 +48,7 @@ const AppSider: React.FC<AppSiderProps> = ({ mobileOpen = false, onCloseMobile }
       <div className="sider-overview">
         <Text className="sider-overview__eyebrow">Workspace</Text>
         <Title level={5}>BHMS</Title>
-        <Text className="sider-overview__description">状态、预测、诊断统一查看。</Text>
+        <Text className="sider-overview__description">生命周期预测、机理解释与 benchmark 统一查看。</Text>
         <div className="sider-overview__stats">
           <div>
             <span>电池</span>
@@ -82,7 +82,7 @@ const AppSider: React.FC<AppSiderProps> = ({ mobileOpen = false, onCloseMobile }
       />
 
       <div className="sider-footnote">
-        <Text>先看总览，再看预测和诊断。</Text>
+        <Text>先看总览，再看生命周期预测与机理解释。</Text>
       </div>
     </div>
   )

@@ -3,5 +3,5 @@
   "title": "CALCE ablation overview",
   "description": "Aggregate RMSE for each hybrid ablation variant.",
   "path": "data/models/calce/plots/ablation_overview.png",
-  "generated_at": "2026-03-15T08:29:25.041569"
+  "generated_at": "2026-03-17T07:48:31.203949"
 }

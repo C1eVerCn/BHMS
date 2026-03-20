@@ -74,3 +74,25 @@ def test_prediction_service_supports_lifecycle_prediction_and_mechanism_explanat
     assert lifecycle["future_risks"]["future_capacity_fade_pattern"] in {"stable_decline", "accelerated_tail_fade"}
     assert explanation["graph_backend"] == "memory"
     assert "lifecycle_evidence" in explanation
+
+
+def test_predict_lifecycle_does_not_delegate_to_predict_rul(tmp_path: Path):
+    settings = _make_settings(tmp_path)
+    database = DatabaseManager(settings.database_path)
+    database.initialize()
+    repo = BHMSRepository(database)
+    battery_service = BatteryService(repository=repo, settings=settings)
+    prediction_service = PredictionService(repository=repo, settings=settings)
+
+    frame = create_synthetic_data(tmp_path / "nasa.csv", num_batteries=1, num_cycles=40, source="nasa", dataset_name="nasa_service")
+    battery_service.import_frame(frame, source="nasa", dataset_path=tmp_path / "nasa.csv", include_in_training=True)
+    battery_id = str(frame["battery_id"].iloc[0])
+
+    def _should_not_run(*args, **kwargs):  # noqa: ANN002, ANN003
+        raise AssertionError("predict_rul should not be called from predict_lifecycle")
+
+    prediction_service.predict_rul = _should_not_run  # type: ignore[method-assign]
+    lifecycle = prediction_service.predict_lifecycle(battery_id=battery_id, model_name="hybrid", seq_len=24)
+
+    assert lifecycle["trajectory"]
+    assert lifecycle["predicted_eol_cycle"] is not None
