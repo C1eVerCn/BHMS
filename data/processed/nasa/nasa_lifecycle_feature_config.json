@@ -1,0 +1,20 @@
+{
+  "sources": [
+    "nasa"
+  ],
+  "feature_columns": [
+    "voltage_mean",
+    "voltage_std",
+    "voltage_min",
+    "voltage_max",
+    "current_mean",
+    "current_std",
+    "temperature_mean",
+    "temperature_std",
+    "temperature_rise_rate",
+    "capacity",
+    "cycle_number"
+  ],
+  "target_column": "capacity_ratio",
+  "task_kind": "lifecycle"
+}

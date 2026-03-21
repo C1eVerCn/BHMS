@@ -24,6 +24,7 @@ from ml.training.experiment_constants import ABLATION_VARIANTS  # noqa: E402
 from ml.training.experiment_runner import create_ablation_summary, create_multi_seed_summary, generate_source_plot_bundle  # noqa: E402
 from ml.training.lifecycle_experiment_runner import run_lifecycle_experiment  # noqa: E402
 from scripts.run_ablation_study import build_variant_summary  # noqa: E402
+from scripts.run_multi_seed_experiment import reusable_root_summary  # noqa: E402
 
 
 def _make_settings(tmp_path: Path):
@@ -172,6 +173,115 @@ def test_multi_seed_summary_contains_mean_std_runs_and_plots(tmp_path: Path):
     assert Path(summary["artifact_paths"]["summary"]).exists()
     assert Path(summary["plots"][0]["path"]).exists()
     assert any(item["key"] == "dataset_split" for item in source_plots)
+
+
+def test_lifecycle_experiment_supports_resume_and_early_stopping(tmp_path: Path):
+    settings = _make_settings(tmp_path)
+    settings.processed_dir.mkdir(parents=True, exist_ok=True)
+    database = DatabaseManager(settings.database_path)
+    database.initialize()
+
+    frame = _build_cycle_frame("calce", "CALCE_RESUME")
+    csv_path = settings.processed_dir / "calce" / "calce_cycle_summary.csv"
+    csv_path.parent.mkdir(parents=True, exist_ok=True)
+    frame.to_csv(csv_path, index=False)
+
+    config_path = _write_config(tmp_path, "calce", "hybrid", csv_path)
+    initial = run_lifecycle_experiment(
+        "calce",
+        "hybrid",
+        config_path=config_path,
+        training_overrides={"num_epochs": 1, "model_version": "calce-hybrid-initial"},
+        artifact_subdir="resume-check",
+        persist_training_run=False,
+    )
+    resumed = run_lifecycle_experiment(
+        "calce",
+        "hybrid",
+        config_path=config_path,
+        training_overrides={
+            "num_epochs": 3,
+            "resume_from": initial["final_checkpoint"],
+            "model_version": "calce-hybrid-resumed",
+        },
+        artifact_subdir="resume-check",
+        persist_training_run=False,
+    )
+    early_stop = run_lifecycle_experiment(
+        "calce",
+        "hybrid",
+        config_path=config_path,
+        training_overrides={
+            "num_epochs": 6,
+            "early_stopping": True,
+            "patience": 1,
+            "min_delta": 1e9,
+            "model_version": "calce-hybrid-early-stop",
+        },
+        artifact_subdir="early-stop-check",
+        persist_training_run=False,
+    )
+
+    assert resumed["epochs_completed"] == 3
+    assert resumed["resume_from"] == initial["final_checkpoint"]
+    assert resumed["best_epoch"] is not None
+    assert resumed["status"] == "completed"
+    assert resumed["history_summary"]["epochs_ran"] == 3
+    assert Path(resumed["summary_path"]).exists()
+    assert Path(resumed["test_details_path"]).exists()
+
+    assert early_stop["stopped_early"] is True
+    assert early_stop["epochs_completed"] < 6
+    assert early_stop["best_checkpoint"] is not None
+
+
+def test_lifecycle_experiment_resolves_gzipped_cycle_summary_from_legacy_config_path(tmp_path: Path):
+    settings = _make_settings(tmp_path)
+    settings.processed_dir.mkdir(parents=True, exist_ok=True)
+    database = DatabaseManager(settings.database_path)
+    database.initialize()
+
+    frame = _build_cycle_frame("hust", "HUST_GZIP", battery_count=4)
+    gzip_path = settings.processed_dir / "hust" / "hust_cycle_summary.csv.gz"
+    legacy_path = settings.processed_dir / "hust" / "hust_cycle_summary.csv"
+    gzip_path.parent.mkdir(parents=True, exist_ok=True)
+    frame.to_csv(gzip_path, index=False)
+
+    config_path = _write_config(tmp_path, "hust", "hybrid", legacy_path)
+    result = run_lifecycle_experiment(
+        "hust",
+        "hybrid",
+        config_path=config_path,
+        training_overrides={"num_epochs": 1, "model_version": "hust-hybrid-gzip"},
+        persist_training_run=False,
+    )
+
+    assert result["config_snapshot"]["data"]["csv_path"].endswith(".csv.gz")
+    assert Path(result["best_checkpoint"]).exists()
+
+
+def test_reusable_root_summary_and_plot_bundle_use_single_run_fallback(tmp_path: Path):
+    settings = _make_settings(tmp_path)
+    settings.processed_dir.mkdir(parents=True, exist_ok=True)
+    database = DatabaseManager(settings.database_path)
+    database.initialize()
+
+    frame = _build_cycle_frame("nasa", "NASA_ROOT")
+    csv_path = settings.processed_dir / "nasa" / "nasa_cycle_summary.csv"
+    csv_path.parent.mkdir(parents=True, exist_ok=True)
+    frame.to_csv(csv_path, index=False)
+
+    bilstm_config = _write_config(tmp_path, "nasa", "bilstm", csv_path)
+    hybrid_config = _write_config(tmp_path, "nasa", "hybrid", csv_path)
+    run_lifecycle_experiment("nasa", "bilstm", config_path=bilstm_config, persist_training_run=False)
+    run_lifecycle_experiment("nasa", "hybrid", config_path=hybrid_config, persist_training_run=False)
+
+    cached = reusable_root_summary("nasa", "hybrid", 42, "lifecycle", model_dir=settings.model_dir)
+    plots = generate_source_plot_bundle("nasa", model_dir=settings.model_dir, processed_dir=settings.processed_dir)
+
+    assert cached is not None
+    assert cached["seed"] == 42
+    assert any(item["key"] == "experiment_summary" for item in plots)
 
 
 def test_ablation_summary_contains_real_variants_and_delta(tmp_path: Path):

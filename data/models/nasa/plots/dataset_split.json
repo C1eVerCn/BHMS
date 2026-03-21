@@ -3,7 +3,7 @@
   "title": "NASA dataset split",
   "description": "Battery counts in the fixed train/validation/test split.",
   "path": "data/models/nasa/plots/dataset_split.png",
-  "generated_at": "2026-03-17T07:57:52.224842",
+  "generated_at": "2026-03-21T14:24:43.533313",
   "split_snapshot": {
     "train_batteries": [
       "nasa::nasa_pcoe::B0005",

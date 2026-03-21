@@ -3,5 +3,5 @@
   "title": "KAGGLE ablation summary",
   "description": "Aggregate RMSE comparison for the configured ablation variants.",
   "path": "data/models/kaggle/plots/experiment_ablations.png",
-  "generated_at": "2026-03-15T08:29:25.936674"
+  "generated_at": "2026-03-21T14:26:06.823156"
 }

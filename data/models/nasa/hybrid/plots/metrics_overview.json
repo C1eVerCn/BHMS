@@ -3,5 +3,5 @@
   "title": "NASA hybrid multi-seed metrics",
   "description": "Mean and std across the configured random seeds.",
   "path": "data/models/nasa/hybrid/plots/metrics_overview.png",
-  "generated_at": "2026-03-17T07:52:04.286079"
+  "generated_at": "2026-03-21T14:24:39.667347"
 }

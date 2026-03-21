@@ -1,31 +1,80 @@
 {
   "source": "kaggle",
+  "task_kind": "lifecycle",
   "models": {
     "bilstm": {
-      "best_val_loss": 21.584999710321426,
+      "best_val_loss": 49.21487808227539,
       "test_metrics": {
-        "loss": 22.46203187306722,
-        "rmse": 23.274049679438274,
-        "mae": 22.954842718442283,
-        "mape": 107.86174392700195,
-        "r2": -128.40412276585897,
-        "lr": 0.00039715242044697206
+        "rmse": 6.175464,
+        "mae": 5.887423,
+        "mape": 80.940791,
+        "r2": -17.015064
       },
-      "best_checkpoint": "data/models/kaggle/bilstm/bilstm_best.pt",
-      "final_checkpoint": "data/models/kaggle/bilstm/bilstm_final.pt"
+      "single_run_test_metrics": {
+        "loss": 49.84935760498047,
+        "traj_loss": 0.0002030767936958,
+        "rul_loss": 53.5565185546875,
+        "eol_loss": 54.1751708984375,
+        "knee_loss": 5.547982215881348,
+        "mono_loss": 0.0,
+        "smooth_loss": 6.224839808055549e-07,
+        "domain_loss": 0.13826565444469452,
+        "trajectory_rmse": 0.02015325240790844,
+        "trajectory_mae": 0.016527144238352776,
+        "trajectory_mape": 1.895457148551941,
+        "trajectory_r2": 0.6766481399536133,
+        "rul_mae": 54.056514739990234,
+        "rul_rmse": 54.447696685791016,
+        "eol_mae": 54.675167083740234,
+        "eol_rmse": 55.05934143066406,
+        "knee_mae": 6.014803886413574,
+        "rmse": 0.02015325240790844,
+        "mae": 0.016527144238352776,
+        "mape": 1.895457148551941,
+        "r2": 0.6766481399536133,
+        "lr": 6.262610478227527e-05
+      },
+      "best_checkpoint": "data/models/kaggle/bilstm/runs/seed-7/bilstm_best.pt",
+      "final_checkpoint": "data/models/kaggle/bilstm/bilstm_final.pt",
+      "requested_model_type": "bilstm",
+      "multi_seed_available": true
     },
     "hybrid": {
-      "best_val_loss": 21.826394826173782,
+      "best_val_loss": 49.80013656616211,
       "test_metrics": {
-        "loss": 23.11567447980245,
-        "rmse": 23.940061712265013,
-        "mae": 23.611383120218914,
-        "mape": 98.34155705769857,
-        "r2": -131.03062624931334,
-        "lr": 0.0002383738952177247
+        "rmse": 0.034848,
+        "mae": 0.027524,
+        "mape": 3.16887,
+        "r2": 0.020525
       },
-      "best_checkpoint": "data/models/kaggle/hybrid/hybrid_best.pt",
-      "final_checkpoint": "data/models/kaggle/hybrid/hybrid_final.pt"
+      "single_run_test_metrics": {
+        "loss": 50.423702239990234,
+        "traj_loss": 0.0008197103161364794,
+        "rul_loss": 54.71617126464844,
+        "eol_loss": 53.86210632324219,
+        "knee_loss": 6.026420593261719,
+        "mono_loss": 0.0,
+        "smooth_loss": 2.5037154500751058e-06,
+        "domain_loss": 0.1334628462791443,
+        "trajectory_rmse": 0.04048975929617882,
+        "trajectory_mae": 0.03349687531590462,
+        "trajectory_mape": 3.8595757484436035,
+        "trajectory_r2": -0.30519533157348633,
+        "rul_mae": 55.21617126464844,
+        "rul_rmse": 55.59914016723633,
+        "eol_mae": 54.36210632324219,
+        "eol_rmse": 54.752925872802734,
+        "knee_mae": 6.526420593261719,
+        "rmse": 0.04048975929617882,
+        "mae": 0.03349687531590462,
+        "mape": 3.8595757484436035,
+        "r2": -0.30519533157348633,
+        "lr": 6.262610478227527e-05
+      },
+      "best_checkpoint": "data/models/kaggle/hybrid/runs/seed-7/hybrid_best.pt",
+      "final_checkpoint": "data/models/kaggle/hybrid/hybrid_final.pt",
+      "requested_model_type": "hybrid",
+      "multi_seed_available": true
     }
   }
 }

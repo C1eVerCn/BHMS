@@ -86,5 +86,8 @@
     "train": 9,
     "val": 3,
     "test": 6
-  }
+  },
+  "ingestion_mode": "csv_ready",
+  "training_ready": true,
+  "source_group": "main_lifecycle"
 }

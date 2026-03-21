@@ -1,0 +1,7 @@
+{
+  "key": "experiment_summary",
+  "title": "HUST model comparison",
+  "description": "Aggregate multi-seed metric comparison between Bi-LSTM and Hybrid.",
+  "path": "data/models/hust/plots/experiment_summary.png",
+  "generated_at": "2026-03-21T14:23:29.165940"
+}

@@ -13,6 +13,7 @@ from backend.app.services.repository import BHMSRepository
 from ml.data.adapters import CALCEAdapter, HUSTAdapter, KaggleAdapter, MATRAdapter, NASAAdapter, OxfordAdapter, PulseBatAdapter
 from ml.data import LifecycleDataModule
 from ml.data.dataset import RULDataModule
+from ml.data.processed_paths import cleanup_cycle_summary_variants, cycle_summary_path
 from ml.data.schema import BATTERY_SCHEMA_COLUMNS, enrich_existing_cycle_frame
 from ml.data.source_registry import get_dataset_card, list_supported_sources
 
@@ -64,8 +65,9 @@ class BatteryService:
         if card.ingestion_mode == "enhancement_assets":
             return self._import_enhancement_assets(source=source, output_dir=output_dir)
         adapter = self._get_adapter(source)
-        processed_csv = output_dir / f"{source}_cycle_summary.csv"
+        processed_csv = cycle_summary_path(source, output_dir)
         frame = adapter.process_directory(self._source_dir(source), output_path=processed_csv, battery_ids=battery_ids)
+        cleanup_cycle_summary_variants(source, output_dir, processed_csv)
         summary = self.import_frame(
             frame,
             source=source,
@@ -276,8 +278,9 @@ class BatteryService:
         enriched = enriched[BATTERY_SCHEMA_COLUMNS]
         output_dir = self.settings.processed_dir / source
         output_dir.mkdir(parents=True, exist_ok=True)
-        source_csv = output_dir / f"{source}_cycle_summary.csv"
+        source_csv = cycle_summary_path(source, output_dir)
         enriched.to_csv(source_csv, index=False)
+        cleanup_cycle_summary_variants(source, output_dir, source_csv)
         rul_data_module = RULDataModule(
             csv_path=source_csv,
             source=source,

@@ -1,0 +1,7 @@
+{
+  "key": "training_curves",
+  "title": "MATR hybrid training curves",
+  "description": "Train/validation loss curves for the configured seed runs.",
+  "path": "data/models/matr/hybrid/plots/training_curves.png",
+  "generated_at": "2026-03-21T14:20:43.827400"
+}

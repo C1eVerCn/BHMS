@@ -17,6 +17,7 @@ from backend.app.core.config import Settings, get_settings
 from ml.data import LifecycleDataModule
 from ml.data.adapters import CALCEAdapter, HUSTAdapter, KaggleAdapter, MATRAdapter, NASAAdapter, OxfordAdapter, PulseBatAdapter
 from ml.data.dataset import RULDataModule
+from ml.data.processed_paths import cleanup_cycle_summary_variants, cycle_summary_path
 from ml.data.source_registry import get_dataset_card, list_supported_sources
 from ml.data.schema import TRAINING_FEATURE_COLUMNS
 
@@ -76,9 +77,10 @@ def refresh_processed_source(
             },
             "data_summary": asset_payload["dataset_summary"],
         }
-    processed_csv = output_dir / f"{source}_cycle_summary.csv"
+    processed_csv = cycle_summary_path(source, output_dir)
 
     frame = adapter.process_directory(raw_dir, output_path=processed_csv)
+    cleanup_cycle_summary_variants(source, output_dir, processed_csv)
     data_module = RULDataModule(
         csv_path=processed_csv,
         source=source,

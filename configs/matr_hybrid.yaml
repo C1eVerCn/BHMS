@@ -1,5 +1,5 @@
 data:
-  csv_path: data/processed/matr/matr_cycle_summary.csv
+  csv_path: data/processed/matr/matr_cycle_summary.csv.gz
   sources:
     - matr
   feature_columns:

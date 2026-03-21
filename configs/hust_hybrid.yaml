@@ -1,5 +1,5 @@
 data:
-  csv_path: data/processed/hust/hust_cycle_summary.csv
+  csv_path: data/processed/hust/hust_cycle_summary.csv.gz
   sources:
     - hust
   feature_columns:

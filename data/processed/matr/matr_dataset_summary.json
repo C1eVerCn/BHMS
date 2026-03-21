@@ -1,5 +1,5 @@
 {
-  "csv_path": "data/processed/matr/matr_cycle_summary.csv",
+  "csv_path": "data/processed/matr/matr_cycle_summary.csv.gz",
   "source": "matr",
   "seq_len": 30,
   "batch_size": 16,

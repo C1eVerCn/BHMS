@@ -3,5 +3,5 @@
   "title": "NASA model comparison",
   "description": "Aggregate multi-seed metric comparison between Bi-LSTM and Hybrid.",
   "path": "data/models/nasa/plots/experiment_summary.png",
-  "generated_at": "2026-03-17T07:57:52.194226"
+  "generated_at": "2026-03-21T14:24:43.497838"
 }

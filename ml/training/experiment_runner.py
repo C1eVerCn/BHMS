@@ -16,6 +16,7 @@ import yaml
 from backend.app.core.database import get_database
 from backend.app.services.repository import BHMSRepository
 from ml.data import RULDataModule
+from ml.data.processed_paths import resolve_cycle_summary_path
 from ml.training.experiment_constants import (
     ABLATION_VARIANTS,
     DEFAULT_CONFIGS,
@@ -116,7 +117,9 @@ def run_training_experiment(
     torch.manual_seed(seed)
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(seed)
-    csv_path = resolve_path(data_cfg["csv_path"])
+    csv_path = resolve_cycle_summary_path(resolve_path(data_cfg["csv_path"]), source=source)
+    merged.setdefault("data", {})["csv_path"] = serialize_path(csv_path)
+    data_cfg["csv_path"] = merged["data"]["csv_path"]
     checkpoint_dir = resolve_path(training_cfg.get("checkpoint_dir", "data/models"))
     log_dir = resolve_path(training_cfg.get("log_dir", "data/models/logs"))
     training_cfg.pop("checkpoint_dir", None)
@@ -235,6 +238,7 @@ def create_multi_seed_summary(
     summary = {
         "source": source,
         "model_type": model_type,
+        "task_kind": per_seed_summaries[0].get("task_kind", "rul") if per_seed_summaries else "rul",
         "suite_kind": "multi_seed",
         "available": True,
         "seeds": seeds,
@@ -330,6 +334,24 @@ def load_json(path: str | Path) -> dict[str, Any] | None:
     return json.loads(candidate.read_text(encoding="utf-8"))
 
 
+def _comparison_ready_summary(
+    multi_seed_summary: dict[str, Any] | None,
+    experiment_summary: dict[str, Any] | None,
+) -> dict[str, Any] | None:
+    if multi_seed_summary:
+        return multi_seed_summary
+    metrics = (experiment_summary or {}).get("test_metrics") or {}
+    if not metrics:
+        return None
+    std = {key: 0.0 for key in metrics if isinstance(metrics.get(key), (int, float))}
+    return {
+        "aggregate_metrics": {
+            "mean": metrics,
+            "std": std,
+        }
+    }
+
+
 def generate_source_plot_bundle(
     source: str,
     *,
@@ -341,8 +363,14 @@ def generate_source_plot_bundle(
     processed_root = resolve_path(processed_dir) / source
     plots_dir = model_root / "plots"
     plots: list[dict[str, Any]] = []
-    bilstm_summary = load_json(model_root / "bilstm" / "bilstm_multi_seed_summary.json")
-    hybrid_summary = load_json(model_root / "hybrid" / "hybrid_multi_seed_summary.json")
+    bilstm_summary = _comparison_ready_summary(
+        load_json(model_root / "bilstm" / "bilstm_multi_seed_summary.json"),
+        load_json(model_root / "bilstm" / "bilstm_experiment_summary.json"),
+    )
+    hybrid_summary = _comparison_ready_summary(
+        load_json(model_root / "hybrid" / "hybrid_multi_seed_summary.json"),
+        load_json(model_root / "hybrid" / "hybrid_experiment_summary.json"),
+    )
     if bilstm_summary and hybrid_summary:
         plots.append(
             plot_source_comparison(

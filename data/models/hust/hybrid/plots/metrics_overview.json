@@ -1,0 +1,7 @@
+{
+  "key": "metrics_overview",
+  "title": "HUST hybrid multi-seed metrics",
+  "description": "Mean and std across the configured random seeds.",
+  "path": "data/models/hust/hybrid/plots/metrics_overview.png",
+  "generated_at": "2026-03-21T14:23:25.565831"
+}

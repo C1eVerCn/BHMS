@@ -3,5 +3,5 @@
   "title": "NASA hybrid error distribution",
   "description": "Prediction error histogram for every configured seed.",
   "path": "data/models/nasa/hybrid/plots/error_distribution.png",
-  "generated_at": "2026-03-17T07:52:04.354873"
+  "generated_at": "2026-03-21T14:24:39.744162"
 }

@@ -14,6 +14,7 @@ import torch
 from torch.utils.data import DataLoader, Dataset
 
 from ml.data.nasa_preprocessor import DEFAULT_FEATURE_COLUMNS, DatasetSplit, NASABatteryPreprocessor
+from ml.data.processed_paths import resolve_cycle_summary_path
 from ml.data.source_registry import SOURCE_REGISTRY
 
 
@@ -89,7 +90,7 @@ class RULDataModule:
         reuse_existing_split: bool = True,
         seed: int = 42,
     ):
-        self.csv_path = Path(csv_path)
+        self.csv_path = resolve_cycle_summary_path(csv_path, source=source)
         self.source = source.lower()
         self.seq_len = seq_len
         self.batch_size = batch_size

@@ -29,6 +29,7 @@ from ml.data.source_registry import (  # noqa: E402
     list_enhancement_only_sources,
     list_training_ready_sources,
 )
+from scripts.refresh_processed_baselines import refresh_processed_baselines  # noqa: E402
 
 
 def _make_settings(tmp_path: Path):
@@ -235,6 +236,30 @@ def test_pulsebat_asset_manifest_stays_out_of_training_pool(tmp_path: Path):
     assert Path(payload["feature_index_path"]).exists()
     assert payload["asset_count"] >= 6
     assert payload["dataset_summary"]["training_ready"] is False
+
+
+def test_refresh_processed_baselines_compresses_hust_and_matr_cycle_summaries(tmp_path: Path):
+    settings = _make_settings(tmp_path)
+    _write_hust_zip(settings.raw_hust_dir, battery_count=3, cycle_count=12)
+    _write_matr_batch(settings.raw_matr_dir, cell_count=3, cycle_count=12)
+
+    summary = refresh_processed_baselines(
+        sources=["hust", "matr"],
+        settings=settings,
+        seq_len=6,
+        batch_size=2,
+    )
+
+    hust_csv = settings.processed_dir / "hust" / "hust_cycle_summary.csv.gz"
+    matr_csv = settings.processed_dir / "matr" / "matr_cycle_summary.csv.gz"
+    assert summary["hust"]["csv_path"].endswith(".csv.gz")
+    assert summary["matr"]["csv_path"].endswith(".csv.gz")
+    assert hust_csv.exists()
+    assert matr_csv.exists()
+    assert not (settings.processed_dir / "hust" / "hust_cycle_summary.csv").exists()
+    assert not (settings.processed_dir / "matr" / "matr_cycle_summary.csv").exists()
+    assert not pd.read_csv(hust_csv).empty
+    assert not pd.read_csv(matr_csv).empty
 
 
 def test_battery_service_import_builtin_source_supports_external_modes(tmp_path: Path):

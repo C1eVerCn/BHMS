@@ -13,6 +13,7 @@ import torch
 from backend.app.core.database import get_database
 from backend.app.services.repository import BHMSRepository
 from ml.data import LifecycleDataModule, LifecycleTargetConfig
+from ml.data.processed_paths import resolve_cycle_summary_path
 from ml.training.experiment_artifacts import serialize_path, write_json
 from ml.training.experiment_runner import (
     create_ablation_summary,
@@ -32,6 +33,16 @@ MODEL_ARTIFACT_ALIASES = {
     "lifecycle_hybrid": "hybrid",
     "lifecycle_bilstm": "bilstm",
 }
+
+
+def _history_summary(history: dict[str, Any]) -> dict[str, Any]:
+    train_history = history.get("train", []) or []
+    val_history = history.get("val", []) or []
+    return {
+        "epochs_ran": len(train_history),
+        "last_train_loss": train_history[-1].get("loss") if train_history else None,
+        "last_val_loss": val_history[-1].get("loss") if val_history else None,
+    }
 
 
 def _target_config_from_payload(payload: dict[str, Any]) -> LifecycleTargetConfig:
@@ -76,7 +87,9 @@ def run_lifecycle_experiment(
         get_database().initialize()
     repo = repository or BHMSRepository()
 
-    csv_path = resolve_path(data_cfg["csv_path"])
+    csv_path = resolve_cycle_summary_path(resolve_path(data_cfg["csv_path"]), source=source)
+    merged.setdefault("data", {})["csv_path"] = serialize_path(csv_path)
+    data_cfg["csv_path"] = merged["data"]["csv_path"]
     source_scope = data_cfg.get("sources") or source
     data_module = LifecycleDataModule(
         csv_path=csv_path,
@@ -134,6 +147,7 @@ def run_lifecycle_experiment(
     summary = {
         **result,
         "source": source,
+        "task_kind": "lifecycle",
         "model_type": artifact_model_type,
         "requested_model_type": requested_model_type,
         "suite_kind": suite_kind,
@@ -147,17 +161,15 @@ def run_lifecycle_experiment(
         "feature_columns": data_summary.get("feature_columns", []),
         "model_config": model_config,
         "training_config": asdict(trainer.config),
-        "history_summary": {
-            "epochs_ran": len(result.get("history", {}).get("train", []) or []),
-            "last_train_loss": (result.get("history", {}).get("train", []) or [{}])[-1].get("loss"),
-            "last_val_loss": (result.get("history", {}).get("val", []) or [{}])[-1].get("loss"),
-        },
+        "history_summary": _history_summary(result.get("history", {})),
         "test_details_path": serialize_path(trainer.checkpoint_dir / "test_details.json"),
     }
     write_json(trainer.checkpoint_dir / "test_details.json", result.get("test_details", {}))
     summary_path = trainer.checkpoint_dir / f"{artifact_model_type}_experiment_summary.json"
     write_json(summary_path, summary)
     summary["summary_path"] = serialize_path(summary_path)
+    if not (trainer.checkpoint_dir / "test_details.json").exists() or not summary_path.exists():
+        raise RuntimeError(f"Lifecycle experiment artifacts are incomplete for {source}/{artifact_model_type}.")
 
     if persist_training_run:
         repo.insert_training_run(

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import math
+import time
 from dataclasses import asdict, dataclass, fields
 from pathlib import Path
 from typing import Any, Optional
@@ -9,6 +11,7 @@ from typing import Any, Optional
 import numpy as np
 import torch
 from torch.optim import AdamW
+from torch.optim.lr_scheduler import CosineAnnealingWarmRestarts, ReduceLROnPlateau
 from torch.utils.data import DataLoader
 
 from ml.models import (
@@ -19,6 +22,7 @@ from ml.models import (
     LifecycleLoss,
 )
 from ml.training.experiment_artifacts import serialize_path, write_json
+from ml.training.trainer import EarlyStopping
 
 
 MODEL_ALIASES = {
@@ -38,14 +42,20 @@ class LifecycleTrainingConfig:
     batch_size: int = 16
     learning_rate: float = 3e-4
     weight_decay: float = 1e-2
+    lr_scheduler: str = "cosine_warm_restarts"
+    early_stopping: bool = True
+    patience: int = 20
+    min_delta: float = 1e-4
     device: str = "auto"
+    use_amp: bool = False
     max_grad_norm: float = 1.0
     checkpoint_dir: str = "data/models"
     log_dir: str = "data/models/logs"
     artifact_subdir: Optional[str] = None
     model_version: str = "lifecycle-v1"
     seed: int = 42
-    patience: Optional[int] = None
+    resume_from: Optional[str] = None
+    run_name: Optional[str] = None
 
 
 def _dataclass_from_overrides(dataclass_type, overrides: Optional[dict[str, Any]] = None):
@@ -116,7 +126,11 @@ class LifecycleTrainer:
         self.device = self._resolve_device(training_config.device)
         self.model.to(self.device)
         self.optimizer = AdamW(self.model.parameters(), lr=self.config.learning_rate, weight_decay=self.config.weight_decay)
+        self.scheduler = self._build_scheduler()
         self.criterion = LifecycleLoss()
+        self.scaler = torch.amp.GradScaler("cuda", enabled=self.config.use_amp and torch.cuda.is_available())
+        self.early_stopping = EarlyStopping(training_config.patience, training_config.min_delta) if training_config.early_stopping else None
+        self.run_name = training_config.run_name or f"{training_config.source}_{training_config.model_type}"
         self.history: dict[str, list[dict[str, float]]] = {"train": [], "val": [], "test": []}
         self.test_outputs: dict[str, Any] = {
             "rul_predictions": [],
@@ -136,8 +150,13 @@ class LifecycleTrainer:
         self.best_val_loss = float("inf")
         self.best_checkpoint_path: Optional[Path] = None
         self.final_checkpoint_path: Optional[Path] = None
+        self.best_epoch: Optional[int] = None
+        self.stopped_early = False
+        self.start_epoch = 0
         torch.manual_seed(self.config.seed)
         np.random.seed(self.config.seed)
+        if self.config.resume_from:
+            self._resume(self.config.resume_from)
 
     @staticmethod
     def _resolve_device(device: str) -> torch.device:
@@ -149,16 +168,36 @@ class LifecycleTrainer:
             return torch.device("cpu")
         return torch.device(device)
 
+    def _build_scheduler(self):
+        if self.config.lr_scheduler == "cosine_warm_restarts":
+            return CosineAnnealingWarmRestarts(self.optimizer, T_0=10, T_mult=2, eta_min=1e-6)
+        if self.config.lr_scheduler == "plateau":
+            return ReduceLROnPlateau(self.optimizer, mode="min", factor=0.5, patience=3)
+        return None
+
+    @staticmethod
+    def _ensure_finite_tensor(name: str, value: torch.Tensor) -> None:
+        if not torch.isfinite(value).all():
+            raise FloatingPointError(f"{name} contains NaN/Inf and the lifecycle run is aborted.")
+
+    @staticmethod
+    def _ensure_finite_metric(name: str, value: float) -> None:
+        if not math.isfinite(float(value)):
+            raise FloatingPointError(f"{name} became non-finite and the lifecycle run is aborted.")
+
     def _forward_batch(self, batch: dict[str, Any]) -> tuple[dict[str, torch.Tensor], dict[str, torch.Tensor]]:
-        outputs = self.model(
-            batch["sequence"].to(self.device),
-            source_id=batch.get("source_id"),
-            chemistry_id=batch.get("chemistry_id"),
-            protocol_id=batch.get("protocol_id"),
-            last_capacity_ratio=batch.get("last_capacity_ratio"),
-            observed_cycle=batch.get("observed_cycle"),
-        )
-        losses = self.criterion(outputs, batch)
+        with torch.amp.autocast("cuda", enabled=self.scaler.is_enabled()):
+            outputs = self.model(
+                batch["sequence"].to(self.device),
+                source_id=batch.get("source_id"),
+                chemistry_id=batch.get("chemistry_id"),
+                protocol_id=batch.get("protocol_id"),
+                last_capacity_ratio=batch.get("last_capacity_ratio"),
+                observed_cycle=batch.get("observed_cycle"),
+            )
+            losses = self.criterion(outputs, batch)
+        for name, loss in losses.items():
+            self._ensure_finite_tensor(name, loss)
         return outputs, losses
 
     @staticmethod
@@ -215,20 +254,44 @@ class LifecycleTrainer:
                     self.optimizer.zero_grad(set_to_none=True)
                 outputs, losses = self._forward_batch(batch)
                 if training:
-                    losses["loss"].backward()
+                    self.scaler.scale(losses["loss"]).backward()
                     if self.config.max_grad_norm > 0:
+                        self.scaler.unscale_(self.optimizer)
                         torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.config.max_grad_norm)
-                    self.optimizer.step()
+                    self.scaler.step(self.optimizer)
+                    self.scaler.update()
                 metrics = {key: float(value.detach().cpu().item()) for key, value in losses.items()}
                 metrics.update(self._aggregate_metrics(outputs, batch))
                 for key, value in metrics.items():
+                    self._ensure_finite_metric(key, value)
                     aggregates[key] = aggregates.get(key, 0.0) + value
                 batches += 1
         result = {key: value / max(1, batches) for key, value in aggregates.items()}
         result["lr"] = float(self.optimizer.param_groups[0]["lr"])
+        for key, value in result.items():
+            self._ensure_finite_metric(key, value)
         return result
 
-    def save_checkpoint(self, filename: str, *, test_metrics: Optional[dict[str, float]] = None) -> Path:
+    def _resume(self, checkpoint_path: str | Path) -> None:
+        checkpoint = torch.load(checkpoint_path, map_location=self.device)
+        self.model.load_state_dict(checkpoint["model_state_dict"])
+        optimizer_state = checkpoint.get("optimizer_state_dict")
+        if optimizer_state:
+            self.optimizer.load_state_dict(optimizer_state)
+        scheduler_state = checkpoint.get("scheduler_state_dict")
+        if scheduler_state and self.scheduler is not None:
+            self.scheduler.load_state_dict(scheduler_state)
+        scaler_state = checkpoint.get("scaler_state_dict")
+        if scaler_state and self.scaler.is_enabled():
+            self.scaler.load_state_dict(scaler_state)
+        self.best_val_loss = float(checkpoint.get("best_val_loss", self.best_val_loss))
+        self.best_epoch = checkpoint.get("best_epoch")
+        self.history = checkpoint.get("history", self.history)
+        self.start_epoch = int(checkpoint.get("epoch", -1)) + 1
+        if self.early_stopping is not None:
+            self.early_stopping.best_loss = self.best_val_loss if math.isfinite(self.best_val_loss) else None
+
+    def save_checkpoint(self, filename: str, epoch: int, val_loss: float, *, test_metrics: Optional[dict[str, float]] = None) -> Path:
         checkpoint_path = self.checkpoint_dir / filename
         metadata = {
             "source": self.config.source,
@@ -244,12 +307,19 @@ class LifecycleTrainer:
             "target_config": self.data_summary.get("target_config", {}),
             "test_metrics": test_metrics or {},
             "history": self.history,
-            "best_val_loss": self.best_val_loss,
+            "best_val_loss": val_loss,
+            "best_epoch": self.best_epoch,
+            "device": str(self.device),
+            "run_name": self.run_name,
         }
         torch.save(
             {
+                "epoch": epoch,
                 **metadata,
                 "model_state_dict": self.model.state_dict(),
+                "optimizer_state_dict": self.optimizer.state_dict(),
+                "scheduler_state_dict": self.scheduler.state_dict() if self.scheduler is not None else None,
+                "scaler_state_dict": self.scaler.state_dict() if self.scaler.is_enabled() else None,
             },
             checkpoint_path,
         )
@@ -272,6 +342,7 @@ class LifecycleTrainer:
                 metrics = {key: float(value.detach().cpu().item()) for key, value in losses.items()}
                 metrics.update(self._aggregate_metrics(outputs, batch))
                 for key, value in metrics.items():
+                    self._ensure_finite_metric(key, value)
                     aggregates[key] = aggregates.get(key, 0.0) + value
                 batches += 1
                 rul_predictions.extend(outputs["rul"].detach().cpu().view(-1).tolist())
@@ -287,26 +358,57 @@ class LifecycleTrainer:
             "trajectory_targets": [[float(value) for value in row] for row in trajectory_targets],
             "errors": [float(pred - target) for pred, target in zip(rul_predictions, rul_targets)],
         }
+        for key, value in result.items():
+            self._ensure_finite_metric(key, value)
         return result
 
     def fit(self) -> dict[str, Any]:
-        for _ in range(self.config.num_epochs):
+        started_at = time.perf_counter()
+        last_epoch = self.start_epoch - 1
+        for epoch in range(self.start_epoch, self.config.num_epochs):
+            last_epoch = epoch
             train_metrics = self._run_epoch(self.train_loader, training=True)
             self.history["train"].append(train_metrics)
             val_metrics = self._run_epoch(self.val_loader, training=False) if self.val_loader is not None else train_metrics
             self.history["val"].append(val_metrics)
+            if isinstance(self.scheduler, ReduceLROnPlateau):
+                self.scheduler.step(val_metrics["loss"])
+            elif self.scheduler is not None:
+                self.scheduler.step(epoch + 1)
             if val_metrics["loss"] < self.best_val_loss:
                 self.best_val_loss = val_metrics["loss"]
-                self.best_checkpoint_path = self.save_checkpoint(f"{self.config.model_type}_best.pt")
+                self.best_epoch = epoch + 1
+                self.best_checkpoint_path = self.save_checkpoint(
+                    f"{self.config.model_type}_best.pt",
+                    epoch=epoch,
+                    val_loss=self.best_val_loss,
+                )
+            if self.early_stopping and self.early_stopping.should_stop(val_metrics["loss"]):
+                self.stopped_early = True
+                break
         test_metrics = self.test()
         self.history["test"] = [test_metrics] if test_metrics else []
-        self.final_checkpoint_path = self.save_checkpoint(f"{self.config.model_type}_final.pt", test_metrics=test_metrics)
+        self.final_checkpoint_path = self.save_checkpoint(
+            f"{self.config.model_type}_final.pt",
+            epoch=max(last_epoch, 0),
+            val_loss=self.best_val_loss,
+            test_metrics=test_metrics,
+        )
+        duration_sec = round(time.perf_counter() - started_at, 3)
+        epochs_completed = len(self.history.get("train", []))
         summary = {
             "source": self.config.source,
             "task_kind": self.config.task_kind,
             "model_type": self.config.model_type,
             "model_version": self.config.model_version,
             "best_val_loss": self.best_val_loss,
+            "best_epoch": self.best_epoch,
+            "epochs_completed": epochs_completed,
+            "stopped_early": self.stopped_early,
+            "resume_from": serialize_path(self.config.resume_from) if self.config.resume_from else None,
+            "device": str(self.device),
+            "duration_sec": duration_sec,
+            "status": "completed",
             "history": self.history,
             "test_metrics": test_metrics,
             "test_details": self.test_outputs,

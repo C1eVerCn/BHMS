@@ -19,6 +19,7 @@ import yaml
 from backend.app.core.database import get_database
 from backend.app.services.repository import BHMSRepository
 from ml.data import LifecycleDataModule, LifecycleTargetConfig, RULDataModule
+from ml.data.processed_paths import resolve_cycle_summary_path
 from ml.data.source_registry import get_dataset_card, list_supported_sources
 from ml.training import LifecycleTrainer, LifecycleTrainingConfig, build_lifecycle_model, run_lifecycle_experiment
 from ml.training.experiment_runner import merge_configs, run_training_experiment
@@ -44,6 +45,41 @@ def target_config_from_payload(payload: dict[str, Any]) -> LifecycleTargetConfig
     return LifecycleTargetConfig(**config)
 
 
+def build_eval_only_summary(
+    *,
+    source: str,
+    task_kind: str,
+    requested_model_type: str,
+    model_type: str,
+    mode: str,
+    metrics: dict[str, Any],
+) -> dict[str, Any]:
+    history = {
+        "train": [],
+        "val": [metrics] if mode == "validate_only" else [],
+        "test": [metrics] if mode == "test_only" else [],
+    }
+    return {
+        "source": source,
+        "task_kind": task_kind,
+        "requested_model_type": requested_model_type,
+        "model_type": model_type,
+        "mode": mode,
+        "status": "completed",
+        "best_val_loss": metrics.get("loss") if mode == "validate_only" else None,
+        "best_checkpoint": None,
+        "final_checkpoint": None,
+        "history": history,
+        "history_summary": {
+            "epochs_ran": 0,
+            "last_train_loss": None,
+            "last_val_loss": metrics.get("loss") if mode == "validate_only" else None,
+        },
+        "validation_metrics": metrics if mode == "validate_only" else {},
+        "test_metrics": metrics if mode == "test_only" else {},
+    }
+
+
 def run_lifecycle_validation_or_test(args: argparse.Namespace, config: dict[str, Any]) -> dict[str, Any]:
     data_cfg = dict(config.get("data", {}))
     model_cfg = dict(config.get("model", {}))
@@ -51,7 +87,7 @@ def run_lifecycle_validation_or_test(args: argparse.Namespace, config: dict[str,
     target_cfg = target_config_from_payload(data_cfg.get("target_config", {}))
     model_cfg.setdefault("future_len", target_cfg.future_len)
     artifact_model = artifact_model_type(args.model)
-    csv_path = Path(data_cfg["csv_path"])
+    csv_path = resolve_cycle_summary_path(data_cfg["csv_path"], source=args.source)
     data_module = LifecycleDataModule(
         csv_path=csv_path,
         source=data_cfg.get("sources") or args.source,
@@ -78,7 +114,10 @@ def run_lifecycle_validation_or_test(args: argparse.Namespace, config: dict[str,
         training_config=LifecycleTrainingConfig(
             source=args.source,
             model_type=artifact_model,
-            **{key: value for key, value in training_cfg.items() if key != "batch_size"},
+            **{
+                **{key: value for key, value in training_cfg.items() if key != "batch_size"},
+                **({"resume_from": args.resume} if args.resume else {}),
+            },
         ),
         train_loader=data_module.train_loader(),
         val_loader=data_module.val_loader(),
@@ -95,13 +134,14 @@ def run_rul_validation_or_test(args: argparse.Namespace, config: dict[str, Any])
     model_cfg = dict(config.get("model", {}))
     training_cfg = dict(config.get("training", {}))
     artifact_model = artifact_model_type(args.model)
+    csv_path = resolve_cycle_summary_path(data_cfg["csv_path"], source=args.source)
     data_module = RULDataModule(
-        csv_path=data_cfg["csv_path"],
+        csv_path=csv_path,
         source=args.source,
         seq_len=int(data_cfg.get("seq_len", 30)),
         batch_size=int(training_cfg.get("batch_size", 16)),
         feature_cols=data_cfg.get("feature_columns"),
-        output_dir=Path(data_cfg["csv_path"]).parent,
+        output_dir=csv_path.parent,
     )
     data_summary = data_module.summary()
     data_module.export_metadata()
@@ -148,12 +188,14 @@ def main() -> None:
         config = merge_configs(config, config_overrides or {})
 
     if not args.validate_only and not args.test_only:
+        training_overrides = {"resume_from": args.resume} if args.resume else None
         if args.task == "lifecycle":
             result = run_lifecycle_experiment(
                 args.source,
                 args.model,
                 config_path=args.config,
                 config_overrides=config_overrides,
+                training_overrides=training_overrides,
                 repository=BHMSRepository(),
                 persist_training_run=True,
             )
@@ -163,6 +205,7 @@ def main() -> None:
                 artifact_model_type(args.model),
                 config_path=args.config,
                 config_overrides=config_overrides,
+                training_overrides=training_overrides,
                 repository=BHMSRepository(),
                 persist_training_run=True,
             )
@@ -170,9 +213,22 @@ def main() -> None:
         print(f"Saved summary to: {result['summary_path']}")
         return
 
-    result = run_lifecycle_validation_or_test(args, config) if args.task == "lifecycle" else run_rul_validation_or_test(args, config)
     artifact_model = artifact_model_type(args.model)
-    summary_path = Path(config["data"]["csv_path"]).parent / f"{artifact_model}_experiment_summary.json"
+    raw_result = run_lifecycle_validation_or_test(args, config) if args.task == "lifecycle" else run_rul_validation_or_test(args, config)
+    mode = "validate_only" if args.validate_only else "test_only"
+    metrics_key = "val" if args.validate_only else "test"
+    metrics = raw_result.get(metrics_key, {})
+    result = build_eval_only_summary(
+        source=args.source,
+        task_kind=args.task,
+        requested_model_type=args.model,
+        model_type=artifact_model,
+        mode=mode,
+        metrics=metrics,
+    )
+    result[metrics_key] = metrics
+    summary_root = resolve_cycle_summary_path(config["data"]["csv_path"], source=args.source).parent
+    summary_path = summary_root / f"{artifact_model}_experiment_summary.json"
     summary_path.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
     print(json.dumps(result, ensure_ascii=False, indent=2))
     print(f"Saved summary to: {summary_path}")

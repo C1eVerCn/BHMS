@@ -667,6 +667,64 @@ class RULInferenceService:
 
 
 class LifecycleInferenceService(RULInferenceService):
+    @staticmethod
+    def _checkpoint_is_lifecycle(checkpoint_path: Path) -> bool:
+        import torch
+
+        payload = torch.load(checkpoint_path, map_location="cpu")
+        return payload.get("task_kind") == "lifecycle"
+
+    @classmethod
+    def _resolve_lifecycle_checkpoint_from_summary(cls, summary_path: Path) -> Optional[Path]:
+        if not summary_path.exists():
+            return None
+        try:
+            payload = json.loads(summary_path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            return None
+
+        best_checkpoint = payload.get("best_checkpoint") or {}
+        explicit_path = best_checkpoint.get("path") if isinstance(best_checkpoint, dict) else None
+        if explicit_path:
+            candidate = cls._resolve_reference_path(summary_path, explicit_path)
+            if candidate is not None and cls._checkpoint_is_lifecycle(candidate):
+                return candidate
+
+        per_seed_runs = payload.get("per_seed_runs") or []
+        ranked_runs = []
+        for run in per_seed_runs:
+            metrics = run.get("metrics") or {}
+            checkpoint_path = run.get("best_checkpoint") or run.get("final_checkpoint")
+            rmse = metrics.get("rmse")
+            if checkpoint_path is None or rmse is None:
+                continue
+            ranked_runs.append((float(rmse), checkpoint_path))
+        ranked_runs.sort(key=lambda item: item[0])
+        for _, checkpoint_path in ranked_runs:
+            candidate = cls._resolve_reference_path(summary_path, checkpoint_path)
+            if candidate is not None and cls._checkpoint_is_lifecycle(candidate):
+                return candidate
+        return None
+
+    def _resolve_checkpoint(self, source: str, model_name: str) -> Path:
+        summary_candidates = [
+            self.model_dir / source / model_name / f"{model_name}_multi_seed_summary.json",
+            self.model_dir / source / model_name / "optimized-config" / "optimized_multi_seed_summary.json",
+        ]
+        for summary_path in summary_candidates:
+            resolved = self._resolve_lifecycle_checkpoint_from_summary(summary_path)
+            if resolved is not None:
+                return resolved
+        candidates = [
+            self.model_dir / source / model_name / f"{model_name}_best.pt",
+            self.model_dir / source / model_name / f"{model_name}_final.pt",
+            self.model_dir / f"{model_name}_best.pt",
+        ]
+        for candidate in candidates:
+            if candidate.exists() and self._checkpoint_is_lifecycle(candidate):
+                return candidate
+        raise FileNotFoundError(f"未找到来源 {source} 的生命周期模型权重: {model_name}")
+
     def predict(
         self,
         sequence: Optional[np.ndarray],

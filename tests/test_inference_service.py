@@ -7,12 +7,13 @@ import sys
 from pathlib import Path
 
 import numpy as np
+import torch
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from ml.inference.predictor import RULInferenceService  # noqa: E402
+from ml.inference.predictor import LifecycleInferenceService, RULInferenceService  # noqa: E402
 
 
 def test_inference_service_uses_heuristic_when_no_checkpoint(tmp_path: Path):
@@ -66,3 +67,29 @@ def test_resolve_checkpoint_prefers_best_seed_from_summary(tmp_path: Path):
 
     resolved = service._resolve_checkpoint("calce", "hybrid")
     assert resolved == better_checkpoint
+
+
+def test_lifecycle_inference_skips_non_lifecycle_summaries(tmp_path: Path):
+    service = LifecycleInferenceService(tmp_path)
+    stale_checkpoint = tmp_path / "calce" / "hybrid" / "optimized-config" / "runs" / "seed-7" / "hybrid_best.pt"
+    fresh_checkpoint = tmp_path / "calce" / "hybrid" / "hybrid_best.pt"
+    stale_checkpoint.parent.mkdir(parents=True, exist_ok=True)
+    fresh_checkpoint.parent.mkdir(parents=True, exist_ok=True)
+    torch.save({"task_kind": "rul", "model_state_dict": {}}, stale_checkpoint)
+    torch.save({"task_kind": "lifecycle", "model_state_dict": {}}, fresh_checkpoint)
+
+    stale_summary = tmp_path / "calce" / "hybrid" / "optimized-config" / "optimized_multi_seed_summary.json"
+    stale_summary.write_text(
+        json.dumps(
+            {
+                "best_checkpoint": {"path": str(stale_checkpoint)},
+                "per_seed_runs": [{"seed": 7, "metrics": {"rmse": 1.0}, "best_checkpoint": str(stale_checkpoint)}],
+            },
+            ensure_ascii=False,
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+
+    resolved = service._resolve_checkpoint("calce", "hybrid")
+    assert resolved == fresh_checkpoint

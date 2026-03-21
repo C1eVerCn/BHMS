@@ -1,0 +1,26 @@
+{
+  "plots": [
+    {
+      "key": "error_distribution",
+      "title": "HUST hybrid error distribution",
+      "description": "Prediction error histogram for every configured seed.",
+      "path": "data/models/hust/hybrid/plots/error_distribution.png",
+      "generated_at": "2026-03-21T14:23:25.642247"
+    },
+    {
+      "key": "metrics_overview",
+      "title": "HUST hybrid multi-seed metrics",
+      "description": "Mean and std across the configured random seeds.",
+      "path": "data/models/hust/hybrid/plots/metrics_overview.png",
+      "generated_at": "2026-03-21T14:23:25.565831"
+    },
+    {
+      "key": "training_curves",
+      "title": "HUST hybrid training curves",
+      "description": "Train/validation loss curves for the configured seed runs.",
+      "path": "data/models/hust/hybrid/plots/training_curves.png",
+      "generated_at": "2026-03-21T14:23:25.712515"
+    }
+  ],
+  "generated_at": "2026-03-21T14:23:25.713211"
+}

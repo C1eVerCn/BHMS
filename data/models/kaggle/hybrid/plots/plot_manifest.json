@@ -5,22 +5,22 @@
       "title": "KAGGLE hybrid error distribution",
       "description": "Prediction error histogram for every configured seed.",
       "path": "data/models/kaggle/hybrid/plots/error_distribution.png",
-      "generated_at": "2026-03-15T08:29:25.365106"
+      "generated_at": "2026-03-21T14:26:03.053721"
     },
     {
       "key": "metrics_overview",
       "title": "KAGGLE hybrid multi-seed metrics",
       "description": "Mean and std across the configured random seeds.",
       "path": "data/models/kaggle/hybrid/plots/metrics_overview.png",
-      "generated_at": "2026-03-15T08:29:25.308373"
+      "generated_at": "2026-03-21T14:26:02.989237"
     },
     {
       "key": "training_curves",
       "title": "KAGGLE hybrid training curves",
       "description": "Train/validation loss curves for the configured seed runs.",
       "path": "data/models/kaggle/hybrid/plots/training_curves.png",
-      "generated_at": "2026-03-15T08:29:25.410457"
+      "generated_at": "2026-03-21T14:26:03.121513"
     }
   ],
-  "generated_at": "2026-03-15T08:29:25.410791"
+  "generated_at": "2026-03-21T14:26:03.121985"
 }

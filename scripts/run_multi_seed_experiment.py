@@ -18,6 +18,7 @@ from ml.training.experiment_runner import (
     create_multi_seed_summary,
     default_config_for,
     generate_source_plot_bundle,
+    load_json,
     resolve_path,
     run_training_experiment,
 )
@@ -35,6 +36,58 @@ def parse_seeds(raw: str | None) -> list[int]:
 
 def artifact_model_type(model_type: str) -> str:
     return MODEL_ARTIFACT_ALIASES.get(model_type.lower(), model_type.lower())
+
+
+def reusable_root_summary(
+    source: str,
+    model_type: str,
+    seed: int,
+    task: str,
+    *,
+    model_dir: str | Path = "data/models",
+) -> dict[str, object] | None:
+    summary_path = resolve_path(Path(model_dir) / source / model_type / f"{model_type}_experiment_summary.json")
+    summary = load_json(summary_path)
+    if not summary:
+        return None
+    resolved_seed = summary.get("seed")
+    if resolved_seed is None:
+        resolved_seed = ((summary.get("training_config") or {}).get("seed"))
+    if int(resolved_seed or -1) != int(seed):
+        return None
+    if task == "lifecycle" and summary.get("task_kind") not in {None, "lifecycle"}:
+        return None
+    if not summary.get("best_checkpoint") and not summary.get("final_checkpoint"):
+        return None
+    return summary
+
+
+def checkpoint_matches_task(checkpoint_path: str | Path, task: str) -> bool:
+    if task != "lifecycle":
+        return True
+    candidate = Path(checkpoint_path)
+    if not candidate.exists():
+        return False
+    import torch
+
+    payload = torch.load(candidate, map_location="cpu")
+    return payload.get("task_kind") == "lifecycle"
+
+
+def existing_multi_seed_summary(summary_path: Path, task: str) -> dict[str, object] | None:
+    payload = load_json(summary_path)
+    if not payload:
+        return None
+    if task != "lifecycle":
+        return payload
+    if payload.get("task_kind") == "lifecycle":
+        return payload
+    best_checkpoint = (payload.get("best_checkpoint") or {}).get("path")
+    if isinstance(best_checkpoint, str):
+        resolved = resolve_path(best_checkpoint)
+        if checkpoint_matches_task(resolved, task):
+            return payload
+    return None
 
 
 def main() -> None:
@@ -55,13 +108,18 @@ def main() -> None:
     artifact_model = artifact_model_type(requested_model)
     config_path = args.config or str(default_config_for(source, artifact_model))
     summary_path = resolve_path(f"data/models/{source}/{artifact_model}/{artifact_model}_multi_seed_summary.json")
-    if summary_path.exists() and not args.force:
-        print(summary_path.read_text(encoding="utf-8"))
+    cached_summary = existing_multi_seed_summary(summary_path, args.task)
+    if cached_summary is not None and not args.force:
+        print(json.dumps(cached_summary, ensure_ascii=False, indent=2))
         return
 
     seeds = parse_seeds(args.seeds)
     per_seed = []
     for seed in seeds:
+        cached = reusable_root_summary(source, artifact_model, seed, args.task)
+        if cached is not None:
+            per_seed.append(cached)
+            continue
         runner = run_lifecycle_experiment if args.task == "lifecycle" else run_training_experiment
         run_model = requested_model if args.task == "lifecycle" else artifact_model
         per_seed.append(

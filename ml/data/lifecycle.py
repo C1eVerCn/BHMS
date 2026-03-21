@@ -14,6 +14,7 @@ from torch.utils.data import DataLoader, Dataset
 
 from ml.data.dataset import NormalizationStats, _serialize_path
 from ml.data.nasa_preprocessor import DatasetSplit, NASABatteryPreprocessor
+from ml.data.processed_paths import resolve_cycle_summary_path
 from ml.data.schema import TRAINING_FEATURE_COLUMNS
 from ml.data.source_registry import SOURCE_REGISTRY
 
@@ -209,7 +210,8 @@ class LifecycleDataModule:
         seed: int = 42,
         target_config: LifecycleTargetConfig | None = None,
     ):
-        self.csv_path = Path(csv_path)
+        source_hint = source.lower() if isinstance(source, str) else None
+        self.csv_path = resolve_cycle_summary_path(csv_path, source=source_hint)
         self.batch_size = batch_size
         self.feature_cols = list(feature_cols or LIFECYCLE_FEATURE_COLUMNS)
         self.num_workers = num_workers

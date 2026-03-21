@@ -114,5 +114,8 @@
     "train": 60,
     "val": 21,
     "test": 21
-  }
+  },
+  "ingestion_mode": "csv_ready",
+  "training_ready": true,
+  "source_group": "main_lifecycle"
 }

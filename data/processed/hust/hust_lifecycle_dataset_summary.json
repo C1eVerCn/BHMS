@@ -1,5 +1,5 @@
 {
-  "csv_path": "/Users/chris/Documents/trae_projects/BHMS/data/processed/hust/hust_cycle_summary.csv",
+  "csv_path": "data/processed/hust/hust_cycle_summary.csv.gz",
   "sources": [
     "hust"
   ],
@@ -14,7 +14,8 @@
     "temperature_std",
     "temperature_rise_rate",
     "capacity",
-    "cycle_number"
+    "cycle_number",
+    "capacity_ratio"
   ],
   "target_config": {
     "observation_ratios": [
@@ -124,7 +125,8 @@
       "temperature_std": 0.0,
       "temperature_rise_rate": 0.0,
       "capacity": 1.0816604876841742,
-      "cycle_number": 997.7642293168554
+      "cycle_number": 997.7642293168554,
+      "capacity_ratio": 0.8975716688199501
     },
     "stds": {
       "voltage_mean": 0.007954894692342881,
@@ -137,7 +139,8 @@
       "temperature_std": 1.0,
       "temperature_rise_rate": 1.0,
       "capacity": 0.08709412531312569,
-      "cycle_number": 626.709729880372
+      "cycle_number": 626.709729880372,
+      "capacity_ratio": 0.07228002734722688
     }
   },
   "domain_vocab": {
