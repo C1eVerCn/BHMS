@@ -1,0 +1,7 @@
+{
+  "key": "ablation_overview",
+  "title": "HUST ablation overview",
+  "description": "Aggregate RMSE for each hybrid ablation variant.",
+  "path": "data/models/hust/plots/ablation_overview.png",
+  "generated_at": "2026-03-22T04:00:07.119285"
+}

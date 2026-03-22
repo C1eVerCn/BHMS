@@ -199,7 +199,7 @@ class LifecycleDataModule:
 
     def __init__(
         self,
-        csv_path: str | Path,
+        csv_path: str | Path | Sequence[str | Path],
         *,
         source: str | Sequence[str] | None = None,
         batch_size: int = 16,
@@ -211,7 +211,8 @@ class LifecycleDataModule:
         target_config: LifecycleTargetConfig | None = None,
     ):
         source_hint = source.lower() if isinstance(source, str) else None
-        self.csv_path = resolve_cycle_summary_path(csv_path, source=source_hint)
+        self.csv_paths = self._resolve_csv_paths(csv_path, source_hint=source_hint)
+        self.csv_path = self.csv_paths[0]
         self.batch_size = batch_size
         self.feature_cols = list(feature_cols or LIFECYCLE_FEATURE_COLUMNS)
         self.num_workers = num_workers
@@ -220,11 +221,11 @@ class LifecycleDataModule:
         self.target_config = target_config or LifecycleTargetConfig()
         self.output_dir = Path(output_dir) if output_dir is not None else self.csv_path.parent
         self.output_dir.mkdir(parents=True, exist_ok=True)
-        self.data = pd.read_csv(self.csv_path)
+        self.data = self._load_cycle_frames()
         self.sources = self._resolve_sources(source)
         self.data = self.data[self.data["source"].str.lower().isin(self.sources)].copy()
         if self.data.empty:
-            raise ValueError(f"数据文件 {self.csv_path} 中不存在来源 {self.sources} 的样本")
+            raise ValueError(f"数据文件 {self.csv_paths} 中不存在来源 {self.sources} 的样本")
         self.data.sort_values(["canonical_battery_id", "cycle_number"], inplace=True)
         self.split = self._resolve_split()
         self.normalization = self._compute_normalization(self.split.train_batteries)
@@ -253,6 +254,18 @@ class LifecycleDataModule:
             target_config=self.target_config,
             vocab=self.vocab,
         )
+
+    @staticmethod
+    def _resolve_csv_paths(csv_path: str | Path | Sequence[str | Path], *, source_hint: str | None) -> list[Path]:
+        if isinstance(csv_path, (str, Path)):
+            return [resolve_cycle_summary_path(csv_path, source=source_hint)]
+        return [resolve_cycle_summary_path(item) for item in csv_path]
+
+    def _load_cycle_frames(self) -> pd.DataFrame:
+        frames = [pd.read_csv(path) for path in self.csv_paths]
+        if len(frames) == 1:
+            return frames[0]
+        return pd.concat(frames, ignore_index=True)
 
     def _resolve_sources(self, source: str | Sequence[str] | None) -> list[str]:
         if source is None:
@@ -307,6 +320,7 @@ class LifecycleDataModule:
     def summary(self, *, path_root: str | Path | None = None) -> dict[str, Any]:
         payload = {
             "csv_path": _serialize_path(self.csv_path, path_root),
+            "csv_paths": [_serialize_path(path, path_root) for path in self.csv_paths],
             "sources": self.sources,
             "feature_columns": self.feature_cols,
             "target_config": self.target_config.to_dict(),

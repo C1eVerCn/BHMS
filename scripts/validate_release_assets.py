@@ -1,0 +1,231 @@
+#!/usr/bin/env python3
+"""Validate BHMS lifecycle release assets, summary coverage, and path portability."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from pathlib import Path
+from typing import Any, Iterable
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+from ml.inference.predictor import LifecycleInferenceService
+
+
+DEFAULT_RELEASE_SOURCES = ("calce", "nasa", "hust", "matr")
+DEFAULT_MODELS = ("hybrid", "bilstm")
+TRANSFER_SOURCES = ("calce", "nasa")
+WITHIN_SOURCE_SUMMARY_SOURCES = ("hust", "matr")
+
+
+def load_json(path: Path) -> dict[str, Any]:
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def walk_strings(value: Any) -> Iterable[str]:
+    if isinstance(value, dict):
+        for item in value.values():
+            yield from walk_strings(item)
+    elif isinstance(value, list):
+        for item in value:
+            yield from walk_strings(item)
+    elif isinstance(value, str):
+        yield value
+
+
+def find_absolute_path_hits(root: Path) -> list[dict[str, Any]]:
+    hits: list[dict[str, Any]] = []
+    if not root.exists():
+        return hits
+    project_root_text = str(PROJECT_ROOT)
+    for path in sorted(root.rglob("*.json")):
+        try:
+            payload = load_json(path)
+        except json.JSONDecodeError as exc:
+            hits.append({"path": str(path), "kind": "json_decode_error", "detail": str(exc)})
+            continue
+        matched = [item for item in walk_strings(payload) if project_root_text in item]
+        if matched:
+            hits.append(
+                {
+                    "path": str(path),
+                    "kind": "absolute_project_path",
+                    "examples": matched[:5],
+                    "count": len(matched),
+                }
+            )
+    return hits
+
+
+def _check_summary(path: Path, expected_suite_kind: str) -> dict[str, Any]:
+    if not path.exists():
+        return {
+            "path": str(path),
+            "suite_kind": None,
+            "available": False,
+            "ok": False,
+            "error": "missing_file",
+        }
+    payload = load_json(path)
+    report = {
+        "path": str(path),
+        "suite_kind": payload.get("suite_kind"),
+        "available": payload.get("available", True),
+        "ok": payload.get("suite_kind") == expected_suite_kind and payload.get("available", True) is not False,
+    }
+    if payload.get("best_checkpoint"):
+        report["best_checkpoint"] = payload.get("best_checkpoint")
+    return report
+
+
+def _resolve_reference(release_path: Path, raw_path: str | None) -> str | None:
+    if not raw_path:
+        return None
+    resolved = LifecycleInferenceService._resolve_reference_path(release_path, raw_path)
+    return str(resolved) if resolved is not None else None
+
+
+def validate_release_assets(
+    *,
+    project_root: Path = PROJECT_ROOT,
+    model_dir: str | Path = "data/models",
+    processed_dir: str | Path = "data/processed",
+    release_sources: Iterable[str] = DEFAULT_RELEASE_SOURCES,
+    models: Iterable[str] = DEFAULT_MODELS,
+) -> dict[str, Any]:
+    model_root = Path(model_dir).expanduser()
+    if not model_root.is_absolute():
+        model_root = (project_root / model_root).resolve()
+    processed_root = Path(processed_dir).expanduser()
+    if not processed_root.is_absolute():
+        processed_root = (project_root / processed_root).resolve()
+
+    release_sources = tuple(source.lower() for source in release_sources)
+    models = tuple(model.lower() for model in models)
+
+    summary_checks: list[dict[str, Any]] = []
+    for source in TRANSFER_SOURCES:
+        if source not in release_sources:
+            continue
+        for model in models:
+            path = model_root / source / model / "transfer" / f"multisource_to_{source}" / f"{model}_transfer_summary.json"
+            summary_checks.append(_check_summary(path, "transfer"))
+    for source in WITHIN_SOURCE_SUMMARY_SOURCES:
+        if source not in release_sources:
+            continue
+        for model in models:
+            path = model_root / source / model / f"{model}_multi_seed_summary.json"
+            summary_checks.append(_check_summary(path, "multi_seed"))
+        for extra_name in ("ablation_summary.json", "comparison_summary.json"):
+            path = model_root / source / extra_name
+            if not path.exists():
+                summary_checks.append(
+                    {
+                        "path": str(path),
+                        "kind": extra_name,
+                        "ok": False,
+                        "error": "missing_file",
+                    }
+                )
+                continue
+            payload = load_json(path)
+            summary_checks.append(
+                {
+                    "path": str(path),
+                    "kind": extra_name,
+                    "ok": bool(payload),
+                }
+            )
+
+    service = LifecycleInferenceService(model_root)
+    release_checks: list[dict[str, Any]] = []
+    for source in release_sources:
+        for model in models:
+            release_path = model_root / source / model / "release" / "final_release.json"
+            if not release_path.exists():
+                release_checks.append(
+                    {
+                        "source": source,
+                        "model": model,
+                        "release_path": str(release_path),
+                        "ok": False,
+                        "error": "missing_file",
+                    }
+                )
+                continue
+            payload = load_json(release_path)
+            try:
+                resolved_checkpoint = service._resolve_checkpoint(source, model)
+            except Exception as exc:
+                release_checks.append(
+                    {
+                        "source": source,
+                        "model": model,
+                        "release_path": str(release_path),
+                        "release_label": payload.get("release_label"),
+                        "suite_kind": payload.get("suite_kind"),
+                        "summary_path": payload.get("summary_path"),
+                        "checkpoint_path": payload.get("checkpoint_path"),
+                        "ok": False,
+                        "error": str(exc),
+                    }
+                )
+                continue
+            release_checks.append(
+                {
+                    "source": source,
+                    "model": model,
+                    "release_path": str(release_path),
+                    "release_label": payload.get("release_label"),
+                    "suite_kind": payload.get("suite_kind"),
+                    "summary_path": payload.get("summary_path"),
+                    "resolved_summary_path": _resolve_reference(release_path, payload.get("summary_path")),
+                    "checkpoint_path": payload.get("checkpoint_path"),
+                    "resolved_checkpoint_path": str(resolved_checkpoint),
+                    "checkpoint_exists": resolved_checkpoint.exists(),
+                    "ok": resolved_checkpoint.exists(),
+                }
+            )
+
+    absolute_path_hits = find_absolute_path_hits(model_root) + find_absolute_path_hits(processed_root)
+    failed_summary_checks = [item for item in summary_checks if not item.get("ok")]
+    failed_release_checks = [item for item in release_checks if not item.get("ok")]
+
+    return {
+        "ok": not absolute_path_hits and not failed_summary_checks and not failed_release_checks,
+        "project_root": str(project_root),
+        "model_dir": str(model_root),
+        "processed_dir": str(processed_root),
+        "summary_checks": summary_checks,
+        "release_checks": release_checks,
+        "absolute_path_hits": absolute_path_hits,
+        "failed_summary_checks": failed_summary_checks,
+        "failed_release_checks": failed_release_checks,
+    }
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Validate BHMS lifecycle release assets and metadata portability")
+    parser.add_argument("--model-dir", default="data/models")
+    parser.add_argument("--processed-dir", default="data/processed")
+    parser.add_argument("--sources", nargs="+", default=list(DEFAULT_RELEASE_SOURCES))
+    parser.add_argument("--models", nargs="+", default=list(DEFAULT_MODELS))
+    args = parser.parse_args()
+
+    report = validate_release_assets(
+        model_dir=args.model_dir,
+        processed_dir=args.processed_dir,
+        release_sources=args.sources,
+        models=args.models,
+    )
+    print(json.dumps(report, ensure_ascii=False, indent=2))
+    if not report["ok"]:
+        raise SystemExit(1)
+
+
+if __name__ == "__main__":
+    main()

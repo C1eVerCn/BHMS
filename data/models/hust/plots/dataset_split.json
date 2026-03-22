@@ -3,7 +3,7 @@
   "title": "HUST dataset split",
   "description": "Battery counts in the fixed train/validation/test split.",
   "path": "data/models/hust/plots/dataset_split.png",
-  "generated_at": "2026-03-21T14:23:29.195794",
+  "generated_at": "2026-03-22T04:20:31.895784",
   "split_snapshot": {
     "train_batteries": [
       "hust::hust_77cell::1-1",

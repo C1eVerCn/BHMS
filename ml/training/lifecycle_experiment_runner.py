@@ -62,6 +62,7 @@ def run_lifecycle_experiment(
     artifact_subdir: str | None = None,
     suite_kind: str = "baseline",
     variant_key: str = "baseline",
+    stage_kind: str = "baseline",
     repository: Optional[BHMSRepository] = None,
     persist_training_run: bool = True,
 ) -> dict[str, Any]:
@@ -87,27 +88,47 @@ def run_lifecycle_experiment(
         get_database().initialize()
     repo = repository or BHMSRepository()
 
-    csv_path = resolve_cycle_summary_path(resolve_path(data_cfg["csv_path"]), source=source)
-    merged.setdefault("data", {})["csv_path"] = serialize_path(csv_path)
-    data_cfg["csv_path"] = merged["data"]["csv_path"]
+    csv_paths_cfg = data_cfg.get("csv_paths")
+    if csv_paths_cfg:
+        csv_paths = [resolve_cycle_summary_path(resolve_path(path)) for path in csv_paths_cfg]
+        csv_path = csv_paths[0]
+        merged.setdefault("data", {})["csv_paths"] = [serialize_path(path) for path in csv_paths]
+        data_cfg["csv_paths"] = merged["data"]["csv_paths"]
+        if "csv_path" in merged.get("data", {}):
+            merged["data"].pop("csv_path", None)
+            data_cfg.pop("csv_path", None)
+    else:
+        csv_path = resolve_cycle_summary_path(resolve_path(data_cfg["csv_path"]), source=source)
+        csv_paths = [csv_path]
+        merged.setdefault("data", {})["csv_path"] = serialize_path(csv_path)
+        data_cfg["csv_path"] = merged["data"]["csv_path"]
     source_scope = data_cfg.get("sources") or source
+    checkpoint_root = resolve_path(training_cfg.get("checkpoint_dir", "data/models"))
+    log_root = resolve_path(training_cfg.get("log_dir", "data/models/logs"))
+    if len(csv_paths) > 1:
+        data_output_dir = checkpoint_root / source / artifact_model_type
+        if artifact_subdir:
+            data_output_dir = data_output_dir / artifact_subdir
+        data_output_dir = data_output_dir / "data_profile"
+    else:
+        data_output_dir = csv_path.parent
     data_module = LifecycleDataModule(
-        csv_path=csv_path,
+        csv_path=csv_paths if len(csv_paths) > 1 else csv_path,
         source=source_scope,
         batch_size=int(training_cfg.get("batch_size", 16)),
         feature_cols=data_cfg.get("feature_columns"),
-        output_dir=csv_path.parent,
+        output_dir=data_output_dir,
         seed=seed,
         target_config=target_cfg,
     )
     data_summary = data_module.summary()
     if artifact_subdir:
-        root_summary_path = csv_path.parent / f"{source}_lifecycle_dataset_summary.json"
+        root_summary_path = data_output_dir / f"{source}_lifecycle_dataset_summary.json"
         if not root_summary_path.exists():
             data_module.export_metadata()
         profile_prefix = variant_key if suite_kind == "ablation" else source
         target_dir = (
-            resolve_path(training_cfg.get("checkpoint_dir", "data/models"))
+            checkpoint_root
             / source
             / artifact_model_type
             / artifact_subdir
@@ -133,8 +154,8 @@ def run_lifecycle_experiment(
         training_config=LifecycleTrainingConfig(
             source=source,
             model_type=artifact_model_type,
-            checkpoint_dir=str(resolve_path(training_cfg.get("checkpoint_dir", "data/models"))),
-            log_dir=str(resolve_path(training_cfg.get("log_dir", "data/models/logs"))),
+            checkpoint_dir=str(checkpoint_root),
+            log_dir=str(log_root),
             artifact_subdir=artifact_subdir,
             **{key: value for key, value in training_cfg.items() if key not in {"checkpoint_dir", "log_dir", "batch_size"}},
         ),
@@ -152,6 +173,8 @@ def run_lifecycle_experiment(
         "requested_model_type": requested_model_type,
         "suite_kind": suite_kind,
         "variant_key": variant_key,
+        "stage_kind": stage_kind,
+        "source_scope": source_scope if isinstance(source_scope, list) else [source_scope],
         "seed": trainer.config.seed,
         "artifact_dir": serialize_path(trainer.checkpoint_dir),
         "log_dir": serialize_path(trainer.log_dir),
@@ -186,6 +209,8 @@ def run_lifecycle_experiment(
                     "seed": trainer.config.seed,
                     "suite_kind": suite_kind,
                     "variant_key": variant_key,
+                    "stage_kind": stage_kind,
+                    "source_scope": source_scope if isinstance(source_scope, list) else [source_scope],
                     "artifact_dir": serialize_path(trainer.checkpoint_dir),
                     "config_path": serialize_path(resolved_config),
                     "config_snapshot": merged,

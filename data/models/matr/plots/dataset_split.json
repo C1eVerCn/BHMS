@@ -3,7 +3,7 @@
   "title": "MATR dataset split",
   "description": "Battery counts in the fixed train/validation/test split.",
   "path": "data/models/matr/plots/dataset_split.png",
-  "generated_at": "2026-03-21T14:20:47.562512",
+  "generated_at": "2026-03-22T04:21:54.573466",
   "split_snapshot": {
     "train_batteries": [
       "matr::matr_severson::MATR_batch_20170512_cell_001",

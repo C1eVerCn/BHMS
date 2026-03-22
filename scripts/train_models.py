@@ -96,8 +96,8 @@ def run_lifecycle_validation_or_test(args: argparse.Namespace, config: dict[str,
         output_dir=csv_path.parent,
         target_config=target_cfg,
     )
-    data_summary = data_module.summary()
-    data_module.export_metadata()
+    data_summary = data_module.summary(path_root=PROJECT_ROOT)
+    data_module.export_metadata(path_root=PROJECT_ROOT)
     model, model_config = build_lifecycle_model(
         args.model,
         input_dim=len(data_summary["feature_columns"]),
@@ -143,8 +143,8 @@ def run_rul_validation_or_test(args: argparse.Namespace, config: dict[str, Any])
         feature_cols=data_cfg.get("feature_columns"),
         output_dir=csv_path.parent,
     )
-    data_summary = data_module.summary()
-    data_module.export_metadata()
+    data_summary = data_module.summary(path_root=PROJECT_ROOT)
+    data_module.export_metadata(path_root=PROJECT_ROOT)
 
     model, model_config = build_model(artifact_model, input_dim=len(data_summary["feature_columns"]), overrides=model_cfg)
     trainer = RULTrainer(
@@ -171,8 +171,10 @@ def main() -> None:
     parser.add_argument("--source", choices=list_supported_sources(), required=True)
     parser.add_argument("--model", choices=MODEL_CHOICES, required=True)
     parser.add_argument("--task", choices=["lifecycle", "rul"], default="lifecycle")
+    parser.add_argument("--stage-kind", choices=["baseline", "pretrain", "fine_tune", "final_evaluation"], default="baseline")
     parser.add_argument("--config", required=True)
     parser.add_argument("--resume", default=None)
+    parser.add_argument("--init-from-checkpoint", default=None)
     parser.add_argument("--validate-only", action="store_true")
     parser.add_argument("--test-only", action="store_true")
     parser.add_argument("--override-json", default=None, help="JSON string merged into the YAML config")
@@ -188,7 +190,13 @@ def main() -> None:
         config = merge_configs(config, config_overrides or {})
 
     if not args.validate_only and not args.test_only:
-        training_overrides = {"resume_from": args.resume} if args.resume else None
+        training_overrides = {}
+        if args.resume:
+            training_overrides["resume_from"] = args.resume
+        if args.init_from_checkpoint:
+            training_overrides["init_from_checkpoint"] = args.init_from_checkpoint
+        if not training_overrides:
+            training_overrides = None
         if args.task == "lifecycle":
             result = run_lifecycle_experiment(
                 args.source,
@@ -196,6 +204,7 @@ def main() -> None:
                 config_path=args.config,
                 config_overrides=config_overrides,
                 training_overrides=training_overrides,
+                stage_kind=args.stage_kind,
                 repository=BHMSRepository(),
                 persist_training_run=True,
             )

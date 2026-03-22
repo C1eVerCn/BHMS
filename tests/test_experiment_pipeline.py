@@ -8,6 +8,7 @@ from dataclasses import replace
 from pathlib import Path
 
 import pandas as pd
+import torch
 import yaml
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -19,10 +20,13 @@ from backend.app.core.database import DatabaseManager  # noqa: E402
 from backend.app.services.battery_service import BatteryService  # noqa: E402
 from backend.app.services.insight_service import InsightService  # noqa: E402
 from backend.app.services.repository import BHMSRepository  # noqa: E402
+from ml.data import create_synthetic_data  # noqa: E402
 from ml.data.schema import finalize_cycle_frame  # noqa: E402
 from ml.training.experiment_constants import ABLATION_VARIANTS  # noqa: E402
 from ml.training.experiment_runner import create_ablation_summary, create_multi_seed_summary, generate_source_plot_bundle  # noqa: E402
 from ml.training.lifecycle_experiment_runner import run_lifecycle_experiment  # noqa: E402
+from ml.training.lifecycle_trainer import LifecycleTrainer, LifecycleTrainingConfig, build_lifecycle_model  # noqa: E402
+from ml.training.lifecycle_transfer_runner import run_transfer_benchmark  # noqa: E402
 from scripts.run_ablation_study import build_variant_summary  # noqa: E402
 from scripts.run_multi_seed_experiment import reusable_root_summary  # noqa: E402
 
@@ -70,32 +74,43 @@ def _build_cycle_frame(source: str, battery_prefix: str, battery_count: int = 5)
     return finalize_cycle_frame(pd.DataFrame(rows), source=source, dataset_name=f"{source}_experiment_test", eol_capacity_ratio=0.8)
 
 
-def _write_config(tmp_path: Path, source: str, model_type: str, csv_path: Path) -> Path:
-    config = {
-        "data": {
-            "csv_path": str(csv_path),
-            "sources": [source],
-            "feature_columns": [
-                "voltage_mean",
-                "voltage_std",
-                "voltage_min",
-                "voltage_max",
-                "current_mean",
-                "current_std",
-                "temperature_mean",
-                "temperature_std",
-                "temperature_rise_rate",
-                "capacity",
-                "cycle_number",
-            ],
-            "target_config": {
-                "observation_ratios": [0.2, 0.3, 0.4],
-                "default_observation_ratio": 0.3,
-                "encoder_len": 24,
-                "future_len": 32,
-                "target_column": "capacity_ratio",
-            },
+def _write_config(
+    tmp_path: Path,
+    source: str,
+    model_type: str,
+    csv_path: Path | list[Path],
+    *,
+    sources: list[str] | None = None,
+) -> Path:
+    data_config = {
+        "sources": sources or [source],
+        "feature_columns": [
+            "voltage_mean",
+            "voltage_std",
+            "voltage_min",
+            "voltage_max",
+            "current_mean",
+            "current_std",
+            "temperature_mean",
+            "temperature_std",
+            "temperature_rise_rate",
+            "capacity",
+            "cycle_number",
+        ],
+        "target_config": {
+            "observation_ratios": [0.2, 0.3, 0.4],
+            "default_observation_ratio": 0.3,
+            "encoder_len": 24,
+            "future_len": 32,
+            "target_column": "capacity_ratio",
         },
+    }
+    if isinstance(csv_path, list):
+        data_config["csv_paths"] = [str(path) for path in csv_path]
+    else:
+        data_config["csv_path"] = str(csv_path)
+    config = {
+        "data": data_config,
         "model": {
             "hidden_dim": 16,
             "num_layers": 1,
@@ -258,6 +273,110 @@ def test_lifecycle_experiment_resolves_gzipped_cycle_summary_from_legacy_config_
 
     assert result["config_snapshot"]["data"]["csv_path"].endswith(".csv.gz")
     assert Path(result["best_checkpoint"]).exists()
+
+
+def test_transfer_benchmark_runs_multisource_pretrain_then_finetune(tmp_path: Path):
+    settings = _make_settings(tmp_path)
+    settings.processed_dir.mkdir(parents=True, exist_ok=True)
+    database = DatabaseManager(settings.database_path)
+    database.initialize()
+
+    csv_paths: dict[str, Path] = {}
+    for source in ("nasa", "calce", "hust", "matr"):
+        csv_path = settings.processed_dir / source / f"{source}_cycle_summary.csv"
+        csv_path.parent.mkdir(parents=True, exist_ok=True)
+        create_synthetic_data(
+            csv_path,
+            num_batteries=5,
+            num_cycles=72,
+            source=source,
+            dataset_name=f"{source}_transfer_test",
+        )
+        csv_paths[source] = csv_path
+
+    pretrain_config = _write_config(
+        tmp_path,
+        "calce",
+        "bilstm",
+        [csv_paths["nasa"], csv_paths["calce"], csv_paths["hust"], csv_paths["matr"]],
+        sources=["nasa", "calce", "hust", "matr"],
+    )
+    fine_tune_config = _write_config(tmp_path, "calce", "bilstm", csv_paths["calce"], sources=["calce"])
+
+    summary = run_transfer_benchmark(
+        "calce",
+        "bilstm",
+        pretrain_config_path=pretrain_config,
+        fine_tune_config_path=fine_tune_config,
+        seeds=[7],
+        model_dir=settings.model_dir,
+        persist_training_run=False,
+        pretrain_training_overrides={"num_epochs": 1, "batch_size": 4},
+        fine_tune_training_overrides={"num_epochs": 1, "batch_size": 4},
+    )
+
+    assert summary["suite_kind"] == "transfer"
+    assert summary["task_kind"] == "lifecycle"
+    assert len(summary["pretrain_runs"]) == 1
+    assert len(summary["fine_tune_runs"]) == 1
+    assert Path(summary["artifact_paths"]["summary"]).exists()
+    assert Path(summary["best_checkpoint"]["path"]).exists()
+    assert summary["aggregate_metrics"]["mean"]["trajectory_rmse"] is not None
+
+    fine_tune_summary_path = Path(summary["fine_tune_runs"][0]["summary_path"])
+    fine_tune_summary = json.loads(fine_tune_summary_path.read_text(encoding="utf-8"))
+    assert fine_tune_summary["stage_kind"] == "fine_tune"
+    assert fine_tune_summary["init_from_checkpoint"] == summary["pretrain_runs"][0]["best_checkpoint"]
+    assert Path(fine_tune_summary["best_checkpoint"]).exists()
+
+
+def test_lifecycle_trainer_partial_init_skips_shape_mismatches(tmp_path: Path):
+    model, model_config = build_lifecycle_model(
+        "hybrid",
+        input_dim=11,
+        vocab_sizes={"source": 2, "chemistry": 1, "protocol": 1},
+        overrides={"d_model": 16, "fusion_dim": 16, "transformer_layers": 1, "xlstm_layers": 1},
+    )
+    state_dict = model.state_dict()
+    matching_key = "decoder.rul_head.3.bias"
+    mismatched_key = "input_proj.weight"
+    checkpoint_path = tmp_path / "partial_init.pt"
+    torch.save(
+        {
+            "model_state_dict": {
+                matching_key: torch.full_like(state_dict[matching_key], 3.14),
+                mismatched_key: torch.zeros(state_dict[mismatched_key].shape[0] + 1, state_dict[mismatched_key].shape[1]),
+            }
+        },
+        checkpoint_path,
+    )
+
+    reloaded_model, reloaded_config = build_lifecycle_model(
+        "hybrid",
+        input_dim=11,
+        vocab_sizes={"source": 2, "chemistry": 1, "protocol": 1},
+        overrides={"d_model": 16, "fusion_dim": 16, "transformer_layers": 1, "xlstm_layers": 1},
+    )
+    trainer = LifecycleTrainer(
+        model=reloaded_model,
+        model_config=reloaded_config,
+        training_config=LifecycleTrainingConfig(
+            source="calce",
+            model_type="hybrid",
+            checkpoint_dir=str(tmp_path / "models"),
+            log_dir=str(tmp_path / "logs"),
+            init_from_checkpoint=str(checkpoint_path),
+        ),
+        train_loader=[],
+        val_loader=[],
+        test_loader=[],
+        data_summary={"feature_columns": ["f"] * 11},
+    )
+
+    assert trainer.init_from_report is not None
+    assert trainer.init_from_report["loaded_key_count"] == 1
+    assert trainer.init_from_report["skipped_shape_mismatch_count"] == 1
+    assert torch.allclose(trainer.model.state_dict()[matching_key], torch.full_like(trainer.model.state_dict()[matching_key], 3.14))
 
 
 def test_reusable_root_summary_and_plot_bundle_use_single_run_fallback(tmp_path: Path):

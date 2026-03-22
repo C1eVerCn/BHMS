@@ -1,0 +1,7 @@
+{
+  "key": "training_curves",
+  "title": "NASA hybrid transfer curves",
+  "description": "Train/validation curves for the fine-tuned transfer runs.",
+  "path": "data/models/nasa/hybrid/transfer/multisource_to_nasa/plots/training_curves.png",
+  "generated_at": "2026-03-22T03:44:52.037524"
+}

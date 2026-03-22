@@ -1,0 +1,13 @@
+{
+  "source": "hust",
+  "model_type": "bilstm",
+  "task_kind": "lifecycle",
+  "release_label": "within-source-final-2026-03-22",
+  "checkpoint_path": "data/models/hust/bilstm/runs/seed-7/bilstm_best.pt",
+  "summary_path": "data/models/hust/bilstm/bilstm_multi_seed_summary.json",
+  "suite_kind": "multi_seed",
+  "stage_kind": null,
+  "transfer_key": null,
+  "source_scope": null,
+  "generated_at": "2026-03-22T04:22:55.313733"
+}

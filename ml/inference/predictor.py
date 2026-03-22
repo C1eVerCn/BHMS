@@ -582,10 +582,97 @@ class RULInferenceService:
         effect = "提升" if delta < 0 else "压低"
         return f"遮挡 {feature_name} 后，模型输出相对基线{effect}了 RUL 估计。"
 
+    @classmethod
+    def _summary_checkpoint_candidates(
+        cls,
+        summary_path: Path,
+        payload: dict[str, object],
+        *,
+        run_keys: Sequence[str] = ("per_seed_runs",),
+        metric_keys: Sequence[str] = ("rmse",),
+    ) -> list[Path]:
+        candidates: list[Path] = []
+        seen: set[Path] = set()
+
+        def maybe_add(raw_path: object) -> None:
+            if not isinstance(raw_path, (str, Path)):
+                return
+            candidate = cls._resolve_reference_path(summary_path, raw_path)
+            if candidate is None or candidate in seen:
+                return
+            seen.add(candidate)
+            candidates.append(candidate)
+
+        best_checkpoint = payload.get("best_checkpoint")
+        if isinstance(best_checkpoint, dict):
+            maybe_add(best_checkpoint.get("path"))
+        else:
+            maybe_add(best_checkpoint)
+        maybe_add(payload.get("final_checkpoint"))
+
+        ranked_runs: list[tuple[float, object]] = []
+        for run_key in run_keys:
+            runs = payload.get(run_key) or []
+            if not isinstance(runs, list):
+                continue
+            for run in runs:
+                if not isinstance(run, dict):
+                    continue
+                metrics = run.get("metrics") or run.get("test_metrics") or {}
+                checkpoint_path = run.get("best_checkpoint") or run.get("final_checkpoint")
+                if checkpoint_path is None:
+                    continue
+                metric_value = float("inf")
+                if isinstance(metrics, dict):
+                    for metric_key in metric_keys:
+                        value = metrics.get(metric_key)
+                        if isinstance(value, (int, float)):
+                            metric_value = float(value)
+                            break
+                ranked_runs.append((metric_value, checkpoint_path))
+        ranked_runs.sort(key=lambda item: item[0])
+        for _, checkpoint_path in ranked_runs:
+            maybe_add(checkpoint_path)
+        return candidates
+
+    @classmethod
+    def _resolve_checkpoint_from_release_manifest(cls, release_path: Path) -> Optional[Path]:
+        if not release_path.exists():
+            return None
+        try:
+            payload = json.loads(release_path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            return None
+
+        explicit_checkpoint = payload.get("checkpoint_path")
+        if explicit_checkpoint is None:
+            best_checkpoint = payload.get("best_checkpoint")
+            if isinstance(best_checkpoint, dict):
+                explicit_checkpoint = best_checkpoint.get("path")
+            else:
+                explicit_checkpoint = best_checkpoint
+        if explicit_checkpoint:
+            candidate = cls._resolve_reference_path(release_path, explicit_checkpoint)
+            if candidate is not None:
+                return candidate
+
+        summary_reference = payload.get("summary_path")
+        if not summary_reference:
+            return None
+        summary_path = cls._resolve_reference_path(release_path, summary_reference)
+        if summary_path is None:
+            return None
+        return cls._resolve_checkpoint_from_summary(summary_path)
+
     def _resolve_checkpoint(self, source: str, model_name: str) -> Path:
+        release_manifest = self.model_dir / source / model_name / "release" / "final_release.json"
+        resolved = self._resolve_checkpoint_from_release_manifest(release_manifest)
+        if resolved is not None:
+            return resolved
         summary_candidates = [
-            self.model_dir / source / model_name / "optimized-config" / "optimized_multi_seed_summary.json",
             self.model_dir / source / model_name / f"{model_name}_multi_seed_summary.json",
+            self.model_dir / source / model_name / "optimized-config" / "optimized_multi_seed_summary.json",
+            self.model_dir / source / model_name / f"{model_name}_experiment_summary.json",
         ]
         for summary_path in summary_candidates:
             resolved = self._resolve_checkpoint_from_summary(summary_path)
@@ -610,25 +697,12 @@ class RULInferenceService:
         except json.JSONDecodeError:
             return None
 
-        best_checkpoint = payload.get("best_checkpoint") or {}
-        explicit_path = best_checkpoint.get("path") if isinstance(best_checkpoint, dict) else None
-        if explicit_path:
-            candidate = RULInferenceService._resolve_reference_path(summary_path, explicit_path)
-            if candidate is not None:
-                return candidate
-
-        per_seed_runs = payload.get("per_seed_runs") or []
-        ranked_runs = []
-        for run in per_seed_runs:
-            metrics = run.get("metrics") or {}
-            checkpoint_path = run.get("best_checkpoint") or run.get("final_checkpoint")
-            rmse = metrics.get("rmse")
-            if checkpoint_path is None or rmse is None:
-                continue
-            ranked_runs.append((float(rmse), checkpoint_path))
-        ranked_runs.sort(key=lambda item: item[0])
-        for _, checkpoint_path in ranked_runs:
-            candidate = RULInferenceService._resolve_reference_path(summary_path, checkpoint_path)
+        for candidate in RULInferenceService._summary_checkpoint_candidates(
+            summary_path,
+            payload,
+            run_keys=("per_seed_runs",),
+            metric_keys=("rmse",),
+        ):
             if candidate is not None:
                 return candidate
         return None
@@ -639,7 +713,9 @@ class RULInferenceService:
         if candidate.is_absolute():
             return candidate if candidate.exists() else None
 
-        search_roots = [PROJECT_ROOT, summary_path.parent, *summary_path.parents]
+        # Prefer paths relative to the artifact tree first so copied repos or relocated
+        # workspaces do not accidentally resolve back to the original project root.
+        search_roots = [summary_path.parent, *summary_path.parents, PROJECT_ROOT]
         seen: set[Path] = set()
         for root in search_roots:
             resolved = (root / candidate).resolve()
@@ -683,33 +759,33 @@ class LifecycleInferenceService(RULInferenceService):
         except json.JSONDecodeError:
             return None
 
-        best_checkpoint = payload.get("best_checkpoint") or {}
-        explicit_path = best_checkpoint.get("path") if isinstance(best_checkpoint, dict) else None
-        if explicit_path:
-            candidate = cls._resolve_reference_path(summary_path, explicit_path)
-            if candidate is not None and cls._checkpoint_is_lifecycle(candidate):
-                return candidate
-
-        per_seed_runs = payload.get("per_seed_runs") or []
-        ranked_runs = []
-        for run in per_seed_runs:
-            metrics = run.get("metrics") or {}
-            checkpoint_path = run.get("best_checkpoint") or run.get("final_checkpoint")
-            rmse = metrics.get("rmse")
-            if checkpoint_path is None or rmse is None:
-                continue
-            ranked_runs.append((float(rmse), checkpoint_path))
-        ranked_runs.sort(key=lambda item: item[0])
-        for _, checkpoint_path in ranked_runs:
-            candidate = cls._resolve_reference_path(summary_path, checkpoint_path)
+        for candidate in cls._summary_checkpoint_candidates(
+            summary_path,
+            payload,
+            run_keys=("fine_tune_runs", "per_seed_runs"),
+            metric_keys=("trajectory_rmse", "rmse"),
+        ):
             if candidate is not None and cls._checkpoint_is_lifecycle(candidate):
                 return candidate
         return None
 
+    @classmethod
+    def _resolve_lifecycle_checkpoint_from_release_manifest(cls, release_path: Path) -> Optional[Path]:
+        candidate = cls._resolve_checkpoint_from_release_manifest(release_path)
+        if candidate is None or not cls._checkpoint_is_lifecycle(candidate):
+            return None
+        return candidate
+
     def _resolve_checkpoint(self, source: str, model_name: str) -> Path:
+        release_manifest = self.model_dir / source / model_name / "release" / "final_release.json"
+        resolved = self._resolve_lifecycle_checkpoint_from_release_manifest(release_manifest)
+        if resolved is not None:
+            return resolved
         summary_candidates = [
+            self.model_dir / source / model_name / "transfer" / f"multisource_to_{source}" / f"{model_name}_transfer_summary.json",
             self.model_dir / source / model_name / f"{model_name}_multi_seed_summary.json",
             self.model_dir / source / model_name / "optimized-config" / "optimized_multi_seed_summary.json",
+            self.model_dir / source / model_name / f"{model_name}_experiment_summary.json",
         ]
         for summary_path in summary_candidates:
             resolved = self._resolve_lifecycle_checkpoint_from_summary(summary_path)

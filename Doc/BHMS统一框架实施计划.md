@@ -1,6 +1,6 @@
 # BHMS 执行版方案：以 `xLSTM + Transformer + GraphRAG` 为主线的全生命周期预测与机理解释
 
-更新日期：2026-03-17
+更新日期：2026-03-22
 
 ## 0. 方案摘要
 
@@ -12,14 +12,14 @@
 
 本文件是后续阶段更新的唯一主计划文档。后续每完成一个阶段，只增量更新本文件，不再新开重复规划文档。
 
-## 当前进展（2026-03-17）
+## 当前进展（2026-03-22）
 
 - 阶段 1 已完成：主计划文档落地、主文档集合收口、旧文档与旧脚本清理、实验路径改为仓库相对路径、基线提交已完成
 - 已完成基线提交：`chore: snapshot xlstm-hybrid baseline and streamline repo`
 - 阶段 2 已开始：新增多源 source registry，扩展 `hust / matr / oxford / pulsebat` adapter 与元数据字段
-- 阶段 3 已开始：新增生命周期数据模块、`LifecycleHybridPredictor`、`LifecycleBiLSTMPredictor` 与生命周期训练骨架
-- 阶段 4 已开始：GraphRAG 已可消费 lifecycle evidence / model evidence，并支持风险窗口、机理节点和未来退化排序依据
-- 阶段 5 已开始：后端已提供 `/api/v2/predict/lifecycle` 与 `/api/v2/explain/mechanism`，并补齐前端类型与服务层接口草案
+- 阶段 3 已持续推进：新增生命周期数据模块、`LifecycleHybridPredictor`、`LifecycleBiLSTMPredictor`、多源 `csv_paths` 训练支持、checkpoint warm-start 与 transfer benchmark 脚本
+- 阶段 4 已推进：GraphRAG 已可消费 lifecycle evidence / model evidence，并补了一轮排序回归修复，减少不符合上下文的机理候选误排
+- 阶段 5 已推进：后端已提供 `/api/v2/predict/lifecycle` 与 `/api/v2/explain/mechanism`，推理端支持 `final_release.json` 优先选权重
 
 ## 1. 外部趋势与执行依据
 
@@ -185,6 +185,17 @@
 - Stage A：`NASA + CALCE + HUST + MATR` 多源预训练
 - Stage B：先 `CALCE` 精调，再 `NASA` 精调
 - `Oxford` 只参与 trajectory 辅助训练，不参与主 benchmark 排名
+
+当前仓库中与该策略对应的落地产物：
+
+- `configs/multisource_pretrain_hybrid.yaml`
+- `configs/multisource_pretrain_bilstm.yaml`
+- `configs/transfer_calce_hybrid.yaml`
+- `configs/transfer_calce_bilstm.yaml`
+- `configs/transfer_nasa_hybrid.yaml`
+- `configs/transfer_nasa_bilstm.yaml`
+- `scripts/run_transfer_benchmark.py`
+- `scripts/promote_lifecycle_release.py`
 
 ### 4.6 主对照与消融
 

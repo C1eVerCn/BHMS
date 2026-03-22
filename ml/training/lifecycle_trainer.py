@@ -55,6 +55,7 @@ class LifecycleTrainingConfig:
     model_version: str = "lifecycle-v1"
     seed: int = 42
     resume_from: Optional[str] = None
+    init_from_checkpoint: Optional[str] = None
     run_name: Optional[str] = None
 
 
@@ -153,10 +154,13 @@ class LifecycleTrainer:
         self.best_epoch: Optional[int] = None
         self.stopped_early = False
         self.start_epoch = 0
+        self.init_from_report: Optional[dict[str, Any]] = None
         torch.manual_seed(self.config.seed)
         np.random.seed(self.config.seed)
         if self.config.resume_from:
             self._resume(self.config.resume_from)
+        elif self.config.init_from_checkpoint:
+            self._initialize_from(self.config.init_from_checkpoint)
 
     @staticmethod
     def _resolve_device(device: str) -> torch.device:
@@ -291,6 +295,38 @@ class LifecycleTrainer:
         if self.early_stopping is not None:
             self.early_stopping.best_loss = self.best_val_loss if math.isfinite(self.best_val_loss) else None
 
+    def _initialize_from(self, checkpoint_path: str | Path) -> None:
+        checkpoint = torch.load(checkpoint_path, map_location=self.device)
+        model_state = checkpoint.get("model_state_dict")
+        if not model_state:
+            raise ValueError(f"checkpoint {checkpoint_path} 缺少 model_state_dict，无法用于 fine-tune 初始化")
+        current_state = self.model.state_dict()
+        compatible_state: dict[str, torch.Tensor] = {}
+        skipped_shape_mismatches: list[str] = []
+        for name, value in model_state.items():
+            target = current_state.get(name)
+            if target is None:
+                continue
+            if getattr(value, "shape", None) != target.shape:
+                skipped_shape_mismatches.append(name)
+                continue
+            compatible_state[name] = value
+        if not compatible_state:
+            raise ValueError(f"checkpoint {checkpoint_path} 与当前模型结构不兼容，无法加载任何可复用权重")
+        missing_before_load = [name for name in current_state.keys() if name not in compatible_state]
+        unexpected = [name for name in model_state.keys() if name not in current_state]
+        self.model.load_state_dict(compatible_state, strict=False)
+        self.init_from_report = {
+            "checkpoint_path": serialize_path(checkpoint_path),
+            "loaded_key_count": len(compatible_state),
+            "skipped_shape_mismatch_count": len(skipped_shape_mismatches),
+            "skipped_shape_mismatch_keys": skipped_shape_mismatches[:20],
+            "missing_key_count": len(missing_before_load),
+            "missing_keys_sample": missing_before_load[:20],
+            "unexpected_key_count": len(unexpected),
+            "unexpected_keys_sample": unexpected[:20],
+        }
+
     def save_checkpoint(self, filename: str, epoch: int, val_loss: float, *, test_metrics: Optional[dict[str, float]] = None) -> Path:
         checkpoint_path = self.checkpoint_dir / filename
         metadata = {
@@ -406,6 +442,8 @@ class LifecycleTrainer:
             "epochs_completed": epochs_completed,
             "stopped_early": self.stopped_early,
             "resume_from": serialize_path(self.config.resume_from) if self.config.resume_from else None,
+            "init_from_checkpoint": serialize_path(self.config.init_from_checkpoint) if self.config.init_from_checkpoint else None,
+            "init_from_report": self.init_from_report,
             "device": str(self.device),
             "duration_sec": duration_sec,
             "status": "completed",

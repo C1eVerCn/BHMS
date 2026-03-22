@@ -1,0 +1,26 @@
+{
+  "plots": [
+    {
+      "key": "error_distribution",
+      "title": "HUST bilstm error distribution",
+      "description": "Prediction error histogram for every configured seed.",
+      "path": "data/models/hust/bilstm/plots/error_distribution.png",
+      "generated_at": "2026-03-22T03:49:17.570782"
+    },
+    {
+      "key": "metrics_overview",
+      "title": "HUST bilstm multi-seed metrics",
+      "description": "Mean and std across the configured random seeds.",
+      "path": "data/models/hust/bilstm/plots/metrics_overview.png",
+      "generated_at": "2026-03-22T03:49:17.428566"
+    },
+    {
+      "key": "training_curves",
+      "title": "HUST bilstm training curves",
+      "description": "Train/validation loss curves for the configured seed runs.",
+      "path": "data/models/hust/bilstm/plots/training_curves.png",
+      "generated_at": "2026-03-22T03:49:17.618785"
+    }
+  ],
+  "generated_at": "2026-03-22T03:49:17.619140"
+}

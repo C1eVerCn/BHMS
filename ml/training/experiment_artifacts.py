@@ -24,7 +24,21 @@ except ModuleNotFoundError:
     MATPLOTLIB_AVAILABLE = False
 
 
-METRIC_KEYS = ("rmse", "mae", "mape", "r2")
+PLOT_METRIC_KEYS = ("rmse", "mae", "mape", "r2")
+AGGREGATE_METRIC_KEYS = (
+    "rmse",
+    "mae",
+    "mape",
+    "r2",
+    "trajectory_rmse",
+    "trajectory_mae",
+    "trajectory_r2",
+    "rul_mae",
+    "rul_rmse",
+    "eol_mae",
+    "eol_rmse",
+    "knee_mae",
+)
 PLACEHOLDER_PNG = base64.b64decode(
     "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9sot1mAAAAAASUVORK5CYII="
 )
@@ -71,7 +85,12 @@ def aggregate_metrics(metric_rows: Iterable[dict[str, Any]]) -> dict[str, dict[s
     rows = list(metric_rows)
     mean: dict[str, float | None] = {}
     std: dict[str, float | None] = {}
-    for key in METRIC_KEYS:
+    metric_keys = list(AGGREGATE_METRIC_KEYS)
+    for row in rows:
+        for key, value in row.items():
+            if isinstance(value, (int, float)) and key not in metric_keys:
+                metric_keys.append(key)
+    for key in metric_keys:
         values = [float(item[key]) for item in rows if isinstance(item.get(key), (int, float))]
         if not values:
             mean[key] = None
@@ -146,7 +165,7 @@ def plot_metric_summary(summary: dict[str, Any], output_path: str | Path, *, tit
     labels = []
     values = []
     errors = []
-    for key in METRIC_KEYS:
+    for key in PLOT_METRIC_KEYS:
         if not isinstance(mean.get(key), (int, float)):
             continue
         labels.append(key.upper())
@@ -280,7 +299,7 @@ def plot_source_comparison(
         write_placeholder_png(output)
         return write_plot_metadata(output, key=output.stem, title=title, description=description)
     fig, ax = plt.subplots(figsize=(8, 4.5))
-    labels = list(METRIC_KEYS)
+    labels = list(PLOT_METRIC_KEYS)
     positions = np.arange(len(labels))
     width = 0.34
     for offset, (model_type, summary) in zip((-width / 2, width / 2), model_summaries.items()):
@@ -348,7 +367,8 @@ def write_plot_manifest(directory: str | Path) -> list[dict[str, Any]]:
 
 
 __all__ = [
-    "METRIC_KEYS",
+    "AGGREGATE_METRIC_KEYS",
+    "PLOT_METRIC_KEYS",
     "aggregate_metrics",
     "collect_plot_metadata",
     "write_placeholder_png",

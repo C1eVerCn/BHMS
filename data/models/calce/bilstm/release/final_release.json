@@ -1,0 +1,15 @@
+{
+  "source": "calce",
+  "model_type": "bilstm",
+  "task_kind": "lifecycle",
+  "release_label": "transfer-final-2026-03-22",
+  "checkpoint_path": "data/models/calce/bilstm/transfer/multisource_to_calce/fine_tune/seed-7/bilstm_best.pt",
+  "summary_path": "data/models/calce/bilstm/transfer/multisource_to_calce/bilstm_transfer_summary.json",
+  "suite_kind": "transfer",
+  "stage_kind": null,
+  "transfer_key": "multisource_to_calce",
+  "source_scope": [
+    "calce"
+  ],
+  "generated_at": "2026-03-22T04:22:48.333384"
+}

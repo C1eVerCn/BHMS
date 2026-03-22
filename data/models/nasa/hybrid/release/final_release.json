@@ -1,0 +1,15 @@
+{
+  "source": "nasa",
+  "model_type": "hybrid",
+  "task_kind": "lifecycle",
+  "release_label": "transfer-final-2026-03-22",
+  "checkpoint_path": "data/models/nasa/hybrid/transfer/multisource_to_nasa/fine_tune/seed-7/hybrid_best.pt",
+  "summary_path": "data/models/nasa/hybrid/transfer/multisource_to_nasa/hybrid_transfer_summary.json",
+  "suite_kind": "transfer",
+  "stage_kind": null,
+  "transfer_key": "multisource_to_nasa",
+  "source_scope": [
+    "nasa"
+  ],
+  "generated_at": "2026-03-22T04:22:50.097457"
+}

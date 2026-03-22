@@ -288,14 +288,14 @@ class BatteryService:
             batch_size=batch_size,
             output_dir=output_dir,
         )
-        rul_metadata_paths = rul_data_module.export_metadata()
+        rul_metadata_paths = rul_data_module.export_metadata(path_root=self.settings.project_root)
         lifecycle_data_module = LifecycleDataModule(
             csv_path=source_csv,
             source=source,
             batch_size=batch_size,
             output_dir=output_dir,
         )
-        lifecycle_metadata_paths = lifecycle_data_module.export_metadata()
+        lifecycle_metadata_paths = lifecycle_data_module.export_metadata(path_root=self.settings.project_root)
         return {
             "import_summary": {
                 "source": source,
@@ -311,8 +311,8 @@ class BatteryService:
                     "ingestion_mode": "training_pool",
                 },
             },
-            "data_summary": lifecycle_data_module.summary(),
-            "legacy_rul_data_summary": rul_data_module.summary(),
+            "data_summary": lifecycle_data_module.summary(path_root=self.settings.project_root),
+            "legacy_rul_data_summary": rul_data_module.summary(path_root=self.settings.project_root),
             "metadata_paths": {
                 "rul": rul_metadata_paths,
                 "lifecycle": lifecycle_metadata_paths,

@@ -1,0 +1,26 @@
+{
+  "plots": [
+    {
+      "key": "error_distribution",
+      "title": "CALCE bilstm transfer error distribution",
+      "description": "Prediction error histogram for the fine-tuned transfer runs.",
+      "path": "data/models/calce/bilstm/transfer/multisource_to_calce/plots/error_distribution.png",
+      "generated_at": "2026-03-22T03:37:18.447173"
+    },
+    {
+      "key": "metrics_overview",
+      "title": "CALCE bilstm transfer metrics",
+      "description": "Mean and std across fine-tune seeds for the transfer benchmark.",
+      "path": "data/models/calce/bilstm/transfer/multisource_to_calce/plots/metrics_overview.png",
+      "generated_at": "2026-03-22T03:37:18.397199"
+    },
+    {
+      "key": "training_curves",
+      "title": "CALCE bilstm transfer curves",
+      "description": "Train/validation curves for the fine-tuned transfer runs.",
+      "path": "data/models/calce/bilstm/transfer/multisource_to_calce/plots/training_curves.png",
+      "generated_at": "2026-03-22T03:37:18.503047"
+    }
+  ],
+  "generated_at": "2026-03-22T03:37:18.503406"
+}
