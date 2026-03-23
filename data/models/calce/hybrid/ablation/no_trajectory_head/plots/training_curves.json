@@ -1,7 +1,0 @@
-{
-  "key": "training_curves",
-  "title": "CALCE no_trajectory_head training curves",
-  "description": "Train/validation loss for the ablation variant.",
-  "path": "data/models/calce/hybrid/ablation/no_trajectory_head/plots/training_curves.png",
-  "generated_at": "2026-03-17T07:48:31.161373"
-}

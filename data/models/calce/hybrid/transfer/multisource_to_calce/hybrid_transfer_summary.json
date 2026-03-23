@@ -82154,7 +82154,7 @@
   },
   "best_checkpoint": {
     "seed": 21,
-    "path": "data/models/calce/hybrid/transfer/multisource_to_calce/fine_tune/seed-21/hybrid_best.pt"
+    "path": "data/models/calce/hybrid/release/checkpoints/hybrid_release.pt"
   },
   "artifact_paths": {
     "summary": "data/models/calce/hybrid/transfer/multisource_to_calce/hybrid_transfer_summary.json",

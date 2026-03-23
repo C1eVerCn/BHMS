@@ -3,7 +3,7 @@
   "model_type": "hybrid",
   "task_kind": "lifecycle",
   "release_label": "transfer-final-2026-03-22",
-  "checkpoint_path": "data/models/calce/hybrid/transfer/multisource_to_calce/fine_tune/seed-21/hybrid_best.pt",
+  "checkpoint_path": "data/models/calce/hybrid/release/checkpoints/hybrid_release.pt",
   "summary_path": "data/models/calce/hybrid/transfer/multisource_to_calce/hybrid_transfer_summary.json",
   "suite_kind": "transfer",
   "stage_kind": null,
@@ -11,5 +11,5 @@
   "source_scope": [
     "calce"
   ],
-  "generated_at": "2026-03-22T04:22:46.600129"
+  "generated_at": "2026-03-23T03:34:44.384556"
 }

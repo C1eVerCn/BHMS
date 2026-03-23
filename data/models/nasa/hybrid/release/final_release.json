@@ -3,7 +3,7 @@
   "model_type": "hybrid",
   "task_kind": "lifecycle",
   "release_label": "transfer-final-2026-03-22",
-  "checkpoint_path": "data/models/nasa/hybrid/transfer/multisource_to_nasa/fine_tune/seed-7/hybrid_best.pt",
+  "checkpoint_path": "data/models/nasa/hybrid/release/checkpoints/hybrid_release.pt",
   "summary_path": "data/models/nasa/hybrid/transfer/multisource_to_nasa/hybrid_transfer_summary.json",
   "suite_kind": "transfer",
   "stage_kind": null,
@@ -11,5 +11,5 @@
   "source_scope": [
     "nasa"
   ],
-  "generated_at": "2026-03-22T04:22:50.097457"
+  "generated_at": "2026-03-23T03:33:34.675090"
 }

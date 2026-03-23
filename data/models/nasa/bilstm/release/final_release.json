@@ -3,7 +3,7 @@
   "model_type": "bilstm",
   "task_kind": "lifecycle",
   "release_label": "transfer-final-2026-03-22",
-  "checkpoint_path": "data/models/nasa/bilstm/transfer/multisource_to_nasa/fine_tune/seed-21/bilstm_best.pt",
+  "checkpoint_path": "data/models/nasa/bilstm/release/checkpoints/bilstm_release.pt",
   "summary_path": "data/models/nasa/bilstm/transfer/multisource_to_nasa/bilstm_transfer_summary.json",
   "suite_kind": "transfer",
   "stage_kind": null,
@@ -11,5 +11,5 @@
   "source_scope": [
     "nasa"
   ],
-  "generated_at": "2026-03-22T04:22:51.837227"
+  "generated_at": "2026-03-23T03:33:36.968767"
 }

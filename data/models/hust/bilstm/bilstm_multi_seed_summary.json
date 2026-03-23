@@ -24217,7 +24217,7 @@
   },
   "best_checkpoint": {
     "seed": 7,
-    "path": "data/models/hust/bilstm/runs/seed-7/bilstm_best.pt"
+    "path": "data/models/hust/bilstm/release/checkpoints/bilstm_release.pt"
   },
   "artifact_paths": {
     "summary": "data/models/hust/bilstm/bilstm_multi_seed_summary.json",

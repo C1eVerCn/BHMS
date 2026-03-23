@@ -28,7 +28,7 @@
 
 | 变更类别 | 关键路径/目录 | 是否已验证 | 是否属于需要纳入版本控制的正式封版资产 | 说明 |
 | --- | --- | --- | --- | --- |
-| `CALCE / NASA` transfer 正式汇总 | `data/models/calce/{hybrid,bilstm}/transfer/multisource_to_calce/`、`data/models/nasa/{hybrid,bilstm}/transfer/multisource_to_nasa/` | 是 | 是 | 包含 4 份 `*_transfer_summary.json`、对应 `plots/` 以及 fine-tune 汇总，构成本轮 transfer benchmark 的正式结果面。 |
+| `CALCE / NASA` transfer 正式汇总 | `data/models/calce/{hybrid,bilstm}/transfer/multisource_to_calce/`、`data/models/nasa/{hybrid,bilstm}/transfer/multisource_to_nasa/` | 是 | 是 | 包含 4 份 `*_transfer_summary.json`、对应 `plots/`，其 `best_checkpoint.path` 已同步指向 `release/checkpoints/` 下的正式权重。 |
 | `HUST / MATR` 双模型 multi-seed 汇总 | `data/models/hust/{hybrid,bilstm}/*_multi_seed_summary.json`、`data/models/matr/{hybrid,bilstm}/*_multi_seed_summary.json` | 是 | 是 | `HUST / MATR` 现已具备双模型 within-source 主汇总，可用于扩展验证展示。 |
 | `HUST / MATR` ablation 与 comparison | `data/models/hust/ablation_summary.json`、`data/models/matr/ablation_summary.json`、`data/models/hust/comparison_summary.json`、`data/models/matr/comparison_summary.json`、`data/models/{hust,matr}/plots/` | 是 | 是 | 补齐了原先缺失的 ablation / comparison 面，便于论文图表和答辩对照展示。 |
 | `data/processed` 生命周期元数据刷新 | `data/processed/<source>/` 下 dataset summary、feature config 与 lifecycle summary | 是 | 是 | 仓库默认基线元数据已经统一到仓库相对路径口径，应与模型 summary 一起保留，避免封版后口径漂移。 |
@@ -38,7 +38,7 @@
 
 | 变更类别 | 关键路径/目录 | 是否已验证 | 是否属于需要纳入版本控制的正式封版资产 | 说明 |
 | --- | --- | --- | --- | --- |
-| per-seed checkpoints 与 runs 目录 | `data/models/*/*/runs/`、`data/models/*/*/transfer/*/{pretrain,fine_tune}/seed-*` | 是 | 否 | 适合作为复核与追溯材料，但不属于正式封版的最小提交集合。 |
+| per-seed checkpoints 与 runs 目录 | `data/models/*/*/runs/`、`data/models/*/*/transfer/*/{pretrain,fine_tune}/seed-*` | 是 | 否 | 适合作为复核与追溯材料，应通过 `scripts/archive_experiment_artifacts.py` 统一转入 `data/archive/experiments/<date>/`。 |
 | 单次训练 checkpoint 与训练快照 | `data/models/*/*/*_best.pt`、`data/models/*/*/*_final.pt`、`data/models/*/*/*_best.json`、`data/models/*/*/*_final.json` | 是 | 否 | 可辅助追溯最佳权重来源；若提交体积受限，可保留 manifest 与 summary，单独归档权重。 |
 | 训练明细与测试明细 | `data/models/*/*/training_summary.json`、`data/models/*/*/test_details.json` | 是 | 否 | 建议保留在归档包中，用于答辩追问或实验核查，不作为正式封版最小面。 |
 

@@ -88229,7 +88229,7 @@
   },
   "best_checkpoint": {
     "seed": 7,
-    "path": "data/models/nasa/hybrid/transfer/multisource_to_nasa/fine_tune/seed-7/hybrid_best.pt"
+    "path": "data/models/nasa/hybrid/release/checkpoints/hybrid_release.pt"
   },
   "artifact_paths": {
     "summary": "data/models/nasa/hybrid/transfer/multisource_to_nasa/hybrid_transfer_summary.json",

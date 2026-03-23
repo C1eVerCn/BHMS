@@ -99,11 +99,11 @@ BHMS 当前已经完成 `lifecycle-first` 工程封版资产收口：`CALCE / NA
 
 - 本轮已经完成 lifecycle-first 工程封版资产收口，但这不等同于“所有来源效果都已达到论文级最优”。
 - `NASA` transfer 已经真实跑通，但指标仍弱；因此当前更适合将其作为 transfer 链路证明和弱泛化案例，而不是强结论主证据。
-- 工作区当前仍包含大量实验资产与文档改动；正式提交前仍需要按“正式封版资产 / 中间归档材料”拆分整理。
+- 正式 release checkpoint 已收口到 `data/models/<source>/<model>/release/checkpoints/`；中间训练材料应统一归档到 `data/archive/experiments/<date>/`，不再混留在主工作区。
 - 当前系统定位仍是毕业设计/研究原型的工程封版，不应写成“工业级部署完成”，也不应写成“工业级可靠性验证已完成”。
 
 ## 建议的下一步
 
 - 提交准备阶段：优先围绕 `README.md`、`Doc/BHMS封版检查清单.md`、`Doc/BHMS最终封版说明.md` 与正式 summary / release manifest 组织提交说明，形成一套可复核的封版提交包。
-- 归档阶段：将 `runs/`、per-seed checkpoint、`training_summary.json`、`test_details.json` 等中间训练材料单独归档，正式交付聚焦 summary、comparison、ablation、plots 与 release manifest。
+- 归档阶段：执行 `python scripts/archive_experiment_artifacts.py --archive-label <date>`，将 `runs/`、per-seed checkpoint、`training_summary.json`、`test_details.json` 等中间训练材料统一转入 `data/archive/experiments/<date>/`。
 - 答辩/汇报阶段：主口径建议以 `CALCE` transfer 为主展示、`NASA` transfer 为限制说明、`HUST / MATR` 为扩展验证支撑，避免把所有来源写成同等强结论。

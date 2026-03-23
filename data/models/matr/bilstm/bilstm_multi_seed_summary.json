@@ -49840,7 +49840,7 @@
   },
   "best_checkpoint": {
     "seed": 21,
-    "path": "data/models/matr/bilstm/runs/seed-21/bilstm_best.pt"
+    "path": "data/models/matr/bilstm/release/checkpoints/bilstm_release.pt"
   },
   "artifact_paths": {
     "summary": "data/models/matr/bilstm/bilstm_multi_seed_summary.json",

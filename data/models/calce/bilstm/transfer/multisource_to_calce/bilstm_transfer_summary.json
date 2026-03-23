@@ -82154,7 +82154,7 @@
   },
   "best_checkpoint": {
     "seed": 7,
-    "path": "data/models/calce/bilstm/transfer/multisource_to_calce/fine_tune/seed-7/bilstm_best.pt"
+    "path": "data/models/calce/bilstm/release/checkpoints/bilstm_release.pt"
   },
   "artifact_paths": {
     "summary": "data/models/calce/bilstm/transfer/multisource_to_calce/bilstm_transfer_summary.json",

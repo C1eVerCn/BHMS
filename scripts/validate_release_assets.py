@@ -61,7 +61,25 @@ def find_absolute_path_hits(root: Path) -> list[dict[str, Any]]:
     return hits
 
 
-def _check_summary(path: Path, expected_suite_kind: str) -> dict[str, Any]:
+def _resolve_reference(summary_path: Path, raw_path: str | None) -> str | None:
+    if not raw_path:
+        return None
+    resolved = LifecycleInferenceService._resolve_reference_path(summary_path, raw_path)
+    return str(resolved) if resolved is not None else None
+
+
+def _path_in_release_dir(candidate: Path | None, model_root: Path, source: str, model: str) -> bool:
+    if candidate is None:
+        return False
+    release_dir = model_root / source / model / "release" / "checkpoints"
+    try:
+        candidate.resolve().relative_to(release_dir.resolve())
+    except ValueError:
+        return False
+    return True
+
+
+def _check_summary(path: Path, expected_suite_kind: str, *, model_root: Path, source: str, model: str) -> dict[str, Any]:
     if not path.exists():
         return {
             "path": str(path),
@@ -70,23 +88,41 @@ def _check_summary(path: Path, expected_suite_kind: str) -> dict[str, Any]:
             "ok": False,
             "error": "missing_file",
         }
+
     payload = load_json(path)
+    best_checkpoint = payload.get("best_checkpoint")
+    raw_best_path: str | None = None
+    if isinstance(best_checkpoint, dict):
+        raw_best_path = best_checkpoint.get("path")
+    elif isinstance(best_checkpoint, str):
+        raw_best_path = best_checkpoint
+    resolved_best = LifecycleInferenceService._resolve_reference_path(path, raw_best_path) if raw_best_path else None
+    best_in_release_dir = _path_in_release_dir(resolved_best, model_root, source, model)
+
     report = {
         "path": str(path),
         "suite_kind": payload.get("suite_kind"),
         "available": payload.get("available", True),
-        "ok": payload.get("suite_kind") == expected_suite_kind and payload.get("available", True) is not False,
+        "best_checkpoint": payload.get("best_checkpoint"),
+        "resolved_best_checkpoint": str(resolved_best) if resolved_best else None,
+        "best_checkpoint_exists": resolved_best.exists() if resolved_best else False,
+        "best_checkpoint_in_release_dir": best_in_release_dir,
+        "ok": (
+            payload.get("suite_kind") == expected_suite_kind
+            and payload.get("available", True) is not False
+            and resolved_best is not None
+            and resolved_best.exists()
+            and best_in_release_dir
+        ),
     }
-    if payload.get("best_checkpoint"):
-        report["best_checkpoint"] = payload.get("best_checkpoint")
+    if not report["ok"] and "error" not in report:
+        if resolved_best is None:
+            report["error"] = "missing_best_checkpoint"
+        elif not resolved_best.exists():
+            report["error"] = "best_checkpoint_missing_on_disk"
+        elif not best_in_release_dir:
+            report["error"] = "best_checkpoint_not_in_release_dir"
     return report
-
-
-def _resolve_reference(release_path: Path, raw_path: str | None) -> str | None:
-    if not raw_path:
-        return None
-    resolved = LifecycleInferenceService._resolve_reference_path(release_path, raw_path)
-    return str(resolved) if resolved is not None else None
 
 
 def validate_release_assets(
@@ -113,13 +149,13 @@ def validate_release_assets(
             continue
         for model in models:
             path = model_root / source / model / "transfer" / f"multisource_to_{source}" / f"{model}_transfer_summary.json"
-            summary_checks.append(_check_summary(path, "transfer"))
+            summary_checks.append(_check_summary(path, "transfer", model_root=model_root, source=source, model=model))
     for source in WITHIN_SOURCE_SUMMARY_SOURCES:
         if source not in release_sources:
             continue
         for model in models:
             path = model_root / source / model / f"{model}_multi_seed_summary.json"
-            summary_checks.append(_check_summary(path, "multi_seed"))
+            summary_checks.append(_check_summary(path, "multi_seed", model_root=model_root, source=source, model=model))
         for extra_name in ("ablation_summary.json", "comparison_summary.json"):
             path = model_root / source / extra_name
             if not path.exists():
@@ -175,6 +211,9 @@ def validate_release_assets(
                     }
                 )
                 continue
+
+            checkpoint_exists = resolved_checkpoint.exists()
+            checkpoint_in_release_dir = _path_in_release_dir(resolved_checkpoint, model_root, source, model)
             release_checks.append(
                 {
                     "source": source,
@@ -186,8 +225,9 @@ def validate_release_assets(
                     "resolved_summary_path": _resolve_reference(release_path, payload.get("summary_path")),
                     "checkpoint_path": payload.get("checkpoint_path"),
                     "resolved_checkpoint_path": str(resolved_checkpoint),
-                    "checkpoint_exists": resolved_checkpoint.exists(),
-                    "ok": resolved_checkpoint.exists(),
+                    "checkpoint_exists": checkpoint_exists,
+                    "checkpoint_in_release_dir": checkpoint_in_release_dir,
+                    "ok": checkpoint_exists and checkpoint_in_release_dir,
                 }
             )
 

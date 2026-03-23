@@ -88229,7 +88229,7 @@
   },
   "best_checkpoint": {
     "seed": 21,
-    "path": "data/models/nasa/bilstm/transfer/multisource_to_nasa/fine_tune/seed-21/bilstm_best.pt"
+    "path": "data/models/nasa/bilstm/release/checkpoints/bilstm_release.pt"
   },
   "artifact_paths": {
     "summary": "data/models/nasa/bilstm/transfer/multisource_to_nasa/bilstm_transfer_summary.json",

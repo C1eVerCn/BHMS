@@ -24185,7 +24185,7 @@
   },
   "best_checkpoint": {
     "seed": 42,
-    "path": "data/models/hust/hybrid/hybrid_best.pt"
+    "path": "data/models/hust/hybrid/release/checkpoints/hybrid_release.pt"
   },
   "artifact_paths": {
     "summary": "data/models/hust/hybrid/hybrid_multi_seed_summary.json",

@@ -153,13 +153,14 @@ python scripts/promote_lifecycle_release.py --source calce --model hybrid
 python scripts/promote_lifecycle_release.py --source nasa --model hybrid --summary data/models/nasa/hybrid/transfer/multisource_to_nasa/hybrid_transfer_summary.json
 ```
 
-推理服务会优先读取 `data/models/<source>/<model>/release/final_release.json`；如果 release manifest 不存在，才会回退到 transfer / multi-seed / 单次实验 checkpoint。
+推理服务会优先读取 `data/models/<source>/<model>/release/final_release.json`；release manifest 会固定指向 `release/checkpoints/` 下的正式权重。如果 release manifest 不存在，才会回退到 transfer / multi-seed / 单次实验 checkpoint。
 
 ### 封版收口与验收
 
 ```bash
 python scripts/normalize_repo_metadata_paths.py
 python scripts/validate_release_assets.py
+python scripts/archive_experiment_artifacts.py --archive-label 2026-03-23 --dry-run
 ```
 
 建议把下面三项作为固定封版验收矩阵：
@@ -174,15 +175,17 @@ python scripts/validate_release_assets.py
 - 多 seed 汇总：`data/models/<source>/<model>/<model>_multi_seed_summary.json`
 - transfer 汇总：`data/models/<source>/<model>/transfer/multisource_to_<source>/<model>_transfer_summary.json`
 - final release manifest：`data/models/<source>/<model>/release/final_release.json`
+- formal release checkpoint：`data/models/<source>/<model>/release/checkpoints/<model>_release.pt`
 - 消融汇总：`data/models/<source>/ablation_summary.json`
 - 来源级图表：`data/models/<source>/plots/`
 - 案例目录：`data/exports/cases/<battery_id>/<timestamp>/`
+- 中间实验归档：`data/archive/experiments/<date>/`
 
 ## 已知限制
 
 - 多个来源上的 `R²` 仍偏弱，论文级实验结论需要继续强化
 - transfer 配置、脚本与 final release manifest 已经落地，但论文级 benchmark 结论仍需要持续强化与人工审核
-- 当前工作区仍包含大量实验资产与文档改动；正式提交前仍需要按“正式封版资产 / 中间归档材料”拆分整理
+- 中间训练材料默认转入 `data/archive/experiments/<date>/`，不再作为正式封版资产留在主工作区
 - 当前目标不是工业级认证、监控、队列或集群部署
 
 ## 文档索引
