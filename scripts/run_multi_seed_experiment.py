@@ -45,10 +45,16 @@ def reusable_root_summary(
     task: str,
     *,
     model_dir: str | Path = "data/models",
+    requested_config_path: str | Path | None = None,
 ) -> dict[str, object] | None:
     summary_path = resolve_path(Path(model_dir) / source / model_type / f"{model_type}_experiment_summary.json")
     summary = load_json(summary_path)
     if not summary:
+        return None
+    summary_config_path = summary.get("config_path")
+    if requested_config_path and not isinstance(summary_config_path, str):
+        return None
+    if requested_config_path and resolve_path(summary_config_path) != resolve_path(requested_config_path):
         return None
     resolved_seed = summary.get("seed")
     if resolved_seed is None:
@@ -74,9 +80,22 @@ def checkpoint_matches_task(checkpoint_path: str | Path, task: str) -> bool:
     return payload.get("task_kind") == "lifecycle"
 
 
-def existing_multi_seed_summary(summary_path: Path, task: str) -> dict[str, object] | None:
+def existing_multi_seed_summary(
+    summary_path: Path,
+    task: str,
+    *,
+    requested_config_path: str | Path | None = None,
+    requested_seeds: list[int] | None = None,
+) -> dict[str, object] | None:
     payload = load_json(summary_path)
     if not payload:
+        return None
+    summary_config_path = payload.get("config_path")
+    if requested_config_path and not isinstance(summary_config_path, str):
+        return None
+    if requested_config_path and resolve_path(summary_config_path) != resolve_path(requested_config_path):
+        return None
+    if requested_seeds is not None and list(payload.get("seeds") or []) != list(requested_seeds):
         return None
     if task != "lifecycle":
         return payload
@@ -107,16 +126,31 @@ def main() -> None:
     requested_model = args.model.lower()
     artifact_model = artifact_model_type(requested_model)
     config_path = args.config or str(default_config_for(source, artifact_model))
+    seeds = parse_seeds(args.seeds)
     summary_path = resolve_path(f"data/models/{source}/{artifact_model}/{artifact_model}_multi_seed_summary.json")
-    cached_summary = existing_multi_seed_summary(summary_path, args.task)
+    cached_summary = None
+    if not args.force:
+        cached_summary = existing_multi_seed_summary(
+            summary_path,
+            args.task,
+            requested_config_path=config_path,
+            requested_seeds=seeds,
+        )
     if cached_summary is not None and not args.force:
         print(json.dumps(cached_summary, ensure_ascii=False, indent=2))
         return
 
-    seeds = parse_seeds(args.seeds)
     per_seed = []
     for seed in seeds:
-        cached = reusable_root_summary(source, artifact_model, seed, args.task)
+        cached = None
+        if not args.force:
+            cached = reusable_root_summary(
+                source,
+                artifact_model,
+                seed,
+                args.task,
+                requested_config_path=config_path,
+            )
         if cached is not None:
             per_seed.append(cached)
             continue

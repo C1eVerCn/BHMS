@@ -2,12 +2,12 @@
   "source": "matr",
   "model_type": "hybrid",
   "task_kind": "lifecycle",
-  "release_label": "within-source-final-2026-03-22",
+  "release_label": "matr-lifecycle-hybrid-multiseed-20260409",
   "checkpoint_path": "data/models/matr/hybrid/release/checkpoints/hybrid_release.pt",
   "summary_path": "data/models/matr/hybrid/hybrid_multi_seed_summary.json",
   "suite_kind": "multi_seed",
   "stage_kind": null,
   "transfer_key": null,
   "source_scope": null,
-  "generated_at": "2026-03-23T03:33:43.713234"
+  "generated_at": "2026-04-09T02:39:43.769487"
 }

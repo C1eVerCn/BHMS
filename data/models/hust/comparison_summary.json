@@ -1,98 +1,200 @@
 {
   "source": "hust",
   "task_kind": "lifecycle",
-  "models": {
-    "bilstm": {
-      "best_val_loss": 1084.2497100830078,
-      "test_metrics": {
-        "rmse": 0.021182,
-        "mae": 0.018042,
-        "mape": 2.136232,
-        "r2": 0.900922,
-        "trajectory_rmse": 0.021182,
-        "trajectory_mae": 0.018042,
-        "trajectory_r2": 0.900922,
-        "rul_mae": 1068.775909,
-        "rul_rmse": 1090.498983,
-        "eol_mae": 1068.612996,
-        "eol_rmse": 1090.339284,
-        "knee_mae": 894.197098,
-        "loss": 1184.807943,
-        "traj_loss": 0.000225,
-        "rul_loss": 1068.275904,
-        "eol_loss": 1068.113007,
-        "knee_loss": 893.697728,
-        "mono_loss": 0.0,
-        "smooth_loss": 0.0,
-        "domain_loss": 0.001049,
-        "trajectory_mape": 2.136232,
-        "lr": 0.0003
+  "summary_version": "paper_truth_v1",
+  "required_units": [
+    "within_source"
+  ],
+  "benchmark_units": [
+    {
+      "key": "within_source",
+      "label": "Within-source multi-seed",
+      "suite_kind": "multi_seed",
+      "required_for_paper": true,
+      "available": true,
+      "winner_model": "hybrid",
+      "paper_gate_passed": true,
+      "paper_gate": {
+        "hybrid_beats_bilstm": true,
+        "checks": {
+          "rmse": true,
+          "r2": true
+        },
+        "metric_snapshot": {
+          "hybrid_rmse": 0.010682,
+          "bilstm_rmse": 0.014497,
+          "hybrid_r2": 0.97475,
+          "bilstm_r2": 0.953587
+        }
       },
-      "single_run_test_metrics": {
-        "loss": 1182.742431640625,
-        "traj_loss": 0.00022346823607222177,
-        "rul_loss": 1066.8394317626953,
-        "eol_loss": 1068.9071502685547,
-        "knee_loss": 887.0382537841797,
-        "mono_loss": 0.0,
-        "smooth_loss": 3.41484938104486e-08,
-        "domain_loss": 0.0001301432348554954,
-        "trajectory_rmse": 0.02111879037693143,
-        "trajectory_mae": 0.018073852639645338,
-        "trajectory_mape": 2.136577546596527,
-        "trajectory_r2": 0.9015114158391953,
-        "rul_mae": 1067.3394470214844,
-        "rul_rmse": 1089.0913696289062,
-        "eol_mae": 1069.4071350097656,
-        "eol_rmse": 1091.1172485351562,
-        "knee_mae": 887.5366821289062,
-        "rmse": 0.02111879037693143,
-        "mae": 0.018073852639645338,
-        "mape": 2.136577546596527,
-        "r2": 0.9015114158391953,
-        "lr": 0.0003
+      "models": {
+        "bilstm": {
+          "model_type": "bilstm",
+          "suite_kind": "multi_seed",
+          "summary_path": "data/models/hust/bilstm/bilstm_multi_seed_summary.json",
+          "available": true,
+          "metrics": {
+            "rmse": 0.014497,
+            "mae": 0.011745,
+            "mape": 1.393354,
+            "r2": 0.953587,
+            "trajectory_rmse": 0.014497,
+            "trajectory_mae": 0.011745,
+            "trajectory_r2": 0.953587,
+            "rul_mae": 1071.537165,
+            "rul_rmse": 1093.204956,
+            "eol_mae": 1072.526067,
+            "eol_rmse": 1094.1745,
+            "knee_mae": 895.382863,
+            "loss": 1188.049866,
+            "traj_loss": 0.000105,
+            "rul_loss": 1071.037165,
+            "eol_loss": 1072.026062,
+            "knee_loss": 894.882863,
+            "mono_loss": 0.000373,
+            "smooth_loss": 0.000628,
+            "domain_loss": 0.000558,
+            "trajectory_mape": 1.393354,
+            "lr": 0.0003
+          },
+          "std": {
+            "rmse": 0.000211,
+            "mae": 5.3e-05,
+            "mape": 0.011364,
+            "r2": 0.00134,
+            "trajectory_rmse": 0.000211,
+            "trajectory_mae": 5.3e-05,
+            "trajectory_r2": 0.00134,
+            "rul_mae": 2.299961,
+            "rul_rmse": 2.254006,
+            "eol_mae": 5.048542,
+            "eol_rmse": 4.947611,
+            "knee_mae": 1.264542,
+            "loss": 3.425849,
+            "traj_loss": 3e-06,
+            "rul_loss": 2.299943,
+            "eol_loss": 5.048525,
+            "knee_loss": 1.264542,
+            "mono_loss": 1.8e-05,
+            "smooth_loss": 2.8e-05,
+            "domain_loss": 0.000229,
+            "trajectory_mape": 0.011364,
+            "lr": 0.0
+          },
+          "best_checkpoint": {
+            "seed": 7,
+            "path": "data/models/hust/bilstm/release/checkpoints/bilstm_release.pt"
+          },
+          "generated_at": "2026-04-08T09:50:02.063700",
+          "summary_version": null,
+          "task_kind": "lifecycle",
+          "seeds": [
+            7,
+            21,
+            42
+          ],
+          "release_path": "data/models/hust/bilstm/release/final_release.json"
+        },
+        "hybrid": {
+          "model_type": "hybrid",
+          "suite_kind": "multi_seed",
+          "summary_path": "data/models/hust/hybrid/hybrid_multi_seed_summary.json",
+          "available": true,
+          "metrics": {
+            "rmse": 0.010682,
+            "mae": 0.008621,
+            "mape": 1.010008,
+            "r2": 0.97475,
+            "trajectory_rmse": 0.010682,
+            "trajectory_mae": 0.008621,
+            "trajectory_r2": 0.97475,
+            "rul_mae": 1089.582357,
+            "rul_rmse": 1110.895345,
+            "eol_mae": 1090.250448,
+            "eol_rmse": 1111.550598,
+            "knee_mae": 911.658895,
+            "loss": 1208.232971,
+            "traj_loss": 5.7e-05,
+            "rul_loss": 1089.082377,
+            "eol_loss": 1089.750437,
+            "knee_loss": 911.15891,
+            "mono_loss": 0.000314,
+            "smooth_loss": 0.001125,
+            "domain_loss": 0.017824,
+            "trajectory_mape": 1.010008,
+            "lr": 0.0003
+          },
+          "std": {
+            "rmse": 0.000329,
+            "mae": 0.000372,
+            "mape": 0.037519,
+            "r2": 0.001563,
+            "trajectory_rmse": 0.000329,
+            "trajectory_mae": 0.000372,
+            "trajectory_r2": 0.001563,
+            "rul_mae": 0.85426,
+            "rul_rmse": 0.837907,
+            "eol_mae": 1.299897,
+            "eol_rmse": 1.274872,
+            "knee_mae": 1.196791,
+            "loss": 0.96708,
+            "traj_loss": 4e-06,
+            "rul_loss": 0.85427,
+            "eol_loss": 1.299882,
+            "knee_loss": 1.196811,
+            "mono_loss": 1.1e-05,
+            "smooth_loss": 7e-05,
+            "domain_loss": 0.004483,
+            "trajectory_mape": 0.037519,
+            "lr": 0.0
+          },
+          "best_checkpoint": {
+            "seed": 21,
+            "path": "data/models/hust/hybrid/release/checkpoints/hybrid_release.pt"
+          },
+          "generated_at": "2026-04-08T09:55:04.615296",
+          "summary_version": null,
+          "task_kind": "lifecycle",
+          "seeds": [
+            7,
+            21,
+            42
+          ],
+          "release_path": "data/models/hust/hybrid/release/final_release.json"
+        }
       },
-      "best_checkpoint": "data/models/hust/bilstm/runs/seed-7/bilstm_best.pt",
-      "final_checkpoint": "data/models/hust/bilstm/bilstm_final.pt",
-      "requested_model_type": "bilstm",
-      "multi_seed_available": true
-    },
-    "hybrid": {
-      "best_val_loss": 1109.8319091796875,
-      "test_metrics": {
-        "rmse": 0.021067,
-        "mae": 0.018228,
-        "mape": 2.146616,
-        "r2": 0.901978
-      },
-      "single_run_test_metrics": {
-        "loss": 1208.3247985839844,
-        "traj_loss": 0.0002217409673903603,
-        "rul_loss": 1090.831787109375,
-        "eol_loss": 1086.4922180175781,
-        "knee_loss": 913.2375793457031,
-        "mono_loss": 0.0,
-        "smooth_loss": 6.565323307228255e-08,
-        "domain_loss": 0.024578228127211332,
-        "trajectory_rmse": 0.02103586681187153,
-        "trajectory_mae": 0.018246397841721773,
-        "trajectory_mape": 2.1476953625679016,
-        "trajectory_r2": 0.9022674560546875,
-        "rul_mae": 1091.3317565917969,
-        "rul_rmse": 1112.6109619140625,
-        "eol_mae": 1086.9922180175781,
-        "eol_rmse": 1108.3555297851562,
-        "knee_mae": 913.7375793457031,
-        "rmse": 0.02103586681187153,
-        "mae": 0.018246397841721773,
-        "mape": 2.1476953625679016,
-        "r2": 0.9022674560546875,
-        "lr": 0.0003
-      },
-      "best_checkpoint": "data/models/hust/hybrid/hybrid_best.pt",
-      "final_checkpoint": "data/models/hust/hybrid/hybrid_final.pt",
-      "requested_model_type": "hybrid",
-      "multi_seed_available": true
+      "notes": [
+        "Hybrid 在该 benchmark 单元同时满足更低 RMSE 与更高 R2。"
+      ]
     }
-  }
+  ],
+  "best_models": {
+    "within_source": "hybrid"
+  },
+  "best_model": "hybrid",
+  "paper_gate": {
+    "required_units": [
+      "within_source"
+    ],
+    "available_units": [
+      "within_source",
+      "ablation"
+    ],
+    "passing_units": [
+      "within_source"
+    ],
+    "failing_units": [],
+    "passed": true
+  },
+  "ablation_gate": {
+    "available": true,
+    "checked_variants": [
+      "no_xlstm",
+      "no_transformer"
+    ],
+    "blocking_variants": [],
+    "passed": true
+  },
+  "warnings": [],
+  "generated_at": "2026-04-09T05:54:41.281921"
 }

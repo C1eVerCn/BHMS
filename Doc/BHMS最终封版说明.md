@@ -2,7 +2,7 @@
 
 ## 一句话结论
 
-BHMS 当前已经完成 `lifecycle-first` 工程封版资产收口：`CALCE / NASA` 的 transfer benchmark、`HUST / MATR` 的 within-source 补齐结果，以及 `CALCE / NASA / HUST / MATR` 双模型并存的 lifecycle final release manifest 均已落盘，可作为毕业设计提交、答辩展示和后续复核的统一口径。
+BHMS 当前已经完成 `lifecycle-first` 的系统封版与论文证据面重建：核心 benchmark、transfer、ablation、comparison、release manifest 与论文证据包都已可复核；但截至 `2026-04-03`，论文门槛仍未通过，因此系统可以封版，论文主结论还不能写成“Hybrid 全面优于 BiLSTM”。
 
 ## 本轮新增完成项
 
@@ -26,6 +26,30 @@ BHMS 当前已经完成 `lifecycle-first` 工程封版资产收口：`CALCE / NA
   - 机理解释仍通过 `/api/v2/explain/mechanism`
   - 模型选择继续通过 `model_name=hybrid|bilstm`
   - 每个 `source/model` 都有独立 `final_release.json`，没有引入新的全局默认模型配置
+
+## 当前论文门槛状态
+
+- 真值来源固定为 `*_multi_seed_summary.json`、`*_transfer_summary.json`、`comparison_summary.json`、`ablation_summary.json` 与 `Doc/BHMS论文证据包.md/.json`
+- 当前 7 个核心单元里，已通过 5 个，未通过 2 个：
+  - `CALCE / within-source`
+    - Hybrid `RMSE=0.021945`、`R²=0.513922`
+    - BiLSTM `RMSE=0.017631`、`R²=0.695668`
+    - 当前 winner：`bilstm`
+  - `Kaggle / within-source`
+    - Hybrid `RMSE=0.027337`、`R²=0.322002`
+    - BiLSTM `RMSE=0.024020`、`R²=0.512857`
+    - 当前 winner：`bilstm`
+- transfer 主线状态：
+  - `CALCE / transfer`：Hybrid 通过，可作为正向证据
+  - `NASA / transfer`：Hybrid 通过，但绝对指标仍弱，更适合作为“链路打通 + 弱泛化案例”
+- Hybrid 消融门槛当前未通过的来源：
+  - `NASA`
+  - `CALCE`
+  - `MATR`
+- 因此，当前更准确的口径是：
+  - 系统与实验资产已经封版
+  - 论文证据包已经统一
+  - “Hybrid 全面优于 BiLSTM”仍未达成，下一阶段必须先重跑并优化 `CALCE / Kaggle within-source` 与 `NASA / CALCE / MATR` 相关消融
 
 ## 关键 benchmark 结果
 
@@ -98,6 +122,7 @@ BHMS 当前已经完成 `lifecycle-first` 工程封版资产收口：`CALCE / NA
 ## 已知限制与风险
 
 - 本轮已经完成 lifecycle-first 工程封版资产收口，但这不等同于“所有来源效果都已达到论文级最优”。
+- 当前论文门槛尚未通过；在 `python scripts/validate_release_assets.py --require-paper-gate` 通过前，不应在论文主结论中写“Hybrid 在核心 benchmark 上全面优于 BiLSTM”。
 - `NASA` transfer 已经真实跑通，但指标仍弱；因此当前更适合将其作为 transfer 链路证明和弱泛化案例，而不是强结论主证据。
 - 正式 release checkpoint 已收口到 `data/models/<source>/<model>/release/checkpoints/`；中间训练材料应统一归档到 `data/archive/experiments/<date>/`，不再混留在主工作区。
 - 当前系统定位仍是毕业设计/研究原型的工程封版，不应写成“工业级部署完成”，也不应写成“工业级可靠性验证已完成”。
@@ -106,4 +131,5 @@ BHMS 当前已经完成 `lifecycle-first` 工程封版资产收口：`CALCE / NA
 
 - 提交准备阶段：优先围绕 `README.md`、`Doc/BHMS封版检查清单.md`、`Doc/BHMS最终封版说明.md` 与正式 summary / release manifest 组织提交说明，形成一套可复核的封版提交包。
 - 归档阶段：执行 `python scripts/archive_experiment_artifacts.py --archive-label <date>`，将 `runs/`、per-seed checkpoint、`training_summary.json`、`test_details.json` 等中间训练材料统一转入 `data/archive/experiments/<date>/`。
-- 答辩/汇报阶段：主口径建议以 `CALCE` transfer 为主展示、`NASA` transfer 为限制说明、`HUST / MATR` 为扩展验证支撑，避免把所有来源写成同等强结论。
+- 重跑阶段：优先重做 `CALCE / MATR within-source` 的 Hybrid 与 BiLSTM 公平对比，再重新执行对应 `ablation` 与 `python scripts/rebuild_benchmark_truth.py`。
+- 答辩/汇报阶段：主口径建议以 `CALCE` transfer 为主展示、`NASA` transfer 为限制说明、`HUST / MATR` 为当前正向 within-source 支撑，`CALCE / Kaggle within-source` 作为“仍在优化”的局限性说明。

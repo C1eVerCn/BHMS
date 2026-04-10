@@ -5,22 +5,22 @@
       "title": "MATR hybrid error distribution",
       "description": "Prediction error histogram for every configured seed.",
       "path": "data/models/matr/hybrid/plots/error_distribution.png",
-      "generated_at": "2026-03-21T14:20:43.768270"
+      "generated_at": "2026-04-08T10:01:53.691936"
     },
     {
       "key": "metrics_overview",
       "title": "MATR hybrid multi-seed metrics",
       "description": "Mean and std across the configured random seeds.",
       "path": "data/models/matr/hybrid/plots/metrics_overview.png",
-      "generated_at": "2026-03-21T14:20:43.698695"
+      "generated_at": "2026-04-08T10:01:53.618202"
     },
     {
       "key": "training_curves",
       "title": "MATR hybrid training curves",
       "description": "Train/validation loss curves for the configured seed runs.",
       "path": "data/models/matr/hybrid/plots/training_curves.png",
-      "generated_at": "2026-03-21T14:20:43.827400"
+      "generated_at": "2026-04-08T10:01:53.761531"
     }
   ],
-  "generated_at": "2026-03-21T14:20:43.828086"
+  "generated_at": "2026-04-08T10:01:53.762889"
 }

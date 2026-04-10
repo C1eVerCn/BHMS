@@ -1,5 +1,8 @@
 {
   "csv_path": "data/processed/calce/calce_cycle_summary.csv",
+  "csv_paths": [
+    "data/processed/calce/calce_cycle_summary.csv"
+  ],
   "sources": [
     "calce"
   ],
@@ -75,10 +78,12 @@
       "calce": 1
     },
     "chemistry_to_id": {
-      "unknown": 0
+      "unknown": 0,
+      "Li-ion": 1
     },
     "protocol_to_id": {
-      "unknown": 0
+      "unknown": 0,
+      "calce_cycle_aging": 1
     }
   },
   "num_batteries": 6,

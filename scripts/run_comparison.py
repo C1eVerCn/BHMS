@@ -14,6 +14,7 @@ if str(PROJECT_ROOT) not in sys.path:
 import argparse
 
 from ml.data.source_registry import get_dataset_card, list_supported_sources
+from ml.training.benchmark_truth import sync_ablation_summary, write_source_comparison_summary
 from ml.training.experiment_runner import default_config_for, generate_source_plot_bundle, run_training_experiment
 from ml.training.lifecycle_experiment_runner import run_lifecycle_experiment
 
@@ -65,27 +66,22 @@ def main() -> None:
         raise SystemExit(f"{args.source} is marked as {card.ingestion_mode} and is excluded from lifecycle comparison benchmarks.")
 
     results = {model_type: load_or_train(args.source, model_type, force=args.force, task=args.task) for model_type in ("bilstm", "hybrid")}
-    comparison = {
-        "source": args.source,
-        "task_kind": args.task,
-        "models": {
-            model: {
-                "best_val_loss": (experiment_summary or {}).get("best_val_loss"),
-                "test_metrics": preferred_metrics(experiment_summary, multi_seed_summary),
-                "single_run_test_metrics": (experiment_summary or {}).get("test_metrics", {}),
-                "best_checkpoint": preferred_checkpoint(experiment_summary, multi_seed_summary),
-                "final_checkpoint": (experiment_summary or {}).get("final_checkpoint"),
-                "requested_model_type": (experiment_summary or {}).get("requested_model_type", model),
-                "multi_seed_available": bool(multi_seed_summary),
-            }
-            for model, (experiment_summary, multi_seed_summary) in results.items()
-        },
+    _ = {
+        model: {
+            "best_val_loss": (experiment_summary or {}).get("best_val_loss"),
+            "test_metrics": preferred_metrics(experiment_summary, multi_seed_summary),
+            "single_run_test_metrics": (experiment_summary or {}).get("test_metrics", {}),
+            "best_checkpoint": preferred_checkpoint(experiment_summary, multi_seed_summary),
+            "final_checkpoint": (experiment_summary or {}).get("final_checkpoint"),
+            "requested_model_type": (experiment_summary or {}).get("requested_model_type", model),
+            "multi_seed_available": bool(multi_seed_summary),
+        }
+        for model, (experiment_summary, multi_seed_summary) in results.items()
     }
-    output_path = Path("data/models") / args.source / "comparison_summary.json"
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    output_path.write_text(json.dumps(comparison, ensure_ascii=False, indent=2), encoding="utf-8")
+    sync_ablation_summary(args.source, write=True)
+    output_path = write_source_comparison_summary(args.source)
     generate_source_plot_bundle(args.source)
-    print(json.dumps(comparison, ensure_ascii=False, indent=2))
+    print(output_path.read_text(encoding="utf-8"))
 
 
 if __name__ == "__main__":

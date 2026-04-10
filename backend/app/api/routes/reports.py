@@ -1,23 +1,10 @@
 from fastapi import APIRouter
-from fastapi.responses import PlainTextResponse
 
 from backend.app.core.responses import success_response
 from backend.app.services.insight_service import InsightService
-from backend.app.services import PredictionService
 
 router = APIRouter()
-service = PredictionService()
 insight_service = InsightService()
-
-
-@router.get("/reports/prediction/{prediction_id}")
-def get_prediction_report(prediction_id: int):
-    return PlainTextResponse(service.get_prediction_report(prediction_id), media_type="text/markdown; charset=utf-8")
-
-
-@router.get("/reports/diagnosis/{diagnosis_id}")
-def get_diagnosis_report(diagnosis_id: int):
-    return PlainTextResponse(service.get_diagnosis_report(diagnosis_id), media_type="text/markdown; charset=utf-8")
 
 
 @router.get("/reports/case-bundle/{battery_id}")

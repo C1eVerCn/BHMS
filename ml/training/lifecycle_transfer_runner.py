@@ -11,7 +11,6 @@ from ml.training.experiment_artifacts import (
     plot_error_distribution,
     plot_metric_summary,
     plot_training_curves,
-    select_best_run,
     serialize_path,
     write_json,
     write_plot_manifest,
@@ -25,14 +24,29 @@ def _transfer_run_record(summary: dict[str, Any]) -> dict[str, Any]:
         "seed": summary.get("seed"),
         "metrics": summary.get("test_metrics", {}),
         "best_checkpoint": summary.get("best_checkpoint"),
-        "final_checkpoint": summary.get("final_checkpoint"),
-        "artifact_dir": summary.get("artifact_dir"),
-        "summary_path": summary.get("summary_path"),
-        "history": summary.get("history", {}),
-        "history_summary": summary.get("history_summary", {}),
-        "test_details": summary.get("test_details", {}),
-        "test_details_path": summary.get("test_details_path"),
         "stage_kind": summary.get("stage_kind"),
+    }
+
+
+def _best_checkpoint_payload(per_seed_summaries: list[dict[str, Any]], metric_key: str = "trajectory_rmse") -> dict[str, Any]:
+    ranked = [
+        item
+        for item in per_seed_summaries
+        if isinstance((item.get("test_metrics") or {}).get(metric_key), (int, float))
+    ]
+    if not ranked:
+        ranked = [
+            item
+            for item in per_seed_summaries
+            if isinstance((item.get("test_metrics") or {}).get("rmse"), (int, float))
+        ]
+    if not ranked:
+        return {"seed": None, "path": None}
+    key = metric_key if isinstance((ranked[0].get("test_metrics") or {}).get(metric_key), (int, float)) else "rmse"
+    best = min(ranked, key=lambda item: float(item["test_metrics"][key]))
+    return {
+        "seed": best.get("seed"),
+        "path": best.get("best_checkpoint") or best.get("final_checkpoint"),
     }
 
 
@@ -53,7 +67,7 @@ def create_transfer_summary(
     pretrain_records = [_transfer_run_record(item) for item in pretrain_runs]
     fine_tune_records = [_transfer_run_record(item) for item in fine_tune_runs]
     aggregate = aggregate_metrics([item.get("metrics", {}) for item in fine_tune_records])
-    best_run = select_best_run(fine_tune_records)
+    best_checkpoint = _best_checkpoint_payload(fine_tune_runs)
     summary = {
         "target_source": target_source,
         "model_type": model_type,
@@ -69,10 +83,7 @@ def create_transfer_summary(
         "pretrain_runs": pretrain_records,
         "fine_tune_runs": fine_tune_records,
         "aggregate_metrics": aggregate,
-        "best_checkpoint": {
-            "seed": best_run.get("seed") if best_run else None,
-            "path": best_run.get("best_checkpoint") if best_run else None,
-        },
+        "best_checkpoint": best_checkpoint,
         "artifact_paths": {
             "summary": serialize_path(artifact_root / f"{model_type}_transfer_summary.json"),
             "plots_dir": serialize_path(plots_dir),

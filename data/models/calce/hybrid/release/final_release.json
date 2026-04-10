@@ -2,14 +2,12 @@
   "source": "calce",
   "model_type": "hybrid",
   "task_kind": "lifecycle",
-  "release_label": "transfer-final-2026-03-22",
+  "release_label": "calce-lifecycle-hybrid-multiseed-20260409",
   "checkpoint_path": "data/models/calce/hybrid/release/checkpoints/hybrid_release.pt",
-  "summary_path": "data/models/calce/hybrid/transfer/multisource_to_calce/hybrid_transfer_summary.json",
-  "suite_kind": "transfer",
+  "summary_path": "data/models/calce/hybrid/hybrid_multi_seed_summary.json",
+  "suite_kind": "multi_seed",
   "stage_kind": null,
-  "transfer_key": "multisource_to_calce",
-  "source_scope": [
-    "calce"
-  ],
-  "generated_at": "2026-03-23T03:34:44.384556"
+  "transfer_key": null,
+  "source_scope": null,
+  "generated_at": "2026-04-09T02:39:43.545108"
 }

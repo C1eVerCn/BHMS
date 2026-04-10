@@ -46,9 +46,9 @@ const AppSider: React.FC<AppSiderProps> = ({ mobileOpen = false, onCloseMobile }
   const navContent = (
     <div className="app-sider__inner">
       <div className="sider-overview">
-        <Text className="sider-overview__eyebrow">Workspace</Text>
+        <Text className="sider-overview__eyebrow">导航</Text>
         <Title level={5}>BHMS</Title>
-        <Text className="sider-overview__description">生命周期预测、机理解释与 benchmark 统一查看。</Text>
+        <Text className="sider-overview__description">预测、诊断和实验结果统一查看。</Text>
         <div className="sider-overview__stats">
           <div>
             <span>电池</span>
@@ -63,8 +63,10 @@ const AppSider: React.FC<AppSiderProps> = ({ mobileOpen = false, onCloseMobile }
             <strong>{criticalCount}</strong>
           </div>
           <div>
-            <span>焦点</span>
-            <strong>{compactBatteryId(selectedBatteryId)}</strong>
+            <span>当前</span>
+            <strong className="sider-overview__focus" title={selectedBatteryId ?? '未选择'}>
+              {compactBatteryId(selectedBatteryId, 14)}
+            </strong>
           </div>
         </div>
       </div>
@@ -80,10 +82,6 @@ const AppSider: React.FC<AppSiderProps> = ({ mobileOpen = false, onCloseMobile }
           onCloseMobile?.()
         }}
       />
-
-      <div className="sider-footnote">
-        <Text>先看总览，再看生命周期预测与机理解释。</Text>
-      </div>
     </div>
   )
 

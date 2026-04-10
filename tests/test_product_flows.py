@@ -96,6 +96,8 @@ def test_prediction_and_diagnosis_return_explainable_payloads(tmp_path: Path):
 
     prediction = prediction_service.predict_lifecycle(battery_id=battery_id, model_name='hybrid', seq_len=20)
     assert prediction['projection']['forecast_points']
+    assert prediction['projection']['tail_points']
+    assert prediction['projection']['predicted_zero_cycle'] >= prediction['projection']['predicted_eol_cycle']
     assert prediction['trajectory']
     assert prediction['future_risks']
     assert prediction['explanation']['feature_contributions']
@@ -111,7 +113,40 @@ def test_prediction_and_diagnosis_return_explainable_payloads(tmp_path: Path):
     assert diagnosis['decision_basis']
     assert diagnosis['candidate_faults'][0]['rule_id']
     assert 'lifecycle_evidence' in diagnosis
+    assert '当前样本电池信息' not in diagnosis['description']
     assert '电池故障诊断报告' in diagnosis['report_markdown']
+
+
+def test_battery_options_prioritize_display_samples_and_demo_preset_import(tmp_path: Path):
+    settings = _make_settings(tmp_path)
+    database = DatabaseManager(settings.database_path)
+    database.initialize()
+    repo = BHMSRepository(database)
+    battery_service = BatteryService(repository=repo, settings=settings)
+
+    display_frame = _build_cycle_frame('calce', 'CALCE_SHOW', battery_count=2)
+    training_frame = _build_cycle_frame('calce', 'CALCE_TRAIN', battery_count=2)
+    display_csv = tmp_path / 'display.csv'
+    training_csv = tmp_path / 'training.csv'
+    display_frame.to_csv(display_csv, index=False)
+    training_frame.to_csv(training_csv, index=False)
+    battery_service.import_frame(display_frame, source='calce', dataset_path=display_csv, include_in_training=False)
+    battery_service.import_frame(training_frame, source='calce', dataset_path=training_csv, include_in_training=True)
+
+    options = battery_service.list_battery_options()
+    assert options['total'] == 4
+    assert [item['include_in_training'] for item in options['items']] == [False, False, True, True]
+
+    preset_dir = settings.demo_upload_dir / 'calce'
+    preset_dir.mkdir(parents=True, exist_ok=True)
+    preset_name = 'calce_demo_preset'
+    preset_path = preset_dir / f'{preset_name}.csv'
+    display_frame.to_csv(preset_path, index=False)
+
+    summary = battery_service.import_demo_preset(preset_name)
+    assert summary['validation_summary']['ingestion_mode'] == 'demo_preset'
+    assert summary['validation_summary']['preset_name'] == preset_name
+    assert summary['battery_ids']
 
 
 def test_training_overview_aggregates_experiment_assets(tmp_path: Path):
@@ -137,6 +172,8 @@ def test_training_overview_aggregates_experiment_assets(tmp_path: Path):
     assert calce_overview['dataset_batteries'] == 4
     assert detail['dataset_summary']['num_batteries'] == 4
     assert detail['comparison']['source'] == 'calce'
+    assert isinstance(detail['benchmark_units'], list)
+    assert 'paper_gate' in detail and isinstance(detail['paper_gate'], dict)
     assert {'multi_seed_hybrid', 'multi_seed_bilstm', 'ablation_study'} <= set(detail['recommended_commands'])
     assert ablation['source'] == 'calce'
     assert isinstance(ablation['variants'], list) and ablation['variants']

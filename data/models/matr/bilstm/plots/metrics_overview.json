@@ -3,5 +3,5 @@
   "title": "MATR bilstm multi-seed metrics",
   "description": "Mean and std across the configured random seeds.",
   "path": "data/models/matr/bilstm/plots/metrics_overview.png",
-  "generated_at": "2026-03-22T03:50:58.215864"
+  "generated_at": "2026-04-08T09:51:24.627869"
 }

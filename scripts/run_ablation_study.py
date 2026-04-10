@@ -18,7 +18,6 @@ from ml.training.experiment_artifacts import (
     plot_error_distribution,
     plot_metric_summary,
     plot_training_curves,
-    select_best_run,
     write_plot_manifest,
 )
 from ml.training.experiment_constants import ABLATION_VARIANTS, DEFAULT_SEEDS
@@ -56,14 +55,6 @@ def build_variant_summary(
             {
                 "seed": summary.get("seed"),
                 "metrics": summary.get("test_metrics", {}),
-                "best_checkpoint": summary.get("best_checkpoint"),
-                "final_checkpoint": summary.get("final_checkpoint"),
-                "artifact_dir": summary.get("artifact_dir"),
-                "summary_path": summary.get("summary_path"),
-                "history": summary.get("history", {}),
-                "history_summary": summary.get("history_summary", {}),
-                "test_details": summary.get("test_details", {}),
-                "test_details_path": summary.get("test_details_path"),
             }
         )
     summary = {
@@ -78,34 +69,84 @@ def build_variant_summary(
         },
         "per_seed_runs": per_seed_runs,
         "aggregate_metrics": aggregate_metrics([item.get("metrics", {}) for item in per_seed_runs]),
-        "best_checkpoint": select_best_run(per_seed_runs),
-        "artifact_paths": {
-            "variant_dir": str(artifact_root),
-            "plots_dir": str(plots_dir),
-        },
     }
-    summary["plots"] = [
-        plot_metric_summary(
-            summary,
-            plots_dir / "metrics_overview.png",
-            title=f"{source.upper()} {key} metrics",
-            description="Aggregate mean/std metrics for the ablation variant.",
-        ),
-        plot_error_distribution(
-            per_seed_runs,
-            plots_dir / "error_distribution.png",
-            title=f"{source.upper()} {key} error distribution",
-            description="Prediction error histogram for each seed in the ablation variant.",
-        ),
-        plot_training_curves(
-            per_seed_runs,
-            plots_dir / "training_curves.png",
-            title=f"{source.upper()} {key} training curves",
-            description="Train/validation loss for the ablation variant.",
-        ),
-    ]
+    plot_metric_summary(
+        summary,
+        plots_dir / "metrics_overview.png",
+        title=f"{source.upper()} {key} metrics",
+        description="Aggregate mean/std metrics for the ablation variant.",
+    )
+    plot_error_distribution(
+        per_seed_runs,
+        plots_dir / "error_distribution.png",
+        title=f"{source.upper()} {key} error distribution",
+        description="Prediction error histogram for each seed in the ablation variant.",
+    )
+    plot_training_curves(
+        per_seed_runs,
+        plots_dir / "training_curves.png",
+        title=f"{source.upper()} {key} training curves",
+        description="Train/validation loss for the ablation variant.",
+    )
     write_plot_manifest(plots_dir)
     return summary
+
+
+def full_summary_matches_request(
+    summary: dict[str, object] | None,
+    *,
+    config_path: str | Path,
+    seeds: list[int],
+    task: str,
+) -> bool:
+    if not summary:
+        return False
+    if task == "lifecycle" and summary.get("task_kind") != "lifecycle":
+        return False
+    summary_config_path = summary.get("config_path")
+    if not isinstance(summary_config_path, str):
+        return False
+    if resolve_path(summary_config_path) != resolve_path(config_path):
+        return False
+    return list(summary.get("seeds") or []) == list(seeds)
+
+
+def ensure_full_hybrid_summary(
+    source: str,
+    *,
+    task: str,
+    config_path: str | Path,
+    seeds: list[int],
+    refresh_full_hybrid: bool = False,
+) -> tuple[dict[str, object], bool]:
+    full_summary = load_json(resolve_path(f"data/models/{source}/hybrid/hybrid_multi_seed_summary.json"))
+    runner = run_lifecycle_experiment if task == "lifecycle" else run_training_experiment
+    refreshed = refresh_full_hybrid or not full_summary_matches_request(full_summary, config_path=config_path, seeds=seeds, task=task)
+    if not refreshed and full_summary is not None:
+        return full_summary, False
+
+    seed_runs = []
+    for seed in seeds:
+        seed_runs.append(
+            runner(
+                source,
+                "hybrid",
+                config_path=config_path,
+                training_overrides={"seed": seed, "model_version": f"{source}-hybrid-seed-{seed}"},
+                artifact_subdir=f"runs/seed-{seed}",
+                suite_kind="multi_seed",
+                variant_key="hybrid",
+                persist_training_run=True,
+            )
+        )
+    summary = create_multi_seed_summary(
+        source,
+        "hybrid",
+        seeds=seeds,
+        per_seed_summaries=seed_runs,
+        config_path=config_path,
+    )
+    return summary, True
 
 
 def main() -> None:
@@ -115,6 +156,11 @@ def main() -> None:
     parser.add_argument("--config", default=None)
     parser.add_argument("--seeds", default=None, help="Comma-separated seeds, default: 7,21,42")
     parser.add_argument("--force", action="store_true")
+    parser.add_argument(
+        "--refresh-full-hybrid",
+        action="store_true",
+        help="Force-refresh the Hybrid multi-seed truth summary before running ablations.",
+    )
     args = parser.parse_args()
 
     source = args.source.lower()
@@ -128,30 +174,14 @@ def main() -> None:
         return
 
     seeds = parse_seeds(args.seeds)
-    full_summary = load_json(resolve_path(f"data/models/{source}/hybrid/hybrid_multi_seed_summary.json"))
+    full_summary, _ = ensure_full_hybrid_summary(
+        source,
+        task=args.task,
+        config_path=config_path,
+        seeds=seeds,
+        refresh_full_hybrid=args.refresh_full_hybrid,
+    )
     runner = run_lifecycle_experiment if args.task == "lifecycle" else run_training_experiment
-    if not full_summary:
-        seed_runs = []
-        for seed in seeds:
-            seed_runs.append(
-                runner(
-                    source,
-                    "hybrid",
-                    config_path=config_path,
-                    training_overrides={"seed": seed, "model_version": f"{source}-hybrid-seed-{seed}"},
-                    artifact_subdir=f"runs/seed-{seed}",
-                    suite_kind="multi_seed",
-                    variant_key="hybrid",
-                    persist_training_run=True,
-                )
-            )
-        full_summary = create_multi_seed_summary(
-            source,
-            "hybrid",
-            seeds=seeds,
-            per_seed_summaries=seed_runs,
-            config_path=config_path,
-        )
 
     variants: list[dict[str, object]] = []
     variants.append(
@@ -161,11 +191,7 @@ def main() -> None:
             "description": "复用主实验的 lifecycle hybrid 多随机种子结果。",
             "status": "available",
             "seeds": full_summary.get("seeds", seeds),
-            "per_seed_runs": full_summary.get("per_seed_runs", []),
             "aggregate_metrics": full_summary.get("aggregate_metrics", {}),
-            "best_checkpoint": full_summary.get("best_checkpoint"),
-            "artifact_paths": full_summary.get("artifact_paths", {}),
-            "plots": full_summary.get("plots", []),
         }
     )
 

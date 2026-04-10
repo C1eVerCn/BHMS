@@ -32,7 +32,6 @@ from ml.training.experiment_artifacts import (
     plot_split_overview,
     plot_training_curves,
     serialize_path,
-    select_best_run,
     write_json,
     write_plot_manifest,
 )
@@ -80,13 +79,21 @@ def _run_record(summary: dict[str, Any]) -> dict[str, Any]:
         "variant_key": summary.get("variant_key"),
         "metrics": summary.get("test_metrics", {}),
         "best_checkpoint": summary.get("best_checkpoint"),
-        "final_checkpoint": summary.get("final_checkpoint"),
-        "artifact_dir": summary.get("artifact_dir"),
-        "summary_path": summary.get("summary_path"),
-        "history": summary.get("history", {}),
-        "history_summary": summary.get("history_summary", {}),
-        "test_details": summary.get("test_details", {}),
-        "test_details_path": summary.get("test_details_path"),
+    }
+
+
+def _best_checkpoint_payload(per_seed_summaries: list[dict[str, Any]], metric_key: str = "rmse") -> dict[str, Any]:
+    ranked = [
+        item
+        for item in per_seed_summaries
+        if isinstance((item.get("test_metrics") or {}).get(metric_key), (int, float))
+    ]
+    if not ranked:
+        return {"seed": None, "path": None}
+    best = min(ranked, key=lambda item: float(item["test_metrics"][metric_key]))
+    return {
+        "seed": best.get("seed"),
+        "path": best.get("best_checkpoint") or best.get("final_checkpoint"),
     }
 
 
@@ -234,7 +241,7 @@ def create_multi_seed_summary(
     plots_dir = artifact_root / "plots"
     per_seed_runs = [_run_record(summary) for summary in per_seed_summaries]
     aggregate = aggregate_metrics([run.get("metrics", {}) for run in per_seed_runs])
-    best_run = select_best_run(per_seed_runs)
+    best_checkpoint = _best_checkpoint_payload(per_seed_summaries)
     summary = {
         "source": source,
         "model_type": model_type,
@@ -248,10 +255,7 @@ def create_multi_seed_summary(
         "feature_columns": per_seed_summaries[0].get("feature_columns", []) if per_seed_summaries else [],
         "per_seed_runs": per_seed_runs,
         "aggregate_metrics": aggregate,
-        "best_checkpoint": {
-            "seed": best_run.get("seed") if best_run else None,
-            "path": best_run.get("best_checkpoint") if best_run else None,
-        },
+        "best_checkpoint": best_checkpoint,
         "artifact_paths": {
             "summary": serialize_path(artifact_root / f"{model_type}_multi_seed_summary.json"),
             "plots_dir": serialize_path(plots_dir),
@@ -290,18 +294,28 @@ def create_ablation_summary(
     variants: list[dict[str, Any]],
     model_dir: str | Path = "data/models",
 ) -> dict[str, Any]:
+    from ml.training.benchmark_truth import SUMMARY_VERSION, TASK_KIND, build_ablation_guard
+
     artifact_root = resolve_path(model_dir) / source
     plots_dir = artifact_root / "plots"
     full_variant = next((item for item in variants if item.get("key") == "full_hybrid"), None)
     full_rmse = (((full_variant or {}).get("aggregate_metrics") or {}).get("mean") or {}).get("rmse")
+    full_r2 = (((full_variant or {}).get("aggregate_metrics") or {}).get("mean") or {}).get("r2")
     for variant in variants:
-        current_rmse = (((variant.get("aggregate_metrics") or {}).get("mean")) or {}).get("rmse")
-        delta = None
+        metrics = (((variant.get("aggregate_metrics") or {}).get("mean")) or {})
+        current_rmse = metrics.get("rmse")
+        current_r2 = metrics.get("r2")
+        delta_rmse = None
+        delta_r2 = None
         if isinstance(current_rmse, (int, float)) and isinstance(full_rmse, (int, float)):
-            delta = round(float(current_rmse) - float(full_rmse), 6)
-        variant["delta_vs_full"] = {"rmse": delta}
+            delta_rmse = round(float(current_rmse) - float(full_rmse), 6)
+        if isinstance(current_r2, (int, float)) and isinstance(full_r2, (int, float)):
+            delta_r2 = round(float(current_r2) - float(full_r2), 6)
+        variant["delta_vs_full"] = {"rmse": delta_rmse, "r2": delta_r2}
     summary = {
         "source": source,
+        "task_kind": (full_variant or {}).get("task_kind", TASK_KIND),
+        "summary_version": SUMMARY_VERSION,
         "available": True,
         "variants": variants,
         "notes": [
@@ -314,6 +328,7 @@ def create_ablation_summary(
         },
         "generated_at": datetime.utcnow().isoformat(),
     }
+    summary["guardrail"] = build_ablation_guard(summary)
     summary["plots"] = [
         plot_ablation_overview(
             variants,

@@ -3,5 +3,5 @@
   "title": "KAGGLE bilstm training curves",
   "description": "Train/validation loss curves for the configured seed runs.",
   "path": "data/models/kaggle/bilstm/plots/training_curves.png",
-  "generated_at": "2026-03-15T08:29:25.278816"
+  "generated_at": "2026-04-08T09:49:02.558583"
 }

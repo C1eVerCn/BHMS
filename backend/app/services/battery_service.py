@@ -200,6 +200,20 @@ class BatteryService:
         items, total = self.repository.list_batteries(page=page, page_size=page_size)
         return {"items": items, "page": page, "page_size": page_size, "total": total}
 
+    def list_battery_options(self) -> dict[str, Any]:
+        items = self.repository.list_battery_options()
+        return {"items": items, "total": len(items)}
+
+    def import_demo_preset(self, preset_name: str, include_in_training: bool = False) -> dict[str, Any]:
+        candidate = self._find_demo_preset(preset_name)
+        source = candidate.parent.name.lower() if candidate.parent.name.lower() in self.adapters else self._resolve_source(None, candidate)
+        summary = self.import_uploaded_file(candidate, source=source, include_in_training=include_in_training)
+        summary["validation_summary"]["ingestion_mode"] = "demo_preset"
+        summary["validation_summary"]["preset_name"] = candidate.stem
+        summary["validation_summary"]["ready_for_immediate_analysis"] = bool(summary["battery_ids"])
+        summary["detected_source"] = source
+        return summary
+
     def update_training_candidate(self, battery_id: str, include_in_training: bool) -> dict[str, Any]:
         battery = self.get_battery(battery_id)
         card = get_dataset_card(str(battery.get("source", "")))
@@ -396,6 +410,16 @@ class BatteryService:
             "pulsebat": self.settings.raw_pulsebat_dir,
         }
         return mapping[source]
+
+    def _find_demo_preset(self, preset_name: str) -> Path:
+        root = self.settings.demo_upload_dir
+        if not root.exists():
+            raise BHMSException("演示样本目录不存在", status_code=404, code="demo_preset_dir_missing")
+        normalized = preset_name.strip().lower()
+        for file_path in sorted(item for item in root.rglob("*") if item.is_file()):
+            if file_path.stem.lower() == normalized:
+                return file_path
+        raise BHMSException(f"未找到演示样本 {preset_name}", status_code=404, code="demo_preset_not_found")
 
     @staticmethod
     def _chemistry_for_source(source: str) -> str:

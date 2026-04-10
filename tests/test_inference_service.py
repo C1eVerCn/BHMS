@@ -13,7 +13,12 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from ml.inference.predictor import LifecycleInferenceService, RULInferenceService  # noqa: E402
+from ml.inference.predictor import (  # noqa: E402
+    LifecycleInferenceService,
+    LifecyclePredictionOutput,
+    RULInferenceService,
+)
+from ml.models.lifecycle import LifecycleHybridConfig, LifecycleHybridPredictor  # noqa: E402
 
 
 def test_inference_service_uses_heuristic_when_no_checkpoint(tmp_path: Path):
@@ -204,3 +209,70 @@ def test_lifecycle_inference_resolves_relative_release_manifest_paths(tmp_path: 
 
     resolved = service._resolve_checkpoint("calce", "hybrid")
     assert resolved == checkpoint
+
+
+def test_lifecycle_inference_loads_legacy_hybrid_checkpoint_structure():
+    config = LifecycleHybridConfig(
+        input_dim=11,
+        d_model=16,
+        xlstm_layers=1,
+        xlstm_heads=1,
+        transformer_layers=1,
+        transformer_heads=1,
+        fusion_dim=16,
+        pooling_hidden_dim=8,
+        future_len=8,
+        decoder_heads=1,
+        dropout=0.0,
+        source_vocab_size=2,
+        chemistry_vocab_size=2,
+        protocol_vocab_size=2,
+    )
+    torch.manual_seed(7)
+    reference_model = LifecycleHybridPredictor(config)
+    legacy_state: dict[str, torch.Tensor] = {}
+    for name, value in reference_model.state_dict().items():
+        if name.startswith("fusion.fused_path."):
+            legacy_name = "fusion." + name[len("fusion.fused_path.") :]
+            legacy_state[legacy_name] = value.clone()
+            continue
+        if name.startswith(("fusion.xlstm_only.", "fusion.transformer_only.", "fusion.selector.", "decoder.trajectory_gate.")):
+            continue
+        legacy_state[name] = value.clone()
+
+    checkpoint = {"model_state_dict": legacy_state}
+
+    torch.manual_seed(123)
+    candidate_model = LifecycleHybridPredictor(config)
+    LifecycleInferenceService._load_lifecycle_model_state(candidate_model, checkpoint, Path("legacy_hybrid.pt"))
+    loaded_state = candidate_model.state_dict()
+
+    assert torch.equal(loaded_state["fusion.fused_path.xlstm_proj.weight"], legacy_state["fusion.xlstm_proj.weight"])
+    assert torch.equal(loaded_state["fusion.fused_path.trans_proj.bias"], legacy_state["fusion.trans_proj.bias"])
+    assert torch.equal(loaded_state["decoder.rul_head.1.weight"], legacy_state["decoder.rul_head.1.weight"])
+
+
+def test_lifecycle_inference_marks_model_fallback(monkeypatch, tmp_path: Path):
+    service = LifecycleInferenceService(tmp_path)
+
+    def fake_predict_with_checkpoint(*, sequence, points, source, model_name, feature_cols=None, battery_info=None):
+        if model_name == "hybrid":
+            raise RuntimeError("legacy checkpoint load failed")
+        return LifecyclePredictionOutput(
+            predicted_rul=12.0,
+            predicted_knee_cycle=80.0,
+            predicted_eol_cycle=120.0,
+            confidence=0.76,
+            model_name=model_name,
+            model_version="demo",
+            model_source=source,
+            fallback_used=False,
+            trajectory=[],
+            projection={},
+        )
+
+    monkeypatch.setattr(service, "_predict_with_checkpoint", fake_predict_with_checkpoint)
+    output = service.predict(sequence=np.zeros((4, 11), dtype=float), source="calce", model_name="hybrid")
+
+    assert output.model_name == "bilstm"
+    assert output.fallback_used is True

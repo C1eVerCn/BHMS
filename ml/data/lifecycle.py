@@ -94,6 +94,45 @@ def _resample_1d(values: np.ndarray, target_len: int) -> np.ndarray:
     return np.interp(target_grid, source_grid, values.astype(np.float32)).astype(np.float32)
 
 
+def _centered_moving_average(values: np.ndarray, window: int) -> np.ndarray:
+    if len(values) <= 2 or window <= 1:
+        return values.astype(np.float32, copy=True)
+    effective_window = min(int(window), len(values) if len(values) % 2 == 1 else len(values) - 1)
+    if effective_window < 3:
+        return values.astype(np.float32, copy=True)
+    if effective_window % 2 == 0:
+        effective_window -= 1
+    pad = effective_window // 2
+    kernel = np.ones(effective_window, dtype=np.float32) / float(effective_window)
+    padded = np.pad(values.astype(np.float32), (pad, pad), mode="edge")
+    return np.convolve(padded, kernel, mode="valid").astype(np.float32)
+
+
+def _resample_trajectory_target(values: np.ndarray, target_len: int) -> np.ndarray:
+    values = values.astype(np.float32, copy=True)
+    if len(values) <= target_len:
+        return _resample_1d(values, target_len)
+
+    window = max(3, int(round(len(values) / max(target_len, 1))) + 1)
+    if window % 2 == 0:
+        window += 1
+    trend = _centered_moving_average(values, window)
+    residual = values - trend
+    trend_resampled = _resample_1d(trend, target_len)
+
+    # Keep average residual per bin to preserve real fluctuations in training target
+    representative_residual = np.zeros(target_len, dtype=np.float32)
+    for index, bin_indices in enumerate(np.array_split(np.arange(len(values)), target_len)):
+        representative_residual[index] = float(np.mean(residual[bin_indices]))
+
+    resampled = trend_resampled + representative_residual
+    resampled[0] = values[0]
+    resampled[-1] = values[-1]
+    lower = float(np.min(values))
+    upper = float(np.max(values))
+    return np.clip(resampled, lower, upper).astype(np.float32)
+
+
 def _resample_2d(values: np.ndarray, target_len: int) -> np.ndarray:
     columns = [_resample_1d(values[:, index], target_len) for index in range(values.shape[1])]
     return np.stack(columns, axis=-1).astype(np.float32)
@@ -157,7 +196,7 @@ class LifecycleSequenceDataset(Dataset):
                 observed_features = _resample_2d(observed_features, self.target_config.encoder_len)
                 observed_features = self._normalize_sequence(observed_features)
                 future_capacity = future[self.target_config.target_column].astype(float).to_numpy(copy=True)
-                trajectory_target = _resample_1d(future_capacity, self.target_config.future_len)
+                trajectory_target = _resample_trajectory_target(future_capacity, self.target_config.future_len)
                 last_observed_cycle = float(observed["cycle_number"].iloc[-1])
                 last_capacity_ratio = float(observed["capacity_ratio"].iloc[-1])
                 knee_mask = 1.0 if knee_cycle is not None and float(knee_cycle) > last_observed_cycle else 0.0

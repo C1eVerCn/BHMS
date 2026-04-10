@@ -5,14 +5,14 @@
       "title": "MATR ablation overview",
       "description": "Aggregate RMSE for each hybrid ablation variant.",
       "path": "data/models/matr/plots/ablation_overview.png",
-      "generated_at": "2026-03-22T04:18:57.511888"
+      "generated_at": "2026-04-07T08:56:23.911867"
     },
     {
       "key": "dataset_split",
       "title": "MATR dataset split",
       "description": "Battery counts in the fixed train/validation/test split.",
       "path": "data/models/matr/plots/dataset_split.png",
-      "generated_at": "2026-03-22T04:21:54.573466",
+      "generated_at": "2026-04-09T05:54:41.537143",
       "split_snapshot": {
         "train_batteries": [
           "matr::matr_severson::MATR_batch_20170512_cell_001",
@@ -212,15 +212,15 @@
       "title": "MATR ablation summary",
       "description": "Aggregate RMSE comparison for the configured ablation variants.",
       "path": "data/models/matr/plots/experiment_ablations.png",
-      "generated_at": "2026-03-22T04:21:54.669688"
+      "generated_at": "2026-04-09T05:54:41.748366"
     },
     {
       "key": "experiment_summary",
       "title": "MATR model comparison",
       "description": "Aggregate multi-seed metric comparison between Bi-LSTM and Hybrid.",
       "path": "data/models/matr/plots/experiment_summary.png",
-      "generated_at": "2026-03-22T04:21:54.534656"
+      "generated_at": "2026-04-09T05:54:41.429797"
     }
   ],
-  "generated_at": "2026-03-22T04:21:54.670360"
+  "generated_at": "2026-04-09T05:54:41.750624"
 }

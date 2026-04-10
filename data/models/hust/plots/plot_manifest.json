@@ -12,7 +12,7 @@
       "title": "HUST dataset split",
       "description": "Battery counts in the fixed train/validation/test split.",
       "path": "data/models/hust/plots/dataset_split.png",
-      "generated_at": "2026-03-22T04:20:31.895784",
+      "generated_at": "2026-04-09T05:54:41.131935",
       "split_snapshot": {
         "train_batteries": [
           "hust::hust_77cell::1-1",
@@ -104,15 +104,15 @@
       "title": "HUST ablation summary",
       "description": "Aggregate RMSE comparison for the configured ablation variants.",
       "path": "data/models/hust/plots/experiment_ablations.png",
-      "generated_at": "2026-03-22T04:20:31.969287"
+      "generated_at": "2026-04-09T05:54:41.275502"
     },
     {
       "key": "experiment_summary",
       "title": "HUST model comparison",
       "description": "Aggregate multi-seed metric comparison between Bi-LSTM and Hybrid.",
       "path": "data/models/hust/plots/experiment_summary.png",
-      "generated_at": "2026-03-22T04:20:31.865025"
+      "generated_at": "2026-04-09T05:54:41.016077"
     }
   ],
-  "generated_at": "2026-03-22T04:20:31.970115"
+  "generated_at": "2026-04-09T05:54:41.277031"
 }

@@ -1,13 +1,13 @@
 {
   "source": "calce",
   "model_type": "hybrid",
-  "config_path": "configs/calce_hybrid_optimized.yaml",
   "suite_kind": "optimized_multi_seed",
   "seeds": [
     7,
     21,
     42
   ],
+  "config_path": "configs/calce_hybrid_optimized.yaml",
   "aggregate_metrics": {
     "rmse": 8.113155,
     "mae": 7.816742,
@@ -25,9 +25,7 @@
         "r2": -23.5567569732666,
         "lr": 0.0003
       },
-      "best_checkpoint": "data/models/calce/hybrid/optimized-config/runs/seed-7/hybrid_best.pt",
-      "final_checkpoint": "data/models/calce/hybrid/optimized-config/runs/seed-7/hybrid_final.pt",
-      "summary_path": "data/models/calce/hybrid/optimized-config/runs/seed-7/hybrid_experiment_summary.json"
+      "best_checkpoint": "data/models/calce/hybrid/release/checkpoints/hybrid_release.pt"
     },
     {
       "seed": 21,
@@ -39,9 +37,7 @@
         "r2": -11.378007471561432,
         "lr": 0.0003
       },
-      "best_checkpoint": "data/models/calce/hybrid/optimized-config/runs/seed-21/hybrid_best.pt",
-      "final_checkpoint": "data/models/calce/hybrid/optimized-config/runs/seed-21/hybrid_final.pt",
-      "summary_path": "data/models/calce/hybrid/optimized-config/runs/seed-21/hybrid_experiment_summary.json"
+      "best_checkpoint": "data/models/calce/hybrid/release/checkpoints/hybrid_release.pt"
     },
     {
       "seed": 42,
@@ -53,9 +49,12 @@
         "r2": -16.944020764033,
         "lr": 0.0003
       },
-      "best_checkpoint": "data/models/calce/hybrid/optimized-config/runs/seed-42/hybrid_best.pt",
-      "final_checkpoint": "data/models/calce/hybrid/optimized-config/runs/seed-42/hybrid_final.pt",
-      "summary_path": "data/models/calce/hybrid/optimized-config/runs/seed-42/hybrid_experiment_summary.json"
+      "best_checkpoint": "data/models/calce/hybrid/release/checkpoints/hybrid_release.pt"
     }
-  ]
+  ],
+  "available": true,
+  "best_checkpoint": {
+    "seed": 21,
+    "path": "data/models/calce/hybrid/release/checkpoints/hybrid_release.pt"
+  }
 }

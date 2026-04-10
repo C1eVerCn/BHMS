@@ -236,127 +236,6 @@ class BHMSRepository:
             )
             return int(cursor.lastrowid)
 
-    def latest_training_run(self, source: str, model_type: str) -> Optional[dict[str, Any]]:
-        with self.database.connection() as connection:
-            row = connection.execute(
-                """
-                SELECT * FROM training_runs
-                WHERE source = ? AND model_type = ?
-                ORDER BY created_at DESC LIMIT 1
-                """,
-                (source, model_type),
-            ).fetchone()
-        if row is None:
-            return None
-        item = dict(row)
-        item["metrics"] = self._decode_json(item.pop("metrics_json"), {})
-        item["metadata"] = self._decode_json(item.pop("metadata_json"), {})
-        return item
-
-    def list_training_runs(self, source: Optional[str] = None, model_type: Optional[str] = None, limit: int = 20) -> list[dict[str, Any]]:
-        conditions: list[str] = []
-        params: list[Any] = []
-        if source:
-            conditions.append("source = ?")
-            params.append(source)
-        if model_type:
-            conditions.append("model_type = ?")
-            params.append(model_type)
-        where_clause = f"WHERE {' AND '.join(conditions)}" if conditions else ""
-        with self.database.connection() as connection:
-            rows = connection.execute(
-                f"""
-                SELECT * FROM training_runs
-                {where_clause}
-                ORDER BY created_at DESC
-                LIMIT ?
-                """,
-                (*params, limit),
-            ).fetchall()
-        result = []
-        for row in rows:
-            item = dict(row)
-            item["metrics"] = self._decode_json(item.pop("metrics_json"), {})
-            item["metadata"] = self._decode_json(item.pop("metadata_json"), {})
-            result.append(item)
-        return result
-
-    def insert_training_job(self, record: dict[str, Any]) -> int:
-        with self.database.connection() as connection:
-            cursor = connection.execute(
-                """
-                INSERT INTO training_jobs (
-                    source, model_scope, status, current_stage, force_run,
-                    baseline_json, result_json, log_excerpt, error_message,
-                    metadata_json, created_at, started_at, finished_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """,
-                (
-                    record["source"],
-                    record["model_scope"],
-                    record.get("status", "queued"),
-                    record.get("current_stage"),
-                    int(bool(record.get("force_run", False))),
-                    json.dumps(record.get("baseline"), ensure_ascii=False) if record.get("baseline") is not None else None,
-                    json.dumps(record.get("result"), ensure_ascii=False) if record.get("result") is not None else None,
-                    record.get("log_excerpt"),
-                    record.get("error_message"),
-                    json.dumps(record.get("metadata", {}), ensure_ascii=False),
-                    record.get("created_at", self._now()),
-                    record.get("started_at"),
-                    record.get("finished_at"),
-                ),
-            )
-            return int(cursor.lastrowid)
-
-    def update_training_job(self, job_id: int, **updates: Any) -> None:
-        if not updates:
-            return
-        payload = dict(updates)
-        if "force_run" in payload:
-            payload["force_run"] = int(bool(payload["force_run"]))
-        for json_key in ("baseline", "result", "metadata"):
-            if json_key in payload:
-                target_key = f"{json_key}_json" if json_key != "metadata" else "metadata_json"
-                value = payload.pop(json_key)
-                payload[target_key] = json.dumps(value, ensure_ascii=False) if value is not None else None
-        mappings = {
-            "baseline_json": "baseline_json",
-            "result_json": "result_json",
-            "metadata_json": "metadata_json",
-        }
-        assignments = []
-        params: list[Any] = []
-        for key, value in payload.items():
-            column = mappings.get(key, key)
-            assignments.append(f"{column} = ?")
-            params.append(value)
-        params.append(job_id)
-        with self.database.connection() as connection:
-            connection.execute(
-                f"UPDATE training_jobs SET {', '.join(assignments)} WHERE id = ?",
-                params,
-            )
-
-    def get_training_job(self, job_id: int) -> Optional[dict[str, Any]]:
-        with self.database.connection() as connection:
-            row = connection.execute("SELECT * FROM training_jobs WHERE id = ?", (job_id,)).fetchone()
-        return self._decode_training_job(row)
-
-    def list_training_jobs(self, source: Optional[str] = None, limit: int = 20) -> list[dict[str, Any]]:
-        with self.database.connection() as connection:
-            if source:
-                rows = connection.execute(
-                    "SELECT * FROM training_jobs WHERE source = ? ORDER BY created_at DESC LIMIT ?",
-                    (source, limit),
-                ).fetchall()
-            else:
-                rows = connection.execute(
-                    "SELECT * FROM training_jobs ORDER BY created_at DESC LIMIT ?",
-                    (limit,),
-                ).fetchall()
-        return [item for item in (self._decode_training_job(row) for row in rows) if item is not None]
-
     def latest_completed_training_job(self, source: str) -> Optional[dict[str, Any]]:
         with self.database.connection() as connection:
             row = connection.execute(
@@ -381,12 +260,23 @@ class BHMSRepository:
                        initial_capacity, health_score, status, last_update, dataset_path,
                        include_in_training
                 FROM batteries
-                ORDER BY source, battery_id
+                ORDER BY include_in_training ASC, source ASC, battery_id ASC
                 LIMIT ? OFFSET ?
                 """,
                 (page_size, offset),
             ).fetchall()
         return [dict(row) for row in rows], int(total_row["count"])
+
+    def list_battery_options(self) -> list[dict[str, Any]]:
+        with self.database.connection() as connection:
+            rows = connection.execute(
+                """
+                SELECT battery_id, source, dataset_name, status, cycle_count, include_in_training
+                FROM batteries
+                ORDER BY include_in_training ASC, source ASC, battery_id ASC
+                """
+            ).fetchall()
+        return [dict(row) for row in rows]
 
     def get_battery(self, battery_id: str) -> Optional[dict[str, Any]]:
         with self.database.connection() as connection:
@@ -462,17 +352,23 @@ class BHMSRepository:
             ).fetchone()
         return self._decode_prediction(row)
 
-    def list_predictions(self, battery_id: str, limit: int = 10) -> list[dict[str, Any]]:
+    def list_predictions(self, battery_id: str, limit: int = 10, model_name: Optional[str] = None) -> list[dict[str, Any]]:
+        conditions = ["battery_id = ?"]
+        params: list[Any] = [battery_id]
+        normalized_model = str(model_name or "").strip().lower()
+        if normalized_model and normalized_model != "auto":
+            conditions.append("LOWER(model_name) = ?")
+            params.append(normalized_model)
         with self.database.connection() as connection:
             rows = connection.execute(
-                """
+                f"""
                 SELECT id, battery_id, model_name, predicted_rul, confidence, input_seq_len, created_at, source, payload_json
                 FROM prediction_records
-                WHERE battery_id = ?
+                WHERE {' AND '.join(conditions)}
                 ORDER BY created_at DESC
                 LIMIT ?
                 """,
-                (battery_id, limit),
+                (*params, limit),
             ).fetchall()
         return [item for item in (self._decode_prediction(row) for row in rows) if item is not None]
 

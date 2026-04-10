@@ -51,12 +51,21 @@ def test_validate_release_assets_matches_current_repo_state():
 
     assert report["ok"] is True
     assert report["absolute_path_hits"] == []
-    assert len(report["release_checks"]) == 8
+    assert len(report["release_checks"]) == 10
     assert all(item["checkpoint_exists"] for item in report["release_checks"])
     assert all(item["checkpoint_in_release_dir"] for item in report["release_checks"])
     summary_checks = [item for item in report["summary_checks"] if item.get("suite_kind") in {"transfer", "multi_seed"}]
     assert summary_checks
-    assert all(item["best_checkpoint_in_release_dir"] for item in summary_checks)
+    assert all(item["metric_keys"] for item in summary_checks)
+    assert report["failed_contract_checks"] == []
+    assert report["paper_gate"]["paper_gate_passed"] is False
+    assert {(item["source"], item["unit"]) for item in report["paper_gate"]["failing_units"]} == {
+        ("nasa", "ablation"),
+        ("calce", "within_source"),
+        ("calce", "ablation"),
+        ("kaggle", "within_source"),
+        ("matr", "ablation"),
+    }
 
 
 def test_promote_release_copies_checkpoint_into_release_and_syncs_summary(tmp_path: Path):

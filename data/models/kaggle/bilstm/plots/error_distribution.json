@@ -3,5 +3,5 @@
   "title": "KAGGLE bilstm error distribution",
   "description": "Prediction error histogram for every configured seed.",
   "path": "data/models/kaggle/bilstm/plots/error_distribution.png",
-  "generated_at": "2026-03-15T08:29:25.233280"
+  "generated_at": "2026-04-08T09:49:02.420360"
 }

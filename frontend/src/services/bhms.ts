@@ -1,9 +1,10 @@
-import api, { request } from './api'
+import { request } from './api'
 import type {
   AblationResult,
   AnomalyDetectionResult,
   AnomalyEvent,
   Battery,
+  BatteryOptionsResponse,
   BatteryHealth,
   BatteryHistory,
   CaseBundle,
@@ -12,19 +13,16 @@ import type {
   DashboardSummary,
   DatasetProfile,
   DemoPreset,
-  DiagnosisResult,
   ExperimentDetail,
   ExperimentOverview,
   KnowledgeSummary,
+  LifecycleModelName,
   LifecyclePredictionResult,
   MechanismExplanationResult,
   PaginatedBatteries,
-  PredictionResult,
   SupportedSource,
   SystemStatus,
   TrainingComparison,
-  TrainingJob,
-  TrainingRun,
   UploadSummary,
 } from '../types/domain'
 
@@ -34,6 +32,10 @@ export function getDashboardSummary() {
 
 export function listBatteries(page = 1, pageSize = 10) {
   return request<PaginatedBatteries>({ method: 'GET', url: '/batteries', params: { page, page_size: pageSize } })
+}
+
+export function listBatteryOptions() {
+  return request<BatteryOptionsResponse>({ method: 'GET', url: '/batteries/options' })
 }
 
 export function getBattery(batteryId: string) {
@@ -84,11 +86,15 @@ export function importSourceData(source: SupportedSource, batteryIds?: string[],
   })
 }
 
-export function predictRul(payload: { battery_id: string; model_name: string; seq_len: number; historical_data?: CyclePoint[] }) {
-  return request<PredictionResult>({ method: 'POST', url: '/predict/rul', data: payload })
+export function importDemoPreset(presetName: string, includeInTraining = false) {
+  return request<UploadSummary>({
+    method: 'POST',
+    url: '/data/import-demo-preset',
+    data: { preset_name: presetName, include_in_training: includeInTraining },
+  })
 }
 
-export function predictLifecycle(payload: { battery_id: string; model_name: string; seq_len: number; historical_data?: CyclePoint[] }) {
+export function predictLifecycle(payload: { battery_id: string; model_name: LifecycleModelName; seq_len: number; historical_data?: CyclePoint[] }) {
   return request<LifecyclePredictionResult>({ method: 'POST', url: '/predict/lifecycle', data: payload, baseURL: '/api/v2' })
 }
 
@@ -96,34 +102,14 @@ export function detectAnomaly(payload: { battery_id: string; current_data?: Cycl
   return request<AnomalyDetectionResult>({ method: 'POST', url: '/detect/anomaly', data: payload })
 }
 
-export function diagnoseBattery(payload: { battery_id: string; anomalies: AnomalyEvent[]; battery_info?: Record<string, unknown> }) {
-  return request<DiagnosisResult>({ method: 'POST', url: '/diagnose', data: payload })
-}
-
-export function explainMechanism(payload: { battery_id: string; anomalies?: AnomalyEvent[]; battery_info?: Record<string, unknown> }) {
-  return request<MechanismExplanationResult>({ method: 'POST', url: '/explain/mechanism', data: payload, baseURL: '/api/v2' })
-}
-
-export function createTrainingJob(payload: {
-  source: SupportedSource
-  model_scope: 'bilstm' | 'hybrid' | 'all'
-  force_run?: boolean
-  job_kind?: 'baseline' | 'multi_seed' | 'ablation' | 'full_suite'
-  seed_count?: number
+export function explainMechanism(payload: {
+  battery_id: string
+  anomalies?: AnomalyEvent[]
+  battery_info?: Record<string, unknown>
+  model_name?: LifecycleModelName
+  seq_len?: number
 }) {
-  return request<TrainingJob>({ method: 'POST', url: '/training/jobs', data: payload })
-}
-
-export function listTrainingJobs(source?: string) {
-  return request<TrainingJob[]>({ method: 'GET', url: '/training/jobs', params: source ? { source } : undefined })
-}
-
-export function getTrainingJob(jobId: number) {
-  return request<TrainingJob>({ method: 'GET', url: `/training/jobs/${jobId}` })
-}
-
-export function listTrainingRuns(source?: string, modelType?: string) {
-  return request<TrainingRun[]>({ method: 'GET', url: '/training/runs', params: { source, model_type: modelType } })
+  return request<MechanismExplanationResult>({ method: 'POST', url: '/explain/mechanism', data: payload, baseURL: '/api/v2' })
 }
 
 export function getTrainingComparison(source: string) {
@@ -168,14 +154,4 @@ export function exportCaseBundle(batteryId: string, ensureArtifacts = true) {
     url: `/reports/case-bundle/${batteryId}/export`,
     params: { ensure_artifacts: ensureArtifacts },
   })
-}
-
-export async function downloadPredictionReport(predictionId: number) {
-  const response = await api.get(`/reports/prediction/${predictionId}`, { responseType: 'text' })
-  return response.data as string
-}
-
-export async function downloadDiagnosisReport(diagnosisId: number) {
-  const response = await api.get(`/reports/diagnosis/${diagnosisId}`, { responseType: 'text' })
-  return response.data as string
 }

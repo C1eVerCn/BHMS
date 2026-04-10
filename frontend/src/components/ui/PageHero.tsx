@@ -12,7 +12,7 @@ interface HeroPill {
 }
 
 interface PageHeroProps {
-  kicker: string
+  kicker?: string
   title: string
   description: React.ReactNode
   pills?: HeroPill[]
@@ -22,10 +22,10 @@ interface PageHeroProps {
 
 const PageHero: React.FC<PageHeroProps> = ({ kicker, title, description, pills = [], aside, className }) => {
   return (
-    <section className={['page-hero', className].filter(Boolean).join(' ')}>
+    <section className={['page-hero', !aside ? 'page-hero--single' : '', className].filter(Boolean).join(' ')}>
       <div className="page-hero__main">
         <div className="page-hero__content">
-          <Text className="page-hero__kicker">{kicker}</Text>
+          {kicker ? <Text className="page-hero__kicker">{kicker}</Text> : null}
           <Title className="page-hero__title" level={2}>
             {title}
           </Title>

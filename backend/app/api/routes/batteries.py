@@ -13,6 +13,11 @@ def list_batteries(page: int = Query(1, ge=1), page_size: int = Query(10, ge=1, 
     return success_response(service.list_batteries(page=page, page_size=page_size))
 
 
+@router.get("/batteries/options")
+def list_battery_options():
+    return success_response(service.list_battery_options())
+
+
 @router.get("/battery/{battery_id}")
 def get_battery(battery_id: str):
     return success_response(service.get_battery(battery_id))

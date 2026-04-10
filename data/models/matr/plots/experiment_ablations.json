@@ -3,5 +3,5 @@
   "title": "MATR ablation summary",
   "description": "Aggregate RMSE comparison for the configured ablation variants.",
   "path": "data/models/matr/plots/experiment_ablations.png",
-  "generated_at": "2026-03-22T04:21:54.669688"
+  "generated_at": "2026-04-09T05:54:41.748366"
 }

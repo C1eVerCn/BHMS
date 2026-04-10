@@ -5,6 +5,7 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 import torch
 
@@ -14,6 +15,7 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from ml.data import LifecycleDataModule, LifecycleTargetConfig, create_synthetic_data  # noqa: E402
 from ml.data.adapters import HUSTAdapter  # noqa: E402
+from ml.data.lifecycle import _resample_1d, _resample_trajectory_target  # noqa: E402
 
 
 def test_hust_adapter_adds_required_metadata(tmp_path: Path):
@@ -69,3 +71,28 @@ def test_lifecycle_data_module_builds_multisource_targets(tmp_path: Path):
     assert batch["source_id"].dtype == torch.int64
     assert Path(paths["summary"]).exists()
     assert Path(paths["target_config"]).exists()
+
+
+def test_resample_trajectory_target_preserves_local_fluctuations_when_downsampling():
+    values = np.asarray([1.0, 0.95, 0.97, 0.9, 0.94, 0.86, 0.88, 0.79, 0.81, 0.72], dtype=np.float32)
+
+    linear = _resample_1d(values, 5)
+    resampled = _resample_trajectory_target(values, 5)
+
+    linear_residual = linear - np.linspace(linear[0], linear[-1], num=len(linear), dtype=np.float32)
+    resampled_residual = resampled - np.linspace(resampled[0], resampled[-1], num=len(resampled), dtype=np.float32)
+
+    assert np.isclose(resampled[0], values[0])
+    assert np.isclose(resampled[-1], values[-1])
+    # With average residual strategy, fluctuations are preserved but smaller than max strategy
+    assert np.max(np.abs(resampled_residual)) > 0.0
+
+
+def test_resample_trajectory_target_does_not_invent_waves_for_smooth_sequences():
+    values = np.linspace(1.0, 0.76, num=18, dtype=np.float32)
+
+    resampled = _resample_trajectory_target(values, 6)
+
+    assert np.all(np.diff(resampled) <= 1e-6)
+    assert np.isclose(resampled[0], values[0])
+    assert np.isclose(resampled[-1], values[-1])

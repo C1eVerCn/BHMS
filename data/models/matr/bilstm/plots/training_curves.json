@@ -3,5 +3,5 @@
   "title": "MATR bilstm training curves",
   "description": "Train/validation loss curves for the configured seed runs.",
   "path": "data/models/matr/bilstm/plots/training_curves.png",
-  "generated_at": "2026-03-22T03:50:58.337799"
+  "generated_at": "2026-04-08T09:51:24.902321"
 }

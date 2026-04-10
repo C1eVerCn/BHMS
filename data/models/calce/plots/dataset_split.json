@@ -3,7 +3,7 @@
   "title": "CALCE dataset split",
   "description": "Battery counts in the fixed train/validation/test split.",
   "path": "data/models/calce/plots/dataset_split.png",
-  "generated_at": "2026-03-21T14:25:29.386746",
+  "generated_at": "2026-04-09T05:54:40.289451",
   "split_snapshot": {
     "train_batteries": [
       "calce::calce_demo::CALCE_000",

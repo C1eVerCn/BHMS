@@ -1,5 +1,6 @@
 export type BatteryStatus = 'good' | 'warning' | 'critical' | 'unknown'
 export type SupportedSource = 'nasa' | 'calce' | 'kaggle' | 'hust' | 'matr' | 'oxford' | 'pulsebat'
+export type LifecycleModelName = 'hybrid' | 'bilstm' | 'auto'
 
 export interface CyclePoint {
   battery_id: string
@@ -58,16 +59,13 @@ export interface Battery {
   include_in_training?: boolean
 }
 
-export interface TrainingRun {
-  id: number
+export interface BatteryOption {
+  battery_id: string
   source: string
-  model_type: string
-  model_version?: string | null
-  best_checkpoint_path?: string | null
-  final_checkpoint_path?: string | null
-  metrics: Record<string, unknown>
-  metadata: Record<string, unknown>
-  created_at: string
+  dataset_name?: string | null
+  status: BatteryStatus
+  cycle_count: number
+  include_in_training: boolean
 }
 
 export interface PredictionPoint {
@@ -84,9 +82,12 @@ export interface ConfidenceBandPoint {
 export interface PredictionProjection {
   actual_points: PredictionPoint[]
   forecast_points: PredictionPoint[]
+  display_points?: PredictionPoint[]
   eol_capacity: number
   predicted_eol_cycle: number
   confidence_band: ConfidenceBandPoint[]
+  tail_points?: PredictionPoint[]
+  predicted_zero_cycle?: number | null
   projection_method?: string
 }
 
@@ -160,20 +161,6 @@ export interface PredictionRecord {
   projection?: PredictionProjection
   explanation?: PredictionExplanation | null
   report_markdown?: string | null
-}
-
-export interface PredictionResult extends PredictionRecord {
-  model_version: string
-  model_source: string
-  fallback_used: boolean
-  prediction_time: string
-  trajectory: LifecycleTrajectoryPoint[]
-  risk_windows: RiskWindow[]
-  future_risks: Record<string, unknown>
-  model_evidence: Record<string, unknown>
-  projection: PredictionProjection
-  explanation: PredictionExplanation | null
-  report_markdown: string
 }
 
 export interface AnomalyEvent {
@@ -350,6 +337,11 @@ export interface PaginatedBatteries {
   total: number
 }
 
+export interface BatteryOptionsResponse {
+  items: BatteryOption[]
+  total: number
+}
+
 export interface BatteryHistory {
   battery_id: string
   predictions: PredictionRecord[]
@@ -393,17 +385,64 @@ export interface TrainingComparison {
   previous?: Record<string, unknown> | null
   current?: Record<string, unknown> | null
   latest_job?: TrainingJob | null
-  runs: TrainingRun[]
+}
+
+export interface ComparisonModelSnapshot {
+  model_type: string
+  suite_kind: string
+  summary_path?: string | null
+  available: boolean
+  metrics: Record<string, number | null | undefined>
+  std?: Record<string, number | null | undefined>
+  best_checkpoint?: Record<string, unknown> | string | null
+  generated_at?: string | null
+}
+
+export interface BenchmarkUnit {
+  key: string
+  label: string
+  suite_kind: string
+  required_for_paper?: boolean
+  available: boolean
+  winner_model?: string | null
+  paper_gate_passed?: boolean
+  paper_gate?: {
+    hybrid_beats_bilstm?: boolean
+    checks?: Record<string, boolean>
+    metric_snapshot?: Record<string, number | null | undefined>
+  }
+  models: Record<string, ComparisonModelSnapshot>
+  notes?: string[]
+}
+
+export interface PaperGateStatus {
+  required_units: string[]
+  available_units: string[]
+  passing_units: string[]
+  failing_units: string[]
+  passed: boolean
+}
+
+export interface AblationGateStatus {
+  available: boolean
+  checked_variants: string[]
+  blocking_variants: Array<Record<string, unknown>>
+  passed: boolean
 }
 
 export interface TrainingSourceOverview {
   source: string
   best_model?: string | null
+  best_models?: Record<string, string | null | undefined>
   dataset_batteries: number
   academic_status: string
   headline: string
   warnings: string[]
   plot_count?: number
+  paper_gate_passed?: boolean
+  training_ready?: boolean
+  ingestion_mode?: string
+  source_role?: string
 }
 
 export interface ExperimentOverview {
@@ -417,27 +456,12 @@ export interface ModelExperimentDetail {
   model_type: string
   best_val_loss?: number | null
   test_metrics: Record<string, number | null | undefined>
-  best_checkpoint?: string | null
-  final_checkpoint?: string | null
-  history_available: boolean
-  multi_seed_summary?: Record<string, unknown> | null
-  single_run_summary?: Record<string, unknown> | null
   multi_seed_available?: boolean
   aggregate_metrics?: {
     mean?: Record<string, number | null | undefined>
     std?: Record<string, number | null | undefined>
   }
-  per_seed_runs?: Array<{
-    seed?: number
-    metrics?: Record<string, number | null | undefined>
-    best_checkpoint?: string | null
-    final_checkpoint?: string | null
-    artifact_dir?: string | null
-    summary_path?: string | null
-    history_summary?: Record<string, unknown>
-  }>
-  plots?: PlotArtifact[]
-  artifact_paths?: Record<string, unknown>
+  plots_available?: boolean
   preferred_metrics?: Record<string, number | null | undefined>
   assessment: string
 }
@@ -448,12 +472,15 @@ export interface ExperimentDetail {
   comparison: TrainingComparison
   models: Record<string, ModelExperimentDetail>
   best_model?: string | null
+  best_models?: Record<string, string | null | undefined>
+  benchmark_units?: BenchmarkUnit[]
+  paper_gate?: PaperGateStatus
+  ablation_gate?: AblationGateStatus
   headline: string
   academic_status: string
   warnings: string[]
   key_findings: string[]
   plots?: PlotArtifact[]
-  artifact_paths?: Record<string, unknown>
   recommended_commands: Record<string, string>
 }
 
@@ -479,15 +506,7 @@ export interface AblationVariant {
     mean?: Record<string, number | null | undefined>
     std?: Record<string, number | null | undefined>
   }
-  per_seed_runs?: Array<{
-    seed?: number
-    metrics?: Record<string, number | null | undefined>
-    best_checkpoint?: string | null
-    artifact_dir?: string | null
-  }>
   delta_vs_full?: Record<string, number | null | undefined>
-  artifact_paths?: Record<string, unknown>
-  plots?: PlotArtifact[]
   best_checkpoint?: Record<string, unknown>
 }
 
@@ -498,8 +517,10 @@ export interface AblationResult {
   recommended_command?: string
   variants: AblationVariant[]
   plots?: PlotArtifact[]
-  artifact_paths?: Record<string, unknown>
   generated_at?: string
+  guardrail?: AblationGateStatus
+  task_kind?: string
+  summary_version?: string
 }
 
 export interface DemoPreset {

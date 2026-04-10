@@ -146,7 +146,6 @@ const Dashboard: React.FC = () => {
   return (
     <div className="page-shell dashboard-page">
       <PageHero
-        kicker="Dashboard"
         title="总览"
         description="快速查看状态、趋势和告警。"
         pills={[

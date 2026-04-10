@@ -2,14 +2,12 @@
   "source": "calce",
   "model_type": "bilstm",
   "task_kind": "lifecycle",
-  "release_label": "transfer-final-2026-03-22",
+  "release_label": "calce-lifecycle-bilstm-multiseed-20260409",
   "checkpoint_path": "data/models/calce/bilstm/release/checkpoints/bilstm_release.pt",
-  "summary_path": "data/models/calce/bilstm/transfer/multisource_to_calce/bilstm_transfer_summary.json",
-  "suite_kind": "transfer",
+  "summary_path": "data/models/calce/bilstm/bilstm_multi_seed_summary.json",
+  "suite_kind": "multi_seed",
   "stage_kind": null,
-  "transfer_key": "multisource_to_calce",
-  "source_scope": [
-    "calce"
-  ],
-  "generated_at": "2026-03-23T03:33:32.300379"
+  "transfer_key": null,
+  "source_scope": null,
+  "generated_at": "2026-04-09T02:39:43.565564"
 }

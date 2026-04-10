@@ -26,13 +26,13 @@ interface AppHeaderProps {
 const AppHeader: React.FC<AppHeaderProps> = ({ onOpenNavigation }) => {
   const screens = useBreakpoint()
   const location = useLocation()
-  const batteries = useBhmsStore((state) => state.batteries)
+  const batteryOptions = useBhmsStore((state) => state.batteryOptions)
   const dashboard = useBhmsStore((state) => state.dashboard)
   const selectedBatteryId = useBhmsStore((state) => state.selectedBatteryId)
 
   const isMobile = !screens.lg
   const currentSection = routeLabels[location.pathname] ?? '控制台'
-  const focusBattery = compactBatteryId(selectedBatteryId ?? batteries[0]?.battery_id)
+  const focusBattery = compactBatteryId(selectedBatteryId ?? batteryOptions[0]?.battery_id)
   const averageScore = dashboard?.average_health_score ?? 0
   const alertCount = dashboard?.recent_alerts.length ?? 0
 
