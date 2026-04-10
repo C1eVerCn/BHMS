@@ -1,0 +1,7 @@
+{
+  "key": "metrics_overview",
+  "title": "CALCE bilstm transfer metrics",
+  "description": "Mean and std across fine-tune seeds for the transfer benchmark.",
+  "path": "data/models/calce/bilstm/transfer/multisource_to_calce/plots/metrics_overview.png",
+  "generated_at": "2026-03-22T03:37:18.397199"
+}

@@ -1,0 +1,26 @@
+{
+  "plots": [
+    {
+      "key": "error_distribution",
+      "title": "MATR bilstm error distribution",
+      "description": "Prediction error histogram for every configured seed.",
+      "path": "data/models/matr/bilstm/plots/error_distribution.png",
+      "generated_at": "2026-04-08T09:51:24.805453"
+    },
+    {
+      "key": "metrics_overview",
+      "title": "MATR bilstm multi-seed metrics",
+      "description": "Mean and std across the configured random seeds.",
+      "path": "data/models/matr/bilstm/plots/metrics_overview.png",
+      "generated_at": "2026-04-08T09:51:24.627869"
+    },
+    {
+      "key": "training_curves",
+      "title": "MATR bilstm training curves",
+      "description": "Train/validation loss curves for the configured seed runs.",
+      "path": "data/models/matr/bilstm/plots/training_curves.png",
+      "generated_at": "2026-04-08T09:51:24.902321"
+    }
+  ],
+  "generated_at": "2026-04-08T09:51:24.903112"
+}

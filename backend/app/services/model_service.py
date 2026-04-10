@@ -11,14 +11,13 @@ from backend.app.core.config import Settings, get_settings
 from backend.app.core.exceptions import BHMSException
 from backend.app.services.repository import BHMSRepository
 from kg.graphrag_engine import GraphRAGEngine, GraphTrace
-from ml.inference import AnomalyDetector, AnomalyThreshold, LifecycleInferenceService, RULInferenceService
+from ml.inference import AnomalyDetector, AnomalyThreshold, LifecycleInferenceService
 
 
 class PredictionService:
     def __init__(self, repository: Optional[BHMSRepository] = None, settings: Optional[Settings] = None):
         self.repository = repository or BHMSRepository()
         self.settings = settings or get_settings()
-        self.inference_service = RULInferenceService(self.settings.model_dir)
         self.lifecycle_inference_service = LifecycleInferenceService(self.settings.model_dir)
         self.anomaly_detector = AnomalyDetector(use_statistical=True, use_isolation_forest=True, thresholds=AnomalyThreshold())
         self.diagnosis_engine = GraphRAGEngine(
@@ -29,30 +28,6 @@ class PredictionService:
             neo4j_password=self.settings.neo4j_password,
             neo4j_database=self.settings.neo4j_database,
         )
-
-    def predict_rul(self, battery_id: str, model_name: str = "hybrid", seq_len: int = 30, historical_data: Optional[list[dict[str, Any]]] = None) -> dict[str, Any]:
-        prediction = self._predict_lifecycle_payload(
-            battery_id=battery_id,
-            model_name=model_name,
-            seq_len=seq_len,
-            historical_data=historical_data,
-            request_source="api_v1",
-        )
-        return {
-            "id": prediction["id"],
-            "battery_id": prediction["battery_id"],
-            "model_name": prediction["model_name"],
-            "predicted_rul": prediction["predicted_rul"],
-            "confidence": prediction["confidence"],
-            "model_version": prediction["model_version"],
-            "model_source": prediction["model_source"],
-            "checkpoint_id": prediction["checkpoint_id"],
-            "fallback_used": prediction["fallback_used"],
-            "prediction_time": prediction["prediction_time"],
-            "projection": prediction["projection"],
-            "explanation": prediction.get("explanation"),
-            "report_markdown": prediction["report_markdown"],
-        }
 
     def predict_lifecycle(
         self,
@@ -127,6 +102,10 @@ class PredictionService:
         )
         model_evidence = self._build_model_evidence(
             {
+                "model_name": lifecycle_output.model_name,
+                "model_version": lifecycle_output.model_version,
+                "checkpoint_id": lifecycle_output.checkpoint_id,
+                "fallback_used": lifecycle_output.fallback_used,
                 "explanation": explanation,
                 "payload": {"explanation": explanation},
             }
@@ -197,16 +176,29 @@ class PredictionService:
         battery_id: str,
         anomalies: Optional[list[dict[str, Any]]] = None,
         battery_info: Optional[dict[str, Any]] = None,
+        model_name: str = "hybrid",
+        seq_len: int = 30,
     ) -> dict[str, Any]:
+        battery = self.repository.get_battery(battery_id)
+        if battery is None:
+            raise BHMSException(f"未找到电池 {battery_id}", status_code=404, code="battery_not_found")
         anomaly_list = anomalies or self.repository.list_anomalies(battery_id, limit=5)
         if not anomaly_list:
             anomaly_result = self.detect_anomaly(battery_id)
             anomaly_list = anomaly_result["events"]
-        diagnosis = self.diagnose(battery_id=battery_id, anomalies=anomaly_list, battery_info=battery_info)
-        battery = self.repository.get_battery(battery_id)
-        latest_prediction = self.repository.list_predictions(battery_id, limit=1)
-        lifecycle_evidence = self._build_lifecycle_evidence(battery or {}, latest_prediction[0] if latest_prediction else None)
-        model_evidence = self._build_model_evidence(latest_prediction[0] if latest_prediction else None)
+        latest_prediction = self._ensure_lifecycle_prediction(
+            battery_id=battery_id,
+            model_name=model_name,
+            seq_len=seq_len,
+        )
+        diagnosis = self.diagnose(
+            battery_id=battery_id,
+            anomalies=anomaly_list,
+            battery_info=battery_info or battery,
+            latest_prediction=latest_prediction,
+        )
+        lifecycle_evidence = self._build_lifecycle_evidence(battery, latest_prediction)
+        model_evidence = self._build_model_evidence(latest_prediction)
         return {
             **diagnosis,
             "lifecycle_evidence": lifecycle_evidence,
@@ -256,15 +248,21 @@ class PredictionService:
             "detection_time": datetime.utcnow().isoformat(),
         }
 
-    def diagnose(self, battery_id: str, anomalies: list[dict[str, Any]], battery_info: Optional[dict[str, Any]] = None) -> dict[str, Any]:
+    def diagnose(
+        self,
+        battery_id: str,
+        anomalies: list[dict[str, Any]],
+        battery_info: Optional[dict[str, Any]] = None,
+        latest_prediction: Optional[dict[str, Any]] = None,
+    ) -> dict[str, Any]:
         battery = self.repository.get_battery(battery_id)
         if battery is None:
             raise BHMSException(f"未找到电池 {battery_id}", status_code=404, code="battery_not_found")
         if not anomalies:
             anomalies = self.repository.list_anomalies(battery_id, limit=5)
-        latest_prediction = self.repository.list_predictions(battery_id, limit=1)
-        lifecycle_evidence = self._build_lifecycle_evidence(battery, latest_prediction[0] if latest_prediction else None)
-        model_evidence = self._build_model_evidence(latest_prediction[0] if latest_prediction else None)
+        effective_prediction = latest_prediction or next(iter(self.repository.list_predictions(battery_id, limit=1)), None)
+        lifecycle_evidence = self._build_lifecycle_evidence(battery, effective_prediction)
+        model_evidence = self._build_model_evidence(effective_prediction)
         if not anomalies:
             diagnosis = {
                 "fault_type": "未发现明显故障",
@@ -325,6 +323,12 @@ class PredictionService:
         )
         return {"id": record_id, "battery_id": battery_id, **diagnosis.to_dict(), "diagnosis_time": datetime.utcnow().isoformat()}
 
+    def _ensure_lifecycle_prediction(self, *, battery_id: str, model_name: str, seq_len: int) -> dict[str, Any]:
+        existing = self.repository.list_predictions(battery_id, limit=1, model_name=model_name)
+        if existing:
+            return existing[0]
+        return self.predict_lifecycle(battery_id=battery_id, model_name=model_name, seq_len=seq_len)
+
     def _build_lifecycle_evidence(self, battery: dict[str, Any], prediction: Optional[dict[str, Any]]) -> dict[str, Any]:
         payload = ((prediction or {}).get("payload")) or {}
         if payload.get("future_risks"):
@@ -380,6 +384,10 @@ class PredictionService:
         window_contributions = explanation.get("window_contributions") or []
         confidence_factors = (explanation.get("confidence_summary") or {}).get("factors") or []
         return {
+            "model_name": (prediction or {}).get("model_name"),
+            "model_version": (prediction or {}).get("model_version"),
+            "checkpoint_id": (prediction or {}).get("checkpoint_id"),
+            "fallback_used": bool((prediction or {}).get("fallback_used", False)),
             "top_features": [str(item.get("feature")) for item in feature_contributions[:3] if item.get("feature")],
             "critical_windows": [str(item.get("window_label")) for item in window_contributions[:3] if item.get("window_label")],
             "confidence_factors": [str(item) for item in confidence_factors[:3]],
@@ -422,24 +430,6 @@ class PredictionService:
             }
         ]
 
-    def get_prediction_report(self, prediction_id: int) -> str:
-        prediction = self.repository.get_prediction(prediction_id)
-        if prediction is None:
-            raise BHMSException(f"未找到预测记录 {prediction_id}", status_code=404, code="prediction_not_found")
-        report = prediction.get("report_markdown") or prediction.get("payload", {}).get("report_markdown")
-        if not report:
-            raise BHMSException("预测报告不存在", status_code=404, code="prediction_report_not_found")
-        return str(report)
-
-    def get_diagnosis_report(self, diagnosis_id: int) -> str:
-        diagnosis = self.repository.get_diagnosis(diagnosis_id)
-        if diagnosis is None:
-            raise BHMSException(f"未找到诊断记录 {diagnosis_id}", status_code=404, code="diagnosis_not_found")
-        report = diagnosis.get("report_markdown") or diagnosis.get("payload", {}).get("report_markdown")
-        if not report:
-            raise BHMSException("诊断报告不存在", status_code=404, code="diagnosis_report_not_found")
-        return str(report)
-
     def _build_projection(self, points: list[dict[str, Any]], predicted_rul: float, confidence: float) -> dict[str, Any]:
         cycles = np.asarray([float(item.get("cycle_number", 0.0) or 0.0) for item in points], dtype=float)
         capacities = np.asarray([float(item.get("capacity", 0.0) or 0.0) for item in points], dtype=float)
@@ -460,11 +450,30 @@ class PredictionService:
         else:
             forecast_capacities = last_capacity + (eol_capacity - last_capacity) * progress
         forecast_capacities = np.minimum.accumulate(forecast_capacities)
+        predicted_zero_cycle = round(float(predicted_eol_cycle), 2)
+        tail_points: list[dict[str, float]] = []
+        if forecast_cycles.size >= 2 and eol_capacity > 1e-6:
+            tail_step = max(float(forecast_cycles[-1] - forecast_cycles[-2]), 1e-6)
+            tail_drop = max(float(forecast_capacities[-2] - forecast_capacities[-1]), 1e-6)
+            tail_slope = tail_drop / tail_step
+            raw_extra_horizon = eol_capacity / tail_slope if tail_slope > 1e-6 else horizon
+            extra_horizon = float(np.clip(raw_extra_horizon, horizon * 0.25, horizon * 3.0))
+            predicted_zero_cycle = round(float(predicted_eol_cycle + extra_horizon), 2)
+            tail_cycles = np.linspace(predicted_eol_cycle, predicted_zero_cycle, num=max(8, min(48, int(extra_horizon) + 1)))
+            tail_progress = (tail_cycles - predicted_eol_cycle) / max(extra_horizon, 1e-6)
+            tail_capacities = np.maximum(0.0, eol_capacity * (1.0 - tail_progress))
+            tail_points = [
+                {"cycle": round(float(cycle), 2), "capacity": round(float(capacity), 4)}
+                for cycle, capacity in zip(tail_cycles[1:], tail_capacities[1:])
+            ]
+            if tail_points:
+                forecast_cycles = np.concatenate([forecast_cycles, tail_cycles[1:]])
+                forecast_capacities = np.concatenate([forecast_capacities, tail_capacities[1:]])
         band_width = max(initial_capacity * 0.015, (1.0 - confidence) * initial_capacity * 0.18)
         confidence_band = [
             {
                 "cycle": round(float(cycle), 2),
-                "lower": round(float(max(eol_capacity, capacity - band_width)), 4),
+                "lower": round(float(max(0.0, capacity - band_width)), 4),
                 "upper": round(float(capacity + band_width), 4),
             }
             for cycle, capacity in zip(forecast_cycles, forecast_capacities)
@@ -475,6 +484,8 @@ class PredictionService:
             "eol_capacity": round(float(eol_capacity), 4),
             "predicted_eol_cycle": round(float(predicted_eol_cycle), 2),
             "confidence_band": confidence_band,
+            "tail_points": tail_points,
+            "predicted_zero_cycle": predicted_zero_cycle,
             "projection_method": method,
         }
 
@@ -519,6 +530,7 @@ class PredictionService:
             "## 二、生命周期轨迹",
             f"- 当前历史轨迹长度：{len(projection['actual_points'])} 个 cycle",
             f"- 预测 EOL 周期：{projection['predicted_eol_cycle']}",
+            f"- 容量归零周期：{projection.get('predicted_zero_cycle', projection['predicted_eol_cycle'])}",
             f"- EOL 容量阈值：{projection['eol_capacity']}",
             f"- 投影方法：{projection.get('projection_method', 'linear')}",
             "",

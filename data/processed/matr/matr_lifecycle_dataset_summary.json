@@ -1,5 +1,8 @@
 {
   "csv_path": "data/processed/matr/matr_cycle_summary.csv.gz",
+  "csv_paths": [
+    "data/processed/matr/matr_cycle_summary.csv.gz"
+  ],
   "sources": [
     "matr"
   ],
@@ -14,8 +17,7 @@
     "temperature_std",
     "temperature_rise_rate",
     "capacity",
-    "cycle_number",
-    "capacity_ratio"
+    "cycle_number"
   ],
   "target_config": {
     "observation_ratios": [
@@ -233,8 +235,7 @@
       "temperature_std": 1.8245295147777971,
       "temperature_rise_rate": 6.793539628504631,
       "capacity": 1.0336870526682478,
-      "cycle_number": 418.2317314426846,
-      "capacity_ratio": 0.9660250542810087
+      "cycle_number": 418.2317314426846
     },
     "stds": {
       "voltage_mean": 0.04194728675158205,
@@ -247,8 +248,7 @@
       "temperature_std": 0.5858061413575667,
       "temperature_rise_rate": 2.1418606340593573,
       "capacity": 0.054026089045134326,
-      "cycle_number": 297.88649861399756,
-      "capacity_ratio": 0.04815130592410853
+      "cycle_number": 297.88649861399756
     }
   },
   "domain_vocab": {

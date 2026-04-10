@@ -1,0 +1,7 @@
+{
+  "key": "error_distribution",
+  "title": "HUST bilstm error distribution",
+  "description": "Prediction error histogram for every configured seed.",
+  "path": "data/models/hust/bilstm/plots/error_distribution.png",
+  "generated_at": "2026-04-08T09:50:02.325881"
+}

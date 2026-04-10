@@ -1,0 +1,394 @@
+{
+  "source": "hust",
+  "task_kind": "lifecycle",
+  "summary_version": "paper_truth_v1",
+  "available": true,
+  "notes": [
+    "Ablation summaries reuse the same fixed battery split and the same seed set as the main multi-seed experiment.",
+    "Delta is computed against full_hybrid using aggregate RMSE.",
+    "full_hybrid 已与主实验 Hybrid 多随机种子摘要强制对齐，论文引用请以该 truth-source 为准。"
+  ],
+  "artifact_paths": {
+    "summary": "data/models/hust/ablation_summary.json",
+    "plots_dir": "data/models/hust/plots"
+  },
+  "generated_at": "2026-04-09T05:54:40.841029",
+  "guardrail": {
+    "checked_variants": [
+      "no_xlstm",
+      "no_transformer"
+    ],
+    "blocking_variants": [],
+    "passed": true
+  },
+  "plots": [
+    {
+      "key": "ablation_overview",
+      "title": "HUST ablation overview",
+      "description": "Aggregate RMSE for each hybrid ablation variant.",
+      "path": "data/models/hust/plots/ablation_overview.png",
+      "generated_at": "2026-03-22T04:00:07.119285",
+      "metadata_path": "data/models/hust/plots/ablation_overview.json"
+    }
+  ],
+  "truth_source": "data/models/hust/hybrid/hybrid_multi_seed_summary.json",
+  "variants": [
+    {
+      "key": "full_hybrid",
+      "label": "完整 Hybrid",
+      "description": "复用主实验的 lifecycle hybrid 多随机种子结果。",
+      "status": "available",
+      "seeds": [
+        7,
+        21,
+        42
+      ],
+      "aggregate_metrics": {
+        "mean": {
+          "rmse": 0.010682,
+          "mae": 0.008621,
+          "mape": 1.010008,
+          "r2": 0.97475,
+          "trajectory_rmse": 0.010682,
+          "trajectory_mae": 0.008621,
+          "trajectory_r2": 0.97475,
+          "rul_mae": 1089.582357,
+          "rul_rmse": 1110.895345,
+          "eol_mae": 1090.250448,
+          "eol_rmse": 1111.550598,
+          "knee_mae": 911.658895,
+          "loss": 1208.232971,
+          "traj_loss": 5.7e-05,
+          "rul_loss": 1089.082377,
+          "eol_loss": 1089.750437,
+          "knee_loss": 911.15891,
+          "mono_loss": 0.000314,
+          "smooth_loss": 0.001125,
+          "domain_loss": 0.017824,
+          "trajectory_mape": 1.010008,
+          "lr": 0.0003
+        },
+        "std": {
+          "rmse": 0.000329,
+          "mae": 0.000372,
+          "mape": 0.037519,
+          "r2": 0.001563,
+          "trajectory_rmse": 0.000329,
+          "trajectory_mae": 0.000372,
+          "trajectory_r2": 0.001563,
+          "rul_mae": 0.85426,
+          "rul_rmse": 0.837907,
+          "eol_mae": 1.299897,
+          "eol_rmse": 1.274872,
+          "knee_mae": 1.196791,
+          "loss": 0.96708,
+          "traj_loss": 4e-06,
+          "rul_loss": 0.85427,
+          "eol_loss": 1.299882,
+          "knee_loss": 1.196811,
+          "mono_loss": 1.1e-05,
+          "smooth_loss": 7e-05,
+          "domain_loss": 0.004483,
+          "trajectory_mape": 0.037519,
+          "lr": 0.0
+        }
+      },
+      "best_checkpoint": {
+        "seed": 21,
+        "path": "data/models/hust/hybrid/release/checkpoints/hybrid_release.pt"
+      },
+      "task_kind": "lifecycle",
+      "source": "hust",
+      "delta_vs_full": {
+        "rmse": 0.0,
+        "r2": 0.0
+      }
+    },
+    {
+      "key": "no_xlstm",
+      "label": "去掉 xLSTM",
+      "description": "仅保留 Transformer 路径，验证 xLSTM 的贡献。",
+      "status": "available",
+      "seeds": [
+        7,
+        21,
+        42
+      ],
+      "aggregate_metrics": {
+        "mean": {
+          "rmse": 0.021137,
+          "mae": 0.018066,
+          "mape": 2.136082,
+          "r2": 0.901331,
+          "trajectory_rmse": 0.021137,
+          "trajectory_mae": 0.018066,
+          "trajectory_r2": 0.901331,
+          "rul_mae": 1089.844025,
+          "rul_rmse": 1111.151967,
+          "eol_mae": 1088.206258,
+          "eol_rmse": 1109.546041,
+          "knee_mae": 912.712962,
+          "loss": 1207.80898,
+          "traj_loss": 0.000224,
+          "rul_loss": 1089.344025,
+          "eol_loss": 1087.706268,
+          "knee_loss": 912.212972,
+          "mono_loss": 0.0,
+          "smooth_loss": 0.0,
+          "domain_loss": 0.009697,
+          "trajectory_mape": 2.136082,
+          "lr": 0.0003
+        },
+        "std": {
+          "rmse": 9.7e-05,
+          "mae": 9.2e-05,
+          "mape": 0.004043,
+          "r2": 0.000889,
+          "trajectory_rmse": 9.7e-05,
+          "trajectory_mae": 9.2e-05,
+          "trajectory_r2": 0.000889,
+          "rul_mae": 1.367196,
+          "rul_rmse": 1.340808,
+          "eol_mae": 1.214762,
+          "eol_rmse": 1.19125,
+          "knee_mae": 1.41955,
+          "loss": 0.531275,
+          "traj_loss": 2e-06,
+          "rul_loss": 1.367196,
+          "eol_loss": 1.214776,
+          "knee_loss": 1.419548,
+          "mono_loss": 0.0,
+          "smooth_loss": 0.0,
+          "domain_loss": 0.004435,
+          "trajectory_mape": 0.004043,
+          "lr": 0.0
+        }
+      },
+      "delta_vs_full": {
+        "rmse": 0.010455,
+        "r2": -0.073419
+      },
+      "config_overrides": {
+        "model_overrides": {
+          "use_xlstm": false,
+          "use_transformer": true
+        },
+        "feature_columns": null
+      }
+    },
+    {
+      "key": "no_transformer",
+      "label": "去掉 Transformer",
+      "description": "仅保留 xLSTM 路径，验证 Transformer 的贡献。",
+      "status": "available",
+      "seeds": [
+        7,
+        21,
+        42
+      ],
+      "aggregate_metrics": {
+        "mean": {
+          "rmse": 0.021323,
+          "mae": 0.018001,
+          "mape": 2.135815,
+          "r2": 0.899606,
+          "trajectory_rmse": 0.021323,
+          "trajectory_mae": 0.018001,
+          "trajectory_r2": 0.899606,
+          "rul_mae": 1088.493815,
+          "rul_rmse": 1109.827769,
+          "eol_mae": 1089.528412,
+          "eol_rmse": 1110.842855,
+          "knee_mae": 911.39091,
+          "loss": 1207.333496,
+          "traj_loss": 0.000228,
+          "rul_loss": 1087.993774,
+          "eol_loss": 1089.028432,
+          "knee_loss": 910.890905,
+          "mono_loss": 0.0,
+          "smooth_loss": 0.0,
+          "domain_loss": 0.023061,
+          "trajectory_mape": 2.135815,
+          "lr": 0.0003
+        },
+        "std": {
+          "rmse": 0.000118,
+          "mae": 4.7e-05,
+          "mape": 0.001123,
+          "r2": 0.001104,
+          "trajectory_rmse": 0.000118,
+          "trajectory_mae": 4.7e-05,
+          "trajectory_r2": 0.001104,
+          "rul_mae": 0.835945,
+          "rul_rmse": 0.819772,
+          "eol_mae": 2.182949,
+          "eol_rmse": 2.140535,
+          "knee_mae": 1.362444,
+          "loss": 1.176826,
+          "traj_loss": 3e-06,
+          "rul_loss": 0.835907,
+          "eol_loss": 2.182939,
+          "knee_loss": 1.362426,
+          "mono_loss": 0.0,
+          "smooth_loss": 0.0,
+          "domain_loss": 0.010203,
+          "trajectory_mape": 0.001123,
+          "lr": 0.0
+        }
+      },
+      "delta_vs_full": {
+        "rmse": 0.010641,
+        "r2": -0.075144
+      },
+      "config_overrides": {
+        "model_overrides": {
+          "use_xlstm": true,
+          "use_transformer": false
+        },
+        "feature_columns": null
+      }
+    },
+    {
+      "key": "no_domain_embedding",
+      "label": "去掉 domain embedding",
+      "description": "移除 source/chemistry/protocol 条件编码，验证多源域先验的贡献。",
+      "status": "available",
+      "seeds": [
+        7,
+        21,
+        42
+      ],
+      "aggregate_metrics": {
+        "mean": {
+          "rmse": 0.020997,
+          "mae": 0.018184,
+          "mape": 2.142587,
+          "r2": 0.902634,
+          "trajectory_rmse": 0.020997,
+          "trajectory_mae": 0.018184,
+          "trajectory_r2": 0.902634,
+          "rul_mae": 1091.05485,
+          "rul_rmse": 1112.339437,
+          "eol_mae": 1089.118591,
+          "eol_rmse": 1110.440562,
+          "knee_mae": 912.981781,
+          "loss": 1208.849396,
+          "traj_loss": 0.000221,
+          "rul_loss": 1090.55485,
+          "eol_loss": 1088.618551,
+          "knee_loss": 912.481766,
+          "mono_loss": 0.0,
+          "smooth_loss": 0.0,
+          "domain_loss": 0.038736,
+          "trajectory_mape": 2.142587,
+          "lr": 0.0003
+        },
+        "std": {
+          "rmse": 1.9e-05,
+          "mae": 4.5e-05,
+          "mape": 0.002688,
+          "r2": 0.000171,
+          "trajectory_rmse": 1.9e-05,
+          "trajectory_mae": 4.5e-05,
+          "trajectory_r2": 0.000171,
+          "rul_mae": 1.181209,
+          "rul_rmse": 1.158309,
+          "eol_mae": 1.519402,
+          "eol_rmse": 1.490109,
+          "knee_mae": 0.780723,
+          "loss": 0.991936,
+          "traj_loss": 0.0,
+          "rul_loss": 1.181223,
+          "eol_loss": 1.519388,
+          "knee_loss": 0.780723,
+          "mono_loss": 0.0,
+          "smooth_loss": 0.0,
+          "domain_loss": 0.010661,
+          "trajectory_mape": 0.002688,
+          "lr": 0.0
+        }
+      },
+      "delta_vs_full": {
+        "rmse": 0.010315,
+        "r2": -0.072116
+      },
+      "config_overrides": {
+        "model_overrides": {
+          "use_domain_embeddings": false
+        },
+        "feature_columns": null
+      }
+    },
+    {
+      "key": "no_trajectory_head",
+      "label": "去掉 trajectory head",
+      "description": "关闭未来 trajectory decoder，验证显式轨迹监督对 knee/EOL 的贡献。",
+      "status": "available",
+      "seeds": [
+        7,
+        21,
+        42
+      ],
+      "aggregate_metrics": {
+        "mean": {
+          "rmse": 0.038652,
+          "mae": 0.0355,
+          "mape": 4.119928,
+          "r2": 0.666963,
+          "trajectory_rmse": 0.038652,
+          "trajectory_mae": 0.0355,
+          "trajectory_r2": 0.666963,
+          "rul_mae": 1091.51241,
+          "rul_rmse": 1112.788137,
+          "eol_mae": 1089.492808,
+          "eol_rmse": 1110.807617,
+          "knee_mae": 913.271398,
+          "loss": 1209.299072,
+          "traj_loss": 0.000752,
+          "rul_loss": 1091.012421,
+          "eol_loss": 1088.992808,
+          "knee_loss": 912.771408,
+          "mono_loss": 0.0,
+          "smooth_loss": 0.002203,
+          "domain_loss": 0.019153,
+          "trajectory_mape": 4.119928,
+          "lr": 0.0003
+        },
+        "std": {
+          "rmse": 0.002819,
+          "mae": 0.00261,
+          "mape": 0.322427,
+          "r2": 0.047963,
+          "trajectory_rmse": 0.002819,
+          "trajectory_mae": 0.00261,
+          "trajectory_r2": 0.047963,
+          "rul_mae": 0.49889,
+          "rul_rmse": 0.489281,
+          "eol_mae": 1.431416,
+          "eol_rmse": 1.403606,
+          "knee_mae": 0.345872,
+          "loss": 0.730915,
+          "traj_loss": 0.000108,
+          "rul_loss": 0.498879,
+          "eol_loss": 1.431416,
+          "knee_loss": 0.345866,
+          "mono_loss": 0.0,
+          "smooth_loss": 0.000196,
+          "domain_loss": 0.001961,
+          "trajectory_mape": 0.322427,
+          "lr": 0.0
+        }
+      },
+      "delta_vs_full": {
+        "rmse": 0.02797,
+        "r2": -0.307787
+      },
+      "config_overrides": {
+        "model_overrides": {
+          "use_trajectory_head": false
+        },
+        "feature_columns": null
+      }
+    }
+  ]
+}

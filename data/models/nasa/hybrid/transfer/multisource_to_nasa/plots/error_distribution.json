@@ -1,0 +1,7 @@
+{
+  "key": "error_distribution",
+  "title": "NASA hybrid transfer error distribution",
+  "description": "Prediction error histogram for the fine-tuned transfer runs.",
+  "path": "data/models/nasa/hybrid/transfer/multisource_to_nasa/plots/error_distribution.png",
+  "generated_at": "2026-03-22T03:44:51.971691"
+}

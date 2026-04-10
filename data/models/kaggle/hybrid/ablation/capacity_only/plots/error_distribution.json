@@ -1,7 +1,0 @@
-{
-  "key": "error_distribution",
-  "title": "KAGGLE capacity_only error distribution",
-  "description": "Prediction error histogram for each seed in the ablation variant.",
-  "path": "data/models/kaggle/hybrid/ablation/capacity_only/plots/error_distribution.png",
-  "generated_at": "2026-03-15T08:29:25.760035"
-}

@@ -1,0 +1,7 @@
+{
+  "key": "metrics_overview",
+  "title": "MATR bilstm multi-seed metrics",
+  "description": "Mean and std across the configured random seeds.",
+  "path": "data/models/matr/bilstm/plots/metrics_overview.png",
+  "generated_at": "2026-04-08T09:51:24.627869"
+}

@@ -44,7 +44,9 @@ class LifecycleHybridConfig:
     use_domain_embeddings: bool = True
     use_trajectory_head: bool = True
     use_uncertainty_head: bool = True
+    use_fluctuation_head: bool = True
     trajectory_scale: float = 64.0
+    fluctuation_scale: float = 0.12
     pooling_hidden_dim: int = 128
 
 
@@ -64,7 +66,9 @@ class LifecycleBiLSTMConfig:
     use_domain_embeddings: bool = True
     use_trajectory_head: bool = True
     use_uncertainty_head: bool = True
+    use_fluctuation_head: bool = True
     trajectory_scale: float = 64.0
+    fluctuation_scale: float = 0.12
     pooling_hidden_dim: int = 128
 
 
@@ -79,10 +83,22 @@ class DomainConditioning(nn.Module):
         embedding_dim: int,
         dropout: float,
         enabled: bool,
+        zero_for_degenerate_vocab: bool = False,
     ):
         super().__init__()
         self.enabled = enabled
         self.hidden_dim = hidden_dim
+        # Within-source runs often collapse to a single constant domain token.
+        # For Hybrid we can disable that constant bias entirely while preserving
+        # domain conditioning for true multi-domain settings.
+        self.degenerate_vocab = (
+            enabled
+            and zero_for_degenerate_vocab
+            and source_vocab_size <= 2
+            and chemistry_vocab_size <= 1
+            and protocol_vocab_size <= 1
+        )
+        self.loss_enabled = enabled and not self.degenerate_vocab and source_vocab_size > 1
         self.source_embedding = nn.Embedding(max(1, source_vocab_size), embedding_dim)
         self.chemistry_embedding = nn.Embedding(max(1, chemistry_vocab_size), embedding_dim)
         self.protocol_embedding = nn.Embedding(max(1, protocol_vocab_size), embedding_dim)
@@ -102,7 +118,7 @@ class DomainConditioning(nn.Module):
         protocol_id: Optional[torch.Tensor],
         device: torch.device,
     ) -> tuple[torch.Tensor, torch.Tensor]:
-        if not self.enabled:
+        if not self.enabled or self.degenerate_vocab:
             zeros = torch.zeros(batch_size, self.hidden_dim, device=device)
             return zeros[:, None, :].expand(batch_size, seq_len, self.hidden_dim), zeros
         source_id = torch.zeros(batch_size, dtype=torch.long, device=device) if source_id is None else source_id.view(-1).to(device)
@@ -120,6 +136,47 @@ class DomainConditioning(nn.Module):
         return context[:, None, :].expand(batch_size, seq_len, self.hidden_dim), context
 
 
+class DominanceSafeFusion(nn.Module):
+    def __init__(self, xlstm_dim: int, trans_dim: int, output_dim: int, dropout: float = 0.1):
+        super().__init__()
+        self.fused_path = FeatureFusion(xlstm_dim, trans_dim, output_dim, dropout)
+        self.xlstm_only = nn.Sequential(
+            nn.LayerNorm(xlstm_dim),
+            nn.Linear(xlstm_dim, output_dim),
+            nn.GELU(),
+            nn.Dropout(dropout),
+        )
+        self.transformer_only = nn.Sequential(
+            nn.LayerNorm(trans_dim),
+            nn.Linear(trans_dim, output_dim),
+            nn.GELU(),
+            nn.Dropout(dropout),
+        )
+        self.selector = nn.Linear(output_dim * 3, 3)
+        nn.init.zeros_(self.selector.weight)
+        with torch.no_grad():
+            self.selector.bias.copy_(torch.tensor([2.0, 0.0, 0.0]))
+
+    def forward(self, xlstm_feat: torch.Tensor, trans_feat: torch.Tensor) -> tuple[torch.Tensor, dict[str, torch.Tensor]]:
+        fused_candidate = self.fused_path(xlstm_feat, trans_feat)
+        xlstm_candidate = self.xlstm_only(xlstm_feat)
+        transformer_candidate = self.transformer_only(trans_feat)
+        selector_logits = self.selector(torch.cat([fused_candidate, xlstm_candidate, transformer_candidate], dim=-1))
+        selector_weights = torch.softmax(selector_logits, dim=-1)
+        combined = (
+            selector_weights[..., 0:1] * fused_candidate
+            + selector_weights[..., 1:2] * xlstm_candidate
+            + selector_weights[..., 2:3] * transformer_candidate
+        )
+        return combined, {
+            "fused_candidate": fused_candidate,
+            "xlstm_only_candidate": xlstm_candidate,
+            "transformer_only_candidate": transformer_candidate,
+            "selector_logits": selector_logits,
+            "selector_weights": selector_weights,
+        }
+
+
 class LifecycleDecoder(nn.Module):
     def __init__(
         self,
@@ -132,6 +189,9 @@ class LifecycleDecoder(nn.Module):
         source_vocab_size: int,
         use_trajectory_head: bool,
         use_uncertainty_head: bool,
+        use_fluctuation_head: bool,
+        fluctuation_scale: float,
+        dual_trajectory_fusion: bool = False,
     ):
         super().__init__()
         heads = _compatible_heads(hidden_dim, decoder_heads)
@@ -139,6 +199,9 @@ class LifecycleDecoder(nn.Module):
         self.trajectory_scale = max(1.0, trajectory_scale)
         self.use_trajectory_head = use_trajectory_head
         self.use_uncertainty_head = use_uncertainty_head
+        self.use_fluctuation_head = use_fluctuation_head and fluctuation_scale > 0
+        self.fluctuation_scale = max(0.0, fluctuation_scale)
+        self.dual_trajectory_fusion = use_trajectory_head and dual_trajectory_fusion
         self.query_embed = nn.Parameter(torch.randn(future_len, hidden_dim) * 0.02)
         self.cross_attn = nn.MultiheadAttention(hidden_dim, heads, dropout=dropout, batch_first=True)
         self.decoder_ffn = nn.Sequential(
@@ -151,11 +214,27 @@ class LifecycleDecoder(nn.Module):
         self.decoder_norm = nn.LayerNorm(hidden_dim)
         self.trajectory_head = nn.Linear(hidden_dim, 1)
         self.trajectory_fallback = nn.Linear(hidden_dim, future_len)
+        self.fluctuation_head = nn.Linear(hidden_dim, 1) if self.use_fluctuation_head else None
+        self.trajectory_gate = nn.Linear(hidden_dim * 2, 1) if self.dual_trajectory_fusion else None
+        if self.trajectory_gate is not None:
+            nn.init.zeros_(self.trajectory_gate.weight)
+            nn.init.constant_(self.trajectory_gate.bias, 1.0)
+        if self.fluctuation_head is not None:
+            nn.init.zeros_(self.fluctuation_head.weight)
+            nn.init.zeros_(self.fluctuation_head.bias)
+        envelope = 1.0 - 0.55 * torch.linspace(0.0, 1.0, steps=future_len, dtype=torch.float32).pow(1.2)
+        self.register_buffer("fluctuation_envelope", envelope, persistent=False)
         self.rul_head = nn.Sequential(nn.LayerNorm(hidden_dim), nn.Linear(hidden_dim, hidden_dim // 2), nn.GELU(), nn.Linear(hidden_dim // 2, 1))
         self.eol_head = nn.Sequential(nn.LayerNorm(hidden_dim), nn.Linear(hidden_dim, hidden_dim // 2), nn.GELU(), nn.Linear(hidden_dim // 2, 1))
         self.knee_head = nn.Sequential(nn.LayerNorm(hidden_dim), nn.Linear(hidden_dim, hidden_dim // 2), nn.GELU(), nn.Linear(hidden_dim // 2, 1))
         self.uncertainty_head = nn.Sequential(nn.LayerNorm(hidden_dim), nn.Linear(hidden_dim, 1))
         self.domain_head = nn.Linear(hidden_dim, max(1, source_vocab_size))
+
+    @staticmethod
+    def _effective_trajectory_gate(raw_gate: torch.Tensor) -> torch.Tensor:
+        # Keep the step decoder as the default path and let the fallback branch
+        # act as a corrective global prior instead of dominating mid-range gates.
+        return 1.0 - torch.square(1.0 - raw_gate)
 
     def forward(
         self,
@@ -170,16 +249,49 @@ class LifecycleDecoder(nn.Module):
         decoded, decoder_attn = self.cross_attn(queries, memory, memory, need_weights=True)
         decoded = self.decoder_norm(decoded + self.decoder_ffn(decoded))
 
+        fallback_steps = F.softplus(self.trajectory_fallback(pooled))
+        trajectory_gate = None
         if self.use_trajectory_head:
-            fade_steps = F.softplus(self.trajectory_head(decoded).squeeze(-1))
+            step_steps = F.softplus(self.trajectory_head(decoded).squeeze(-1))
+            if self.dual_trajectory_fusion and self.trajectory_gate is not None:
+                pooled_context = pooled[:, None, :].expand(batch_size, self.future_len, pooled.size(-1))
+                raw_gate = torch.sigmoid(self.trajectory_gate(torch.cat([decoded, pooled_context], dim=-1))).squeeze(-1)
+                trajectory_gate = self._effective_trajectory_gate(raw_gate)
+                fade_steps = trajectory_gate * step_steps + (1.0 - trajectory_gate) * fallback_steps
+            else:
+                fade_steps = step_steps
         else:
-            fallback = self.trajectory_fallback(pooled)
-            fade_steps = F.softplus(fallback)
+            fade_steps = fallback_steps
 
         base_capacity = torch.ones(batch_size, 1, device=memory.device)
         if last_capacity_ratio is not None:
             base_capacity = last_capacity_ratio.view(batch_size, 1).to(memory.device)
-        trajectory = torch.clamp(base_capacity - torch.cumsum(fade_steps, dim=1) / self.trajectory_scale, min=0.0, max=1.2)
+        base_trajectory = torch.clamp(base_capacity - torch.cumsum(fade_steps, dim=1) / self.trajectory_scale, min=0.0, max=1.2)
+        fluctuation = None
+        trajectory = base_trajectory
+        if self.fluctuation_head is not None:
+            fluctuation = torch.tanh(self.fluctuation_head(decoded).squeeze(-1))
+            fluctuation = fluctuation * self.fluctuation_scale * self.fluctuation_envelope.view(1, -1).to(memory.device)
+            trajectory = torch.clamp(base_trajectory + fluctuation, min=0.0, max=1.2)
+            if self.future_len == 1:
+                trajectory = base_trajectory
+            elif self.future_len == 2:
+                trajectory = torch.cat(
+                    [
+                        base_trajectory[:, :1],
+                        torch.minimum(trajectory[:, -1:], base_trajectory[:, -1:]),
+                    ],
+                    dim=1,
+                )
+            else:
+                trajectory = torch.cat(
+                    [
+                        base_trajectory[:, :1],
+                        trajectory[:, 1:-1],
+                        torch.minimum(trajectory[:, -1:], base_trajectory[:, -1:]),
+                    ],
+                    dim=1,
+                )
         soh = trajectory.clone()
 
         observed_cycle = torch.zeros(batch_size, 1, device=memory.device) if observed_cycle is None else observed_cycle.view(batch_size, 1).to(memory.device)
@@ -189,6 +301,7 @@ class LifecycleDecoder(nn.Module):
         uncertainty = F.softplus(self.uncertainty_head(pooled)) if self.use_uncertainty_head else torch.zeros_like(rul)
         return {
             "trajectory": trajectory,
+            "trajectory_base": base_trajectory,
             "soh_trajectory": soh,
             "rul": rul,
             "eol_cycle": eol_cycle,
@@ -196,6 +309,8 @@ class LifecycleDecoder(nn.Module):
             "uncertainty": uncertainty,
             "domain_logits": self.domain_head(pooled),
             "decoder_attention": decoder_attn,
+            "trajectory_gate": trajectory_gate,
+            "trajectory_fluctuation": fluctuation,
         }
 
 
@@ -216,6 +331,7 @@ class LifecycleHybridPredictor(nn.Module):
             embedding_dim=config.domain_embedding_dim,
             dropout=config.dropout,
             enabled=config.use_domain_embeddings,
+            zero_for_degenerate_vocab=True,
         )
         self.xlstm = (
             StackedxLSTM(
@@ -241,7 +357,7 @@ class LifecycleHybridPredictor(nn.Module):
             else None
         )
         if config.use_xlstm and config.use_transformer:
-            self.fusion = FeatureFusion(config.d_model, config.d_model, config.fusion_dim, config.dropout)
+            self.fusion = DominanceSafeFusion(config.d_model, config.d_model, config.fusion_dim, config.dropout)
         else:
             self.fusion = None
             self.single_path = nn.Sequential(
@@ -260,6 +376,9 @@ class LifecycleHybridPredictor(nn.Module):
             source_vocab_size=config.source_vocab_size,
             use_trajectory_head=config.use_trajectory_head,
             use_uncertainty_head=config.use_uncertainty_head,
+            use_fluctuation_head=config.use_fluctuation_head,
+            fluctuation_scale=config.fluctuation_scale,
+            dual_trajectory_fusion=True,
         )
 
     def forward(
@@ -292,8 +411,9 @@ class LifecycleHybridPredictor(nn.Module):
         attn_weights = []
         if self.transformer is not None:
             transformer_out, attn_weights = self.transformer(tokens)
+        fusion_details = None
         if self.fusion is not None:
-            fused = self.fusion(xlstm_out, transformer_out)
+            fused, fusion_details = self.fusion(xlstm_out, transformer_out)
         else:
             primary = xlstm_out if self.xlstm is not None else transformer_out
             fused = self.single_path(primary)
@@ -305,11 +425,13 @@ class LifecycleHybridPredictor(nn.Module):
             last_capacity_ratio=last_capacity_ratio,
             observed_cycle=observed_cycle,
         )
+        outputs["domain_loss_enabled"] = torch.tensor(self.domain.loss_enabled, device=fused.device)
         if return_features:
             outputs["features"] = {
                 "xlstm_out": xlstm_out,
                 "transformer_out": transformer_out,
                 "fused": fused,
+                "fusion_details": fusion_details,
                 "pooled": pooled,
                 "pooling_weights": pooling_weights,
                 "attn_weights": attn_weights,
@@ -360,6 +482,9 @@ class LifecycleBiLSTMPredictor(nn.Module):
             source_vocab_size=config.source_vocab_size,
             use_trajectory_head=config.use_trajectory_head,
             use_uncertainty_head=config.use_uncertainty_head,
+            use_fluctuation_head=config.use_fluctuation_head,
+            fluctuation_scale=config.fluctuation_scale,
+            dual_trajectory_fusion=False,
         )
 
     def forward(
@@ -392,6 +517,7 @@ class LifecycleBiLSTMPredictor(nn.Module):
             last_capacity_ratio=last_capacity_ratio,
             observed_cycle=observed_cycle,
         )
+        outputs["domain_loss_enabled"] = torch.tensor(self.domain.loss_enabled, device=encoded.device)
         if return_features:
             outputs["features"] = {
                 "encoded": encoded,
@@ -409,8 +535,8 @@ class LifecycleLoss(nn.Module):
         rul_weight: float = 0.5,
         eol_weight: float = 0.4,
         knee_weight: float = 0.25,
-        mono_weight: float = 0.1,
-        smooth_weight: float = 0.1,
+        mono_weight: float = 0.02,
+        smooth_weight: float = 0.0,
         domain_weight: float = 0.1,
     ):
         super().__init__()
@@ -441,7 +567,13 @@ class LifecycleLoss(nn.Module):
             knee_loss = trajectory.new_tensor(0.0)
         mono_penalty = torch.relu(trajectory[:, 1:] - trajectory[:, :-1]).mean()
         smooth_penalty = torch.abs(trajectory[:, 2:] - 2 * trajectory[:, 1:-1] + trajectory[:, :-2]).mean()
-        domain_loss = F.cross_entropy(outputs["domain_logits"], source_id)
+        domain_loss_enabled = outputs.get("domain_loss_enabled", True)
+        if isinstance(domain_loss_enabled, torch.Tensor):
+            domain_loss_enabled = bool(domain_loss_enabled.detach().to("cpu").item())
+        if domain_loss_enabled and outputs["domain_logits"].size(-1) > 1:
+            domain_loss = F.cross_entropy(outputs["domain_logits"], source_id)
+        else:
+            domain_loss = trajectory.new_tensor(0.0)
 
         total = (
             self.traj_weight * traj_loss
@@ -465,6 +597,7 @@ class LifecycleLoss(nn.Module):
 
 
 __all__ = [
+    "DominanceSafeFusion",
     "LifecycleBiLSTMConfig",
     "LifecycleBiLSTMPredictor",
     "LifecycleHybridConfig",

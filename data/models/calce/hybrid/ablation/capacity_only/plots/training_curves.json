@@ -1,7 +1,0 @@
-{
-  "key": "training_curves",
-  "title": "CALCE capacity_only training curves",
-  "description": "Train/validation loss for the ablation variant.",
-  "path": "data/models/calce/hybrid/ablation/capacity_only/plots/training_curves.png",
-  "generated_at": "2026-03-15T08:29:24.935876"
-}

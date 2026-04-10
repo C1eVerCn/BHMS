@@ -5,22 +5,22 @@
       "title": "KAGGLE bilstm error distribution",
       "description": "Prediction error histogram for every configured seed.",
       "path": "data/models/kaggle/bilstm/plots/error_distribution.png",
-      "generated_at": "2026-03-15T08:29:25.233280"
+      "generated_at": "2026-04-08T09:49:02.420360"
     },
     {
       "key": "metrics_overview",
       "title": "KAGGLE bilstm multi-seed metrics",
       "description": "Mean and std across the configured random seeds.",
       "path": "data/models/kaggle/bilstm/plots/metrics_overview.png",
-      "generated_at": "2026-03-15T08:29:25.177278"
+      "generated_at": "2026-04-08T09:49:02.319374"
     },
     {
       "key": "training_curves",
       "title": "KAGGLE bilstm training curves",
       "description": "Train/validation loss curves for the configured seed runs.",
       "path": "data/models/kaggle/bilstm/plots/training_curves.png",
-      "generated_at": "2026-03-15T08:29:25.278816"
+      "generated_at": "2026-04-08T09:49:02.558583"
     }
   ],
-  "generated_at": "2026-03-15T08:29:25.279286"
+  "generated_at": "2026-04-08T09:49:02.559458"
 }

@@ -24,6 +24,10 @@ class LifecycleEvidence:
 
 @dataclass
 class ModelEvidence:
+    model_name: Optional[str] = None
+    model_version: Optional[str] = None
+    checkpoint_id: Optional[str] = None
+    fallback_used: bool = False
     top_features: list[str] = field(default_factory=list)
     critical_windows: list[str] = field(default_factory=list)
     confidence_factors: list[str] = field(default_factory=list)
@@ -528,11 +532,7 @@ class LLMInterface:
         if backend_warning:
             evidence.append(backend_warning)
         evidence.extend(decision_basis)
-        usage_hint = ""
-        battery_info = context.get("battery_info") or {}
-        if battery_info:
-            usage_hint = f" 当前样本电池信息：{json.dumps(battery_info, ensure_ascii=False)}。"
-        description = primary.get("description", "") + usage_hint
+        description = primary.get("description", "")
         report = self._render_report(
             fault_type=primary["name"],
             confidence=float(primary["score"]),
@@ -673,6 +673,12 @@ class GraphRAGEngine:
                 battery_source=battery_source,
                 lifecycle_evidence=lifecycle_payload,
             )
+            ranked_faults = _rerank_fault_candidates(
+                ranked_faults,
+                anomalies=anomalies,
+                severity_map=severity_map,
+                lifecycle_evidence=lifecycle_payload,
+            )
             self.active_backend = self.graph_backend
         except Exception as exc:
             if self.graph_backend != "neo4j":
@@ -684,6 +690,12 @@ class GraphRAGEngine:
                 symptoms,
                 severity_map=severity_map,
                 battery_source=battery_source,
+                lifecycle_evidence=lifecycle_payload,
+            )
+            ranked_faults = _rerank_fault_candidates(
+                ranked_faults,
+                anomalies=anomalies,
+                severity_map=severity_map,
                 lifecycle_evidence=lifecycle_payload,
             )
         return self.llm.generate_diagnosis(
@@ -730,6 +742,109 @@ def _tokenize_text(values: list[str]) -> set[str]:
         if compact:
             tokens.add(compact)
     return tokens
+
+
+def _rerank_fault_candidates(
+    ranked_faults: list[dict[str, Any]],
+    *,
+    anomalies: list[dict[str, Any]],
+    severity_map: dict[str, str],
+    lifecycle_evidence: Optional[LifecycleEvidence],
+) -> list[dict[str, Any]]:
+    if not ranked_faults:
+        return ranked_faults
+
+    anomaly_tokens = _tokenize_text(
+        [
+            str(item.get("symptom") or item.get("type") or "")
+            for item in anomalies
+        ]
+        + [
+            str(item.get("description") or "")
+            for item in anomalies
+        ]
+        + [
+            str(item.get("code") or "")
+            for item in anomalies
+        ]
+    )
+    sensor_drift_markers = {
+        "sensor",
+        "传感",
+        "传感器",
+        "漂移",
+        "标定",
+        "校准",
+        "采样",
+        "偏移",
+        "drift",
+        "calibration",
+    }
+    corroboration_markers = {
+        "容量骤降",
+        "容量",
+        "capacity",
+        "内阻异常",
+        "内阻",
+        "resistance",
+        "capacity_ratio",
+    }
+    mechanism_markers = {
+        "充电",
+        "快充",
+        "过充",
+        "低温",
+        "高soc",
+        "soc",
+        "charge",
+        "charging",
+        "cold",
+        "capacity",
+        "容量",
+        "内阻",
+        "resistance",
+    }
+    high_severity_present = any(value in {"high", "critical"} for value in severity_map.values())
+    lifecycle_high_risk = bool(
+        lifecycle_evidence
+        and any(
+            str(value).lower() in {"high", "critical"}
+            for value in lifecycle_evidence.to_dict().values()
+            if value
+        )
+    )
+    has_sensor_drift_evidence = bool(anomaly_tokens & sensor_drift_markers)
+    has_corroboration_gap_evidence = bool(anomaly_tokens & corroboration_markers)
+    has_mechanism_trigger = bool(anomaly_tokens & mechanism_markers)
+
+    reranked: list[dict[str, Any]] = []
+    for index, candidate in enumerate(ranked_faults):
+        adjusted = dict(candidate)
+        base_score = float(candidate.get("score", 0.0) or 0.0)
+        adjustment = 0.0
+        name = str(candidate.get("name", ""))
+        category = str(candidate.get("category", ""))
+
+        if "传感" in category or "传感器漂移" in name:
+            if has_sensor_drift_evidence:
+                adjustment += 0.05
+            elif high_severity_present or lifecycle_high_risk or not has_corroboration_gap_evidence:
+                adjustment -= 0.10
+        elif category in {"机理故障", "充电故障"} and not has_mechanism_trigger and lifecycle_evidence is None:
+            adjustment -= 0.08
+        elif category == "安全故障" and high_severity_present:
+            adjustment += 0.03
+
+        adjusted["score"] = round(max(0.0, min(0.98, base_score + adjustment)), 3)
+        breakdown = dict(candidate.get("score_breakdown", {}))
+        if adjustment:
+            breakdown["context_adjustment"] = round(adjustment, 3)
+            breakdown["final_score"] = adjusted["score"]
+        adjusted["score_breakdown"] = breakdown
+        reranked.append(adjusted)
+
+    reranked.sort(key=lambda item: float(item.get("score", 0.0) or 0.0), reverse=True)
+    return reranked
 
 
 def _infer_stage_label(lifecycle_evidence: Optional[LifecycleEvidence]) -> str:

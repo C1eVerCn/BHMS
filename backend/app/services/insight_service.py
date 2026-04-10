@@ -158,7 +158,7 @@ class InsightService:
             for feature in PROFILE_FEATURES
         }
         demo_files = [item for item in self.get_demo_presets() if item["source"] == source]
-        comparison = self._load_json(self.settings.model_dir / source / "comparison_summary.json") or {}
+        comparison = self._comparison_summary(source)
 
         return {
             "source": source,
@@ -266,7 +266,7 @@ class InsightService:
         for source in SUPPORTED_SOURCES:
             card = get_dataset_card(source)
             profile = self.get_dataset_profile(source)
-            comparison = self._load_json(self.settings.model_dir / source / "comparison_summary.json") or {}
+            comparison = self._comparison_summary(source)
             raw_dir = getattr(self.settings, f"raw_{source}_dir")
             raw_files = sorted(item for item in raw_dir.glob("**/*") if item.is_file()) if raw_dir.exists() else []
             if card.training_ready:
@@ -326,7 +326,7 @@ class InsightService:
         anomalies = self.repository.list_anomalies(battery_id, limit=10)
         cycles = self.repository.get_cycle_points(battery_id, limit=240)
         dataset_profile = self.get_dataset_profile(str(battery.get("source", "unknown")))
-        comparison = self._load_json(self.settings.model_dir / battery["source"] / "comparison_summary.json") or {}
+        comparison = self._comparison_summary(str(battery.get("source", "unknown")))
         experiment_detail = self.training_service.get_experiment_detail(str(battery.get("source", "unknown")))
         dataset_position = self._dataset_position(battery, dataset_profile)
         last_export = self._latest_case_export(battery_id)
@@ -435,9 +435,6 @@ class InsightService:
             "case_bundle.md": bundle["bundle_markdown"],
             "lifecycle_prediction_report.md": prediction_report,
             "mechanism_report.md": diagnosis_report,
-            # Compatibility aliases for one migration round.
-            "prediction_report.md": prediction_report,
-            "diagnosis_report.md": diagnosis_report,
         }
         for file_name, content in file_map.items():
             (export_dir / file_name).write_text(str(content), encoding="utf-8")
@@ -458,24 +455,17 @@ class InsightService:
             self._write_lifecycle_trajectory_chart(charts_dir / "lifecycle_trajectory.png", prediction, cycles),
             self._write_diagnosis_graph_chart(charts_dir / "graphrag_evidence.png", diagnosis),
             self._write_experiment_summary_chart(charts_dir / "benchmark_summary.png", battery.get("source") if battery else None, experiment_context),
-            # Compatibility aliases for one migration round.
-            self._write_lifecycle_trajectory_chart(charts_dir / "rul_projection.png", prediction, cycles),
-            self._write_diagnosis_graph_chart(charts_dir / "diagnosis_graph.png", diagnosis),
-            self._write_experiment_summary_chart(charts_dir / "experiment_summary.png", battery.get("source") if battery else None, experiment_context),
         ]
-        unique_chart_entries = list({item["path"]: item for item in chart_entries}.values())
-        manifest["charts"] = unique_chart_entries
+        manifest["charts"] = chart_entries
         manifest["files"] = [
             {"path": str(export_dir / "manifest.json"), "kind": "manifest"},
             {"path": str(export_dir / "case_bundle.md"), "kind": "case_bundle"},
             {"path": str(export_dir / "lifecycle_prediction_report.md"), "kind": "lifecycle_prediction_report"},
             {"path": str(export_dir / "mechanism_report.md"), "kind": "mechanism_report"},
-            {"path": str(export_dir / "prediction_report.md"), "kind": "prediction_report_alias"},
-            {"path": str(export_dir / "diagnosis_report.md"), "kind": "diagnosis_report_alias"},
             {"path": str(export_dir / "sample_profile.json"), "kind": "sample_profile"},
             {"path": str(export_dir / "dataset_profile.json"), "kind": "dataset_profile"},
             {"path": str(export_dir / "experiment_context.json"), "kind": "experiment_context"},
-            *unique_chart_entries,
+            *chart_entries,
         ]
         (export_dir / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
         return {
@@ -593,11 +583,18 @@ class InsightService:
         else:
             lines.append("- 尚未生成机理解释 / GraphRAG 诊断记录")
         lines.extend(["", "## 七、benchmark 背景"])
-        best_model = self._best_model_name(comparison)
-        if best_model:
-            lines.append(f"- 当前来源对比结果中表现较优的模型：{best_model}")
-        else:
+        best_models = (comparison or {}).get("best_models") or {}
+        if best_models.get("within_source"):
+            lines.append(f"- within-source 当前占优模型：{best_models.get('within_source')}")
+        if best_models.get("transfer"):
+            lines.append(f"- transfer 当前占优模型：{best_models.get('transfer')}")
+        if not best_models:
             lines.append("- 当前来源尚未生成可用的模型对比摘要")
+        paper_gate = (comparison or {}).get("paper_gate") or {}
+        if paper_gate:
+            lines.append(
+                f"- 论文门槛：{'通过' if paper_gate.get('passed') else '未通过'}；failing_units={paper_gate.get('failing_units', [])}"
+            )
         for risk in self._comparison_risks(comparison)[:4]:
             lines.append(f"- 实验风险：{risk}")
         lines.extend(
@@ -726,16 +723,6 @@ class InsightService:
         plt.close(fig)
         return {"path": str(output_path), "kind": "chart", "key": "lifecycle_trajectory"}
 
-    def _write_rul_projection_chart(
-        self,
-        output_path: Path,
-        prediction: Optional[dict[str, Any]],
-        cycles: list[dict[str, Any]],
-    ) -> dict[str, Any]:
-        entry = self._write_lifecycle_trajectory_chart(output_path, prediction, cycles)
-        entry["key"] = "rul_projection"
-        return entry
-
     def _write_diagnosis_graph_chart(self, output_path: Path, diagnosis: Optional[dict[str, Any]]) -> dict[str, Any]:
         output_path.parent.mkdir(parents=True, exist_ok=True)
         if not MATPLOTLIB_AVAILABLE:
@@ -780,12 +767,30 @@ class InsightService:
             write_placeholder_png(output_path)
             return {"path": str(output_path), "kind": "chart", "key": "benchmark_summary"}
         comparison = experiment_context.get("comparison", {}) or {}
-        models = comparison.get("models", {})
+        benchmark_units = comparison.get("benchmark_units", [])
         fig, ax = plt.subplots(figsize=(8, 4.5))
-        labels = list(models.keys())
-        values = [float(((payload.get("test_metrics") or {}).get("rmse") or 0.0)) for payload in models.values()]
-        if labels:
-            ax.bar(labels, values, color=["#1f77b4", "#ff7f0e"][: len(labels)])
+        units = [
+            item
+            for item in benchmark_units
+            if isinstance(item, dict) and isinstance(item.get("models"), dict) and item.get("models")
+        ]
+        model_order = ("hybrid", "bilstm")
+        palette = {"hybrid": "#1f77b4", "bilstm": "#ff7f0e"}
+        if units:
+            labels = [str(item.get("label") or item.get("key") or "benchmark") for item in units]
+            x = np.arange(len(labels))
+            width = 0.34
+            for index, model_name in enumerate(model_order):
+                offsets = x + (index - 0.5) * width
+                values: list[float] = []
+                for item in units:
+                    metrics = ((item.get("models") or {}).get(model_name) or {}).get("metrics") or {}
+                    rmse = metrics.get("rmse")
+                    values.append(float(rmse) if isinstance(rmse, (int, float)) else 0.0)
+                ax.bar(offsets, values, width=width, label=model_name.upper(), color=palette.get(model_name, "#9ca3af"))
+            ax.set_xticks(x)
+            ax.set_xticklabels(labels)
+            ax.legend(loc="best")
         else:
             ax.text(0.5, 0.5, "No benchmark summary", ha="center", va="center", transform=ax.transAxes)
         ax.set_title("Benchmark summary")
@@ -807,6 +812,11 @@ class InsightService:
         if not path.exists():
             return None
         return json.loads(path.read_text(encoding="utf-8"))
+
+    def _comparison_summary(self, source: str) -> dict[str, Any]:
+        comparison = self.training_service.get_comparison(source)
+        current = comparison.get("current")
+        return current if isinstance(current, dict) else {}
 
     @staticmethod
     def _as_float(value: Any) -> Optional[float]:
@@ -833,29 +843,19 @@ class InsightService:
 
     @staticmethod
     def _best_model_name(comparison: dict[str, Any]) -> Optional[str]:
-        models = (comparison or {}).get("models") or {}
-        best_name: Optional[str] = None
-        best_rmse: Optional[float] = None
-        for name, payload in models.items():
-            metrics = payload.get("test_metrics") or {}
-            rmse = metrics.get("rmse")
-            if isinstance(rmse, (int, float)) and (best_rmse is None or float(rmse) < best_rmse):
-                best_rmse = float(rmse)
-                best_name = name
-        return best_name
+        best_models = (comparison or {}).get("best_models") or {}
+        return best_models.get("within_source") or best_models.get("transfer")
 
     @staticmethod
     def _comparison_risks(comparison: dict[str, Any]) -> list[str]:
-        risks: list[str] = []
-        for model_name, payload in ((comparison or {}).get("models") or {}).items():
-            metrics = payload.get("test_metrics") or {}
-            r2 = metrics.get("r2")
-            mape = metrics.get("mape")
-            if isinstance(r2, (int, float)) and float(r2) < 0:
-                risks.append(f"{model_name} 的 trajectory R2 仍为负值，说明实验结论更偏演示级。")
-            if isinstance(mape, (int, float)) and float(mape) > 100:
-                risks.append(f"{model_name} 的 trajectory MAPE 偏高，建议补充多随机种子、消融与 transfer 实验。")
-        return risks
+        risks = list((comparison or {}).get("warnings") or [])
+        paper_gate = (comparison or {}).get("paper_gate") or {}
+        if paper_gate.get("failing_units"):
+            risks.append(f"论文门槛未通过：{paper_gate.get('failing_units')}。")
+        ablation_gate = (comparison or {}).get("ablation_gate") or {}
+        if ablation_gate.get("available") and not ablation_gate.get("passed"):
+            risks.append("Hybrid 消融门槛未通过，说明结构优势证据仍不稳定。")
+        return list(dict.fromkeys(risks))
 
 
 __all__ = ["InsightService"]

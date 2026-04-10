@@ -1,0 +1,7 @@
+{
+  "key": "experiment_ablations",
+  "title": "HUST ablation summary",
+  "description": "Aggregate RMSE comparison for the configured ablation variants.",
+  "path": "data/models/hust/plots/experiment_ablations.png",
+  "generated_at": "2026-04-09T05:54:41.275502"
+}

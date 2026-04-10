@@ -12,7 +12,7 @@
       "title": "KAGGLE dataset split",
       "description": "Battery counts in the fixed train/validation/test split.",
       "path": "data/models/kaggle/plots/dataset_split.png",
-      "generated_at": "2026-03-21T14:26:06.763287",
+      "generated_at": "2026-04-09T05:54:40.728247",
       "split_snapshot": {
         "train_batteries": [
           "kaggle::kaggle_demo::KAGGLE_000",
@@ -33,15 +33,15 @@
       "title": "KAGGLE ablation summary",
       "description": "Aggregate RMSE comparison for the configured ablation variants.",
       "path": "data/models/kaggle/plots/experiment_ablations.png",
-      "generated_at": "2026-03-21T14:26:06.823156"
+      "generated_at": "2026-04-09T05:54:40.834396"
     },
     {
       "key": "experiment_summary",
       "title": "KAGGLE model comparison",
       "description": "Aggregate multi-seed metric comparison between Bi-LSTM and Hybrid.",
       "path": "data/models/kaggle/plots/experiment_summary.png",
-      "generated_at": "2026-03-21T14:26:06.722057"
+      "generated_at": "2026-04-09T05:54:40.614645"
     }
   ],
-  "generated_at": "2026-03-21T14:26:06.823702"
+  "generated_at": "2026-04-09T05:54:40.835872"
 }

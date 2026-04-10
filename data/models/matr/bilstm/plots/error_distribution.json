@@ -1,0 +1,7 @@
+{
+  "key": "error_distribution",
+  "title": "MATR bilstm error distribution",
+  "description": "Prediction error histogram for every configured seed.",
+  "path": "data/models/matr/bilstm/plots/error_distribution.png",
+  "generated_at": "2026-04-08T09:51:24.805453"
+}

@@ -3,5 +3,5 @@
   "title": "KAGGLE hybrid training curves",
   "description": "Train/validation loss curves for the configured seed runs.",
   "path": "data/models/kaggle/hybrid/plots/training_curves.png",
-  "generated_at": "2026-03-21T14:26:03.121513"
+  "generated_at": "2026-04-08T09:49:56.125498"
 }

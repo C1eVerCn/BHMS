@@ -1,0 +1,7 @@
+{
+  "key": "ablation_overview",
+  "title": "MATR ablation overview",
+  "description": "Aggregate RMSE for each hybrid ablation variant.",
+  "path": "data/models/matr/plots/ablation_overview.png",
+  "generated_at": "2026-04-07T08:56:23.911867"
+}

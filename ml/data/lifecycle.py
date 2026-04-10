@@ -94,6 +94,45 @@ def _resample_1d(values: np.ndarray, target_len: int) -> np.ndarray:
     return np.interp(target_grid, source_grid, values.astype(np.float32)).astype(np.float32)
 
 
+def _centered_moving_average(values: np.ndarray, window: int) -> np.ndarray:
+    if len(values) <= 2 or window <= 1:
+        return values.astype(np.float32, copy=True)
+    effective_window = min(int(window), len(values) if len(values) % 2 == 1 else len(values) - 1)
+    if effective_window < 3:
+        return values.astype(np.float32, copy=True)
+    if effective_window % 2 == 0:
+        effective_window -= 1
+    pad = effective_window // 2
+    kernel = np.ones(effective_window, dtype=np.float32) / float(effective_window)
+    padded = np.pad(values.astype(np.float32), (pad, pad), mode="edge")
+    return np.convolve(padded, kernel, mode="valid").astype(np.float32)
+
+
+def _resample_trajectory_target(values: np.ndarray, target_len: int) -> np.ndarray:
+    values = values.astype(np.float32, copy=True)
+    if len(values) <= target_len:
+        return _resample_1d(values, target_len)
+
+    window = max(3, int(round(len(values) / max(target_len, 1))) + 1)
+    if window % 2 == 0:
+        window += 1
+    trend = _centered_moving_average(values, window)
+    residual = values - trend
+    trend_resampled = _resample_1d(trend, target_len)
+
+    # Keep average residual per bin to preserve real fluctuations in training target
+    representative_residual = np.zeros(target_len, dtype=np.float32)
+    for index, bin_indices in enumerate(np.array_split(np.arange(len(values)), target_len)):
+        representative_residual[index] = float(np.mean(residual[bin_indices]))
+
+    resampled = trend_resampled + representative_residual
+    resampled[0] = values[0]
+    resampled[-1] = values[-1]
+    lower = float(np.min(values))
+    upper = float(np.max(values))
+    return np.clip(resampled, lower, upper).astype(np.float32)
+
+
 def _resample_2d(values: np.ndarray, target_len: int) -> np.ndarray:
     columns = [_resample_1d(values[:, index], target_len) for index in range(values.shape[1])]
     return np.stack(columns, axis=-1).astype(np.float32)
@@ -157,7 +196,7 @@ class LifecycleSequenceDataset(Dataset):
                 observed_features = _resample_2d(observed_features, self.target_config.encoder_len)
                 observed_features = self._normalize_sequence(observed_features)
                 future_capacity = future[self.target_config.target_column].astype(float).to_numpy(copy=True)
-                trajectory_target = _resample_1d(future_capacity, self.target_config.future_len)
+                trajectory_target = _resample_trajectory_target(future_capacity, self.target_config.future_len)
                 last_observed_cycle = float(observed["cycle_number"].iloc[-1])
                 last_capacity_ratio = float(observed["capacity_ratio"].iloc[-1])
                 knee_mask = 1.0 if knee_cycle is not None and float(knee_cycle) > last_observed_cycle else 0.0
@@ -199,7 +238,7 @@ class LifecycleDataModule:
 
     def __init__(
         self,
-        csv_path: str | Path,
+        csv_path: str | Path | Sequence[str | Path],
         *,
         source: str | Sequence[str] | None = None,
         batch_size: int = 16,
@@ -211,7 +250,8 @@ class LifecycleDataModule:
         target_config: LifecycleTargetConfig | None = None,
     ):
         source_hint = source.lower() if isinstance(source, str) else None
-        self.csv_path = resolve_cycle_summary_path(csv_path, source=source_hint)
+        self.csv_paths = self._resolve_csv_paths(csv_path, source_hint=source_hint)
+        self.csv_path = self.csv_paths[0]
         self.batch_size = batch_size
         self.feature_cols = list(feature_cols or LIFECYCLE_FEATURE_COLUMNS)
         self.num_workers = num_workers
@@ -220,11 +260,11 @@ class LifecycleDataModule:
         self.target_config = target_config or LifecycleTargetConfig()
         self.output_dir = Path(output_dir) if output_dir is not None else self.csv_path.parent
         self.output_dir.mkdir(parents=True, exist_ok=True)
-        self.data = pd.read_csv(self.csv_path)
+        self.data = self._load_cycle_frames()
         self.sources = self._resolve_sources(source)
         self.data = self.data[self.data["source"].str.lower().isin(self.sources)].copy()
         if self.data.empty:
-            raise ValueError(f"数据文件 {self.csv_path} 中不存在来源 {self.sources} 的样本")
+            raise ValueError(f"数据文件 {self.csv_paths} 中不存在来源 {self.sources} 的样本")
         self.data.sort_values(["canonical_battery_id", "cycle_number"], inplace=True)
         self.split = self._resolve_split()
         self.normalization = self._compute_normalization(self.split.train_batteries)
@@ -253,6 +293,18 @@ class LifecycleDataModule:
             target_config=self.target_config,
             vocab=self.vocab,
         )
+
+    @staticmethod
+    def _resolve_csv_paths(csv_path: str | Path | Sequence[str | Path], *, source_hint: str | None) -> list[Path]:
+        if isinstance(csv_path, (str, Path)):
+            return [resolve_cycle_summary_path(csv_path, source=source_hint)]
+        return [resolve_cycle_summary_path(item) for item in csv_path]
+
+    def _load_cycle_frames(self) -> pd.DataFrame:
+        frames = [pd.read_csv(path) for path in self.csv_paths]
+        if len(frames) == 1:
+            return frames[0]
+        return pd.concat(frames, ignore_index=True)
 
     def _resolve_sources(self, source: str | Sequence[str] | None) -> list[str]:
         if source is None:
@@ -307,6 +359,7 @@ class LifecycleDataModule:
     def summary(self, *, path_root: str | Path | None = None) -> dict[str, Any]:
         payload = {
             "csv_path": _serialize_path(self.csv_path, path_root),
+            "csv_paths": [_serialize_path(path, path_root) for path in self.csv_paths],
             "sources": self.sources,
             "feature_columns": self.feature_cols,
             "target_config": self.target_config.to_dict(),

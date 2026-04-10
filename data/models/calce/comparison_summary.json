@@ -1,80 +1,392 @@
 {
   "source": "calce",
   "task_kind": "lifecycle",
-  "models": {
-    "bilstm": {
-      "best_val_loss": 60.245906829833984,
-      "test_metrics": {
-        "rmse": 0.020382,
-        "mae": 0.016751,
-        "mape": 1.874402,
-        "r2": 0.589942
+  "summary_version": "paper_truth_v1",
+  "required_units": [
+    "within_source",
+    "transfer",
+    "ablation"
+  ],
+  "benchmark_units": [
+    {
+      "key": "within_source",
+      "label": "Within-source multi-seed",
+      "suite_kind": "multi_seed",
+      "required_for_paper": true,
+      "available": true,
+      "winner_model": "bilstm",
+      "paper_gate_passed": false,
+      "paper_gate": {
+        "hybrid_beats_bilstm": false,
+        "checks": {
+          "rmse": false,
+          "r2": false
+        },
+        "metric_snapshot": {
+          "hybrid_rmse": 0.021945,
+          "bilstm_rmse": 0.017631,
+          "hybrid_r2": 0.513922,
+          "bilstm_r2": 0.695668
+        }
       },
-      "single_run_test_metrics": {
-        "loss": 53.71707534790039,
-        "traj_loss": 0.0001505034015281126,
-        "rul_loss": 52.81727981567383,
-        "eol_loss": 53.2086067199707,
-        "knee_loss": 24.064044952392578,
-        "mono_loss": 0.0,
-        "smooth_loss": 1.280218100419006e-07,
-        "domain_loss": 0.0883038267493248,
-        "trajectory_rmse": 0.017349546775221825,
-        "trajectory_mae": 0.014151759445667267,
-        "trajectory_mape": 1.5779906511306763,
-        "trajectory_r2": 0.7055151462554932,
-        "rul_mae": 53.31727981567383,
-        "rul_rmse": 53.71895217895508,
-        "eol_mae": 53.7086067199707,
-        "eol_rmse": 54.10393142700195,
-        "knee_mae": 24.564044952392578,
-        "rmse": 0.017349546775221825,
-        "mae": 0.014151759445667267,
-        "mape": 1.5779906511306763,
-        "r2": 0.7055151462554932,
-        "lr": 0.0003
+      "models": {
+        "bilstm": {
+          "model_type": "bilstm",
+          "suite_kind": "multi_seed",
+          "summary_path": "data/models/calce/bilstm/bilstm_multi_seed_summary.json",
+          "available": true,
+          "metrics": {
+            "rmse": 0.017631,
+            "mae": 0.014518,
+            "mape": 1.607211,
+            "r2": 0.695668,
+            "trajectory_rmse": 0.017631,
+            "trajectory_mae": 0.014518,
+            "trajectory_r2": 0.695668,
+            "rul_mae": 53.883078,
+            "rul_rmse": 54.275538,
+            "eol_mae": 53.83134,
+            "eol_rmse": 54.223584,
+            "knee_mae": 25.222155,
+            "loss": 54.217438,
+            "traj_loss": 0.000156,
+            "rul_loss": 53.383078,
+            "eol_loss": 53.331341,
+            "knee_loss": 24.722153,
+            "mono_loss": 0.000141,
+            "smooth_loss": 0.000244,
+            "domain_loss": 0.126648,
+            "trajectory_mape": 1.607211,
+            "lr": 0.0003
+          },
+          "std": {
+            "rmse": 0.000453,
+            "mae": 0.000355,
+            "mape": 0.036329,
+            "r2": 0.015499,
+            "trajectory_rmse": 0.000453,
+            "trajectory_mae": 0.000355,
+            "trajectory_r2": 0.015499,
+            "rul_mae": 0.571695,
+            "rul_rmse": 0.568841,
+            "eol_mae": 0.56334,
+            "eol_rmse": 0.559581,
+            "knee_mae": 0.39554,
+            "loss": 0.330114,
+            "traj_loss": 8e-06,
+            "rul_loss": 0.571695,
+            "eol_loss": 0.563339,
+            "knee_loss": 0.395541,
+            "mono_loss": 5.8e-05,
+            "smooth_loss": 8.8e-05,
+            "domain_loss": 0.054168,
+            "trajectory_mape": 0.036329,
+            "lr": 0.0
+          },
+          "best_checkpoint": {
+            "seed": 42,
+            "path": "data/models/calce/bilstm/release/checkpoints/bilstm_release.pt"
+          },
+          "generated_at": "2026-04-08T09:26:39.246443",
+          "summary_version": null,
+          "task_kind": "lifecycle",
+          "seeds": [
+            7,
+            21,
+            42
+          ],
+          "release_path": "data/models/calce/bilstm/release/final_release.json"
+        },
+        "hybrid": {
+          "model_type": "hybrid",
+          "suite_kind": "multi_seed",
+          "summary_path": "data/models/calce/hybrid/hybrid_multi_seed_summary.json",
+          "available": true,
+          "metrics": {
+            "rmse": 0.021945,
+            "mae": 0.01812,
+            "mape": 2.008126,
+            "r2": 0.513922,
+            "trajectory_rmse": 0.021945,
+            "trajectory_mae": 0.01812,
+            "trajectory_r2": 0.513922,
+            "rul_mae": 54.601798,
+            "rul_rmse": 54.989693,
+            "eol_mae": 54.49389,
+            "eol_rmse": 54.88436,
+            "knee_mae": 25.7661,
+            "loss": 54.983534,
+            "traj_loss": 0.000248,
+            "rul_loss": 54.101796,
+            "eol_loss": 53.993889,
+            "knee_loss": 25.2661,
+            "mono_loss": 0.000309,
+            "smooth_loss": 0.000688,
+            "domain_loss": 0.182988,
+            "trajectory_mape": 2.008126,
+            "lr": 0.0003
+          },
+          "std": {
+            "rmse": 0.003909,
+            "mae": 0.003004,
+            "mape": 0.34426,
+            "r2": 0.175478,
+            "trajectory_rmse": 0.003909,
+            "trajectory_mae": 0.003004,
+            "trajectory_r2": 0.175478,
+            "rul_mae": 0.226342,
+            "rul_rmse": 0.225125,
+            "eol_mae": 0.176002,
+            "eol_rmse": 0.174538,
+            "knee_mae": 0.235223,
+            "loss": 0.117368,
+            "traj_loss": 9e-05,
+            "rul_loss": 0.226343,
+            "eol_loss": 0.176002,
+            "knee_loss": 0.235223,
+            "mono_loss": 1.3e-05,
+            "smooth_loss": 2.7e-05,
+            "domain_loss": 0.07423,
+            "trajectory_mape": 0.34426,
+            "lr": 0.0
+          },
+          "best_checkpoint": {
+            "seed": 21,
+            "path": "data/models/calce/hybrid/release/checkpoints/hybrid_release.pt"
+          },
+          "generated_at": "2026-04-08T09:27:32.040461",
+          "summary_version": null,
+          "task_kind": "lifecycle",
+          "seeds": [
+            7,
+            21,
+            42
+          ],
+          "release_path": "data/models/calce/hybrid/release/final_release.json"
+        }
       },
-      "best_checkpoint": "data/models/calce/bilstm/runs/seed-42/bilstm_best.pt",
-      "final_checkpoint": "data/models/calce/bilstm/bilstm_final.pt",
-      "requested_model_type": "bilstm",
-      "multi_seed_available": true
+      "notes": [
+        "BiLSTM 在该 benchmark 单元同时满足更低 RMSE 与更高 R2。"
+      ]
     },
-    "hybrid": {
-      "best_val_loss": 61.415164947509766,
-      "test_metrics": {
-        "rmse": 0.029198,
-        "mae": 0.023205,
-        "mape": 2.606718,
-        "r2": 0.032485
+    {
+      "key": "transfer",
+      "label": "Transfer benchmark",
+      "suite_kind": "transfer",
+      "required_for_paper": true,
+      "available": true,
+      "winner_model": "hybrid",
+      "paper_gate_passed": true,
+      "paper_gate": {
+        "hybrid_beats_bilstm": true,
+        "checks": {
+          "rmse": true,
+          "r2": true
+        },
+        "metric_snapshot": {
+          "hybrid_rmse": 0.018598,
+          "bilstm_rmse": 0.024387,
+          "hybrid_r2": 0.657456,
+          "bilstm_r2": 0.412059
+        }
       },
-      "single_run_test_metrics": {
-        "loss": 54.905948638916016,
-        "traj_loss": 0.0001308917417190969,
-        "rul_loss": 53.978031158447266,
-        "eol_loss": 53.8159065246582,
-        "knee_loss": 25.50210952758789,
-        "mono_loss": 0.0,
-        "smooth_loss": 5.523043569155561e-07,
-        "domain_loss": 0.14912784099578857,
-        "trajectory_rmse": 0.016179725527763367,
-        "trajectory_mae": 0.012992414645850658,
-        "trajectory_mape": 1.444946527481079,
-        "trajectory_r2": 0.7438886165618896,
-        "rul_mae": 54.478031158447266,
-        "rul_rmse": 54.868350982666016,
-        "eol_mae": 54.3159065246582,
-        "eol_rmse": 54.70940017700195,
-        "knee_mae": 26.002111434936523,
-        "rmse": 0.016179725527763367,
-        "mae": 0.012992414645850658,
-        "mape": 1.444946527481079,
-        "r2": 0.7438886165618896,
-        "lr": 0.0003
+      "models": {
+        "bilstm": {
+          "model_type": "bilstm",
+          "suite_kind": "transfer",
+          "summary_path": "data/models/calce/bilstm/transfer/multisource_to_calce/bilstm_transfer_summary.json",
+          "available": true,
+          "metrics": {
+            "rmse": 0.024387,
+            "mae": 0.020305,
+            "mape": 2.280668,
+            "r2": 0.412059,
+            "trajectory_rmse": 0.024387,
+            "trajectory_mae": 0.020305,
+            "trajectory_r2": 0.412059,
+            "rul_mae": 126.575559,
+            "rul_rmse": 127.461957,
+            "eol_mae": 135.855309,
+            "eol_rmse": 136.762956,
+            "knee_mae": 86.40644,
+            "loss": 138.713679,
+            "traj_loss": 0.0003,
+            "rul_loss": 126.075559,
+            "eol_loss": 135.355309,
+            "knee_loss": 85.906447,
+            "mono_loss": 0.0,
+            "smooth_loss": 0.0,
+            "domain_loss": 0.568714,
+            "trajectory_mape": 2.280668,
+            "lr": 8.6e-05
+          },
+          "std": {
+            "rmse": 0.002499,
+            "mae": 0.002173,
+            "mape": 0.245797,
+            "r2": 0.119962,
+            "trajectory_rmse": 0.002499,
+            "trajectory_mae": 0.002173,
+            "trajectory_r2": 0.119962,
+            "rul_mae": 86.98598,
+            "rul_rmse": 86.271755,
+            "eol_mae": 80.743409,
+            "eol_rmse": 79.901933,
+            "knee_mae": 58.418205,
+            "loss": 89.930968,
+            "traj_loss": 6.1e-05,
+            "rul_loss": 86.98598,
+            "eol_loss": 80.743409,
+            "knee_loss": 58.418212,
+            "mono_loss": 0.0,
+            "smooth_loss": 0.0,
+            "domain_loss": 0.2915,
+            "trajectory_mape": 0.245797,
+            "lr": 0.0
+          },
+          "best_checkpoint": {
+            "seed": 7,
+            "path": "data/models/calce/bilstm/release/checkpoints/bilstm_release.pt"
+          },
+          "generated_at": "2026-03-22T03:37:18.324113",
+          "summary_version": null,
+          "task_kind": "lifecycle",
+          "seeds": [
+            7,
+            21,
+            42
+          ],
+          "release_path": "data/models/calce/bilstm/release/final_release.json"
+        },
+        "hybrid": {
+          "model_type": "hybrid",
+          "suite_kind": "transfer",
+          "summary_path": "data/models/calce/hybrid/transfer/multisource_to_calce/hybrid_transfer_summary.json",
+          "available": true,
+          "metrics": {
+            "rmse": 0.018598,
+            "mae": 0.015305,
+            "mape": 1.710382,
+            "r2": 0.657456,
+            "trajectory_rmse": 0.018598,
+            "trajectory_mae": 0.015305,
+            "trajectory_r2": 0.657456,
+            "rul_mae": 6.811884,
+            "rul_rmse": 7.905963,
+            "eol_mae": 7.842759,
+            "eol_rmse": 9.39071,
+            "knee_mae": 31.966918,
+            "loss": 14.015792,
+            "traj_loss": 0.000175,
+            "rul_loss": 6.31272,
+            "eol_loss": 7.354365,
+            "knee_loss": 31.466919,
+            "mono_loss": 0.0,
+            "smooth_loss": 0.0,
+            "domain_loss": 0.507806,
+            "trajectory_mape": 1.710382,
+            "lr": 8.6e-05
+          },
+          "std": {
+            "rmse": 0.002057,
+            "mae": 0.001828,
+            "mape": 0.209476,
+            "r2": 0.077796,
+            "trajectory_rmse": 0.002057,
+            "trajectory_mae": 0.001828,
+            "trajectory_r2": 0.077796,
+            "rul_mae": 1.16556,
+            "rul_rmse": 1.423486,
+            "eol_mae": 2.376364,
+            "eol_rmse": 2.547202,
+            "knee_mae": 3.497079,
+            "loss": 1.189086,
+            "traj_loss": 4e-05,
+            "rul_loss": 1.164848,
+            "eol_loss": 2.369064,
+            "knee_loss": 3.497078,
+            "mono_loss": 0.0,
+            "smooth_loss": 0.0,
+            "domain_loss": 0.138208,
+            "trajectory_mape": 0.209476,
+            "lr": 0.0
+          },
+          "best_checkpoint": {
+            "seed": 21,
+            "path": "data/models/calce/hybrid/release/checkpoints/hybrid_release.pt"
+          },
+          "generated_at": "2026-03-22T03:34:41.099885",
+          "summary_version": null,
+          "task_kind": "lifecycle",
+          "seeds": [
+            7,
+            21,
+            42
+          ],
+          "release_path": "data/models/calce/hybrid/release/final_release.json"
+        }
       },
-      "best_checkpoint": "data/models/calce/hybrid/hybrid_best.pt",
-      "final_checkpoint": "data/models/calce/hybrid/hybrid_final.pt",
-      "requested_model_type": "hybrid",
-      "multi_seed_available": true
+      "notes": [
+        "Hybrid 在该 benchmark 单元同时满足更低 RMSE 与更高 R2。"
+      ]
     }
-  }
+  ],
+  "best_models": {
+    "within_source": "bilstm",
+    "transfer": "hybrid"
+  },
+  "best_model": "bilstm",
+  "paper_gate": {
+    "required_units": [
+      "within_source",
+      "transfer",
+      "ablation"
+    ],
+    "available_units": [
+      "within_source",
+      "transfer",
+      "ablation"
+    ],
+    "passing_units": [
+      "transfer"
+    ],
+    "failing_units": [
+      "within_source",
+      "ablation"
+    ],
+    "passed": false
+  },
+  "ablation_gate": {
+    "available": true,
+    "checked_variants": [
+      "no_xlstm",
+      "no_transformer"
+    ],
+    "blocking_variants": [
+      {
+        "key": "no_xlstm",
+        "rmse": 0.014203,
+        "r2": 0.800341,
+        "delta_vs_full": {
+          "rmse": -0.007742,
+          "r2": 0.286419
+        }
+      },
+      {
+        "key": "no_transformer",
+        "rmse": 0.014212,
+        "r2": 0.802236,
+        "delta_vs_full": {
+          "rmse": -0.007733,
+          "r2": 0.288314
+        }
+      }
+    ],
+    "passed": false
+  },
+  "warnings": [
+    "Within-source multi-seed 未达到 Hybrid 全面优于 BiLSTM 的论文门槛。",
+    "Hybrid 消融存在优于 full_hybrid 的关键反例，当前不能作为结构优势强证据。"
+  ],
+  "generated_at": "2026-04-09T05:54:40.465546"
 }

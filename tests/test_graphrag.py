@@ -78,6 +78,21 @@ def test_graphrag_engine_end_to_end():
     assert "电池故障诊断报告" in report
 
 
+def test_graphrag_keeps_sensor_drift_when_sampling_evidence_is_explicit():
+    engine = GraphRAGEngine()
+    diagnosis = engine.diagnose(
+        anomalies=[
+            {"symptom": "电压异常", "severity": "medium", "description": "采样值整体偏移，怀疑传感器漂移"},
+            {"symptom": "温度异常", "severity": "low", "description": "标定后仍存在持续偏移"},
+        ],
+        battery_info={"battery_id": "B-SENSOR", "source": "nasa"},
+    )
+
+    assert diagnosis.candidate_faults
+    top_names = {item.name for item in diagnosis.candidate_faults[:2]}
+    assert "传感器漂移" in top_names
+
+
 def test_graphrag_engine_falls_back_to_memory_when_neo4j_is_unavailable(monkeypatch: pytest.MonkeyPatch):
     engine = GraphRAGEngine(
         graph_backend="neo4j",

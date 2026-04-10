@@ -3,5 +3,5 @@
   "title": "HUST hybrid training curves",
   "description": "Train/validation loss curves for the configured seed runs.",
   "path": "data/models/hust/hybrid/plots/training_curves.png",
-  "generated_at": "2026-03-21T14:23:25.712515"
+  "generated_at": "2026-04-08T09:55:04.874214"
 }

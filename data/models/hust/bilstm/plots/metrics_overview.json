@@ -1,0 +1,7 @@
+{
+  "key": "metrics_overview",
+  "title": "HUST bilstm multi-seed metrics",
+  "description": "Mean and std across the configured random seeds.",
+  "path": "data/models/hust/bilstm/plots/metrics_overview.png",
+  "generated_at": "2026-04-08T09:50:02.181076"
+}

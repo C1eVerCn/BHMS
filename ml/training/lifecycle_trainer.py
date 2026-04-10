@@ -32,6 +32,13 @@ MODEL_ALIASES = {
     "lifecycle_bilstm": "lifecycle_bilstm",
 }
 
+_LEGACY_LIFECYCLE_KEY_PREFIXES: dict[str, str] = {
+    "fusion.xlstm_proj.": "fusion.fused_path.xlstm_proj.",
+    "fusion.trans_proj.": "fusion.fused_path.trans_proj.",
+    "fusion.gate.": "fusion.fused_path.gate.",
+    "fusion.fusion_norm.": "fusion.fused_path.fusion_norm.",
+}
+
 
 @dataclass
 class LifecycleTrainingConfig:
@@ -55,12 +62,26 @@ class LifecycleTrainingConfig:
     model_version: str = "lifecycle-v1"
     seed: int = 42
     resume_from: Optional[str] = None
+    init_from_checkpoint: Optional[str] = None
     run_name: Optional[str] = None
+    traj_weight: float = 1.0
+    rul_weight: float = 0.5
+    eol_weight: float = 0.4
+    knee_weight: float = 0.25
+    mono_weight: float = 0.1
+    smooth_weight: float = 0.1
+    domain_weight: float = 0.1
 
 
-def _dataclass_from_overrides(dataclass_type, overrides: Optional[dict[str, Any]] = None):
+def _dataclass_from_overrides(dataclass_type, overrides: Optional[dict[str, Any]] = None, *, context: str | None = None):
     allowed = {field.name for field in fields(dataclass_type)}
-    payload = {key: value for key, value in (overrides or {}).items() if key in allowed}
+    incoming = dict(overrides or {})
+    unexpected = sorted(set(incoming) - allowed)
+    if unexpected:
+        label = context or dataclass_type.__name__
+        unexpected_str = ", ".join(unexpected)
+        raise ValueError(f"Unsupported lifecycle config keys for {label}: {unexpected_str}")
+    payload = {key: value for key, value in incoming.items() if key in allowed}
     return dataclass_type(**payload)
 
 
@@ -69,6 +90,18 @@ def _canonical_model_type(model_type: str) -> str:
         return MODEL_ALIASES[model_type.lower()]
     except KeyError as exc:
         raise ValueError(f"Unknown lifecycle model type: {model_type}") from exc
+
+
+def _remap_legacy_lifecycle_state_dict(model_state: dict[str, Any]) -> dict[str, Any]:
+    remapped: dict[str, Any] = {}
+    for name, value in model_state.items():
+        mapped_name = name
+        for legacy_prefix, current_prefix in _LEGACY_LIFECYCLE_KEY_PREFIXES.items():
+            if name.startswith(legacy_prefix):
+                mapped_name = current_prefix + name[len(legacy_prefix):]
+                break
+        remapped[mapped_name] = value
+    return remapped
 
 
 def build_lifecycle_model(
@@ -89,6 +122,7 @@ def build_lifecycle_model(
                 "protocol_vocab_size": vocab_sizes.get("protocol", 1),
                 **(overrides or {}),
             },
+            context="lifecycle_hybrid.model",
         )
         return LifecycleHybridPredictor(config), asdict(config)
     config = _dataclass_from_overrides(
@@ -100,6 +134,7 @@ def build_lifecycle_model(
             "protocol_vocab_size": vocab_sizes.get("protocol", 1),
             **(overrides or {}),
         },
+        context="lifecycle_bilstm.model",
     )
     return LifecycleBiLSTMPredictor(config), asdict(config)
 
@@ -127,7 +162,15 @@ class LifecycleTrainer:
         self.model.to(self.device)
         self.optimizer = AdamW(self.model.parameters(), lr=self.config.learning_rate, weight_decay=self.config.weight_decay)
         self.scheduler = self._build_scheduler()
-        self.criterion = LifecycleLoss()
+        self.criterion = LifecycleLoss(
+            traj_weight=self.config.traj_weight,
+            rul_weight=self.config.rul_weight,
+            eol_weight=self.config.eol_weight,
+            knee_weight=self.config.knee_weight,
+            mono_weight=self.config.mono_weight,
+            smooth_weight=self.config.smooth_weight,
+            domain_weight=self.config.domain_weight,
+        )
         self.scaler = torch.amp.GradScaler("cuda", enabled=self.config.use_amp and torch.cuda.is_available())
         self.early_stopping = EarlyStopping(training_config.patience, training_config.min_delta) if training_config.early_stopping else None
         self.run_name = training_config.run_name or f"{training_config.source}_{training_config.model_type}"
@@ -153,10 +196,13 @@ class LifecycleTrainer:
         self.best_epoch: Optional[int] = None
         self.stopped_early = False
         self.start_epoch = 0
+        self.init_from_report: Optional[dict[str, Any]] = None
         torch.manual_seed(self.config.seed)
         np.random.seed(self.config.seed)
         if self.config.resume_from:
             self._resume(self.config.resume_from)
+        elif self.config.init_from_checkpoint:
+            self._initialize_from(self.config.init_from_checkpoint)
 
     @staticmethod
     def _resolve_device(device: str) -> torch.device:
@@ -291,6 +337,39 @@ class LifecycleTrainer:
         if self.early_stopping is not None:
             self.early_stopping.best_loss = self.best_val_loss if math.isfinite(self.best_val_loss) else None
 
+    def _initialize_from(self, checkpoint_path: str | Path) -> None:
+        checkpoint = torch.load(checkpoint_path, map_location=self.device)
+        model_state = checkpoint.get("model_state_dict")
+        if not model_state:
+            raise ValueError(f"checkpoint {checkpoint_path} 缺少 model_state_dict，无法用于 fine-tune 初始化")
+        model_state = _remap_legacy_lifecycle_state_dict(model_state)
+        current_state = self.model.state_dict()
+        compatible_state: dict[str, torch.Tensor] = {}
+        skipped_shape_mismatches: list[str] = []
+        for name, value in model_state.items():
+            target = current_state.get(name)
+            if target is None:
+                continue
+            if getattr(value, "shape", None) != target.shape:
+                skipped_shape_mismatches.append(name)
+                continue
+            compatible_state[name] = value
+        if not compatible_state:
+            raise ValueError(f"checkpoint {checkpoint_path} 与当前模型结构不兼容，无法加载任何可复用权重")
+        missing_before_load = [name for name in current_state.keys() if name not in compatible_state]
+        unexpected = [name for name in model_state.keys() if name not in current_state]
+        self.model.load_state_dict(compatible_state, strict=False)
+        self.init_from_report = {
+            "checkpoint_path": serialize_path(checkpoint_path),
+            "loaded_key_count": len(compatible_state),
+            "skipped_shape_mismatch_count": len(skipped_shape_mismatches),
+            "skipped_shape_mismatch_keys": skipped_shape_mismatches[:20],
+            "missing_key_count": len(missing_before_load),
+            "missing_keys_sample": missing_before_load[:20],
+            "unexpected_key_count": len(unexpected),
+            "unexpected_keys_sample": unexpected[:20],
+        }
+
     def save_checkpoint(self, filename: str, epoch: int, val_loss: float, *, test_metrics: Optional[dict[str, float]] = None) -> Path:
         checkpoint_path = self.checkpoint_dir / filename
         metadata = {
@@ -406,6 +485,8 @@ class LifecycleTrainer:
             "epochs_completed": epochs_completed,
             "stopped_early": self.stopped_early,
             "resume_from": serialize_path(self.config.resume_from) if self.config.resume_from else None,
+            "init_from_checkpoint": serialize_path(self.config.init_from_checkpoint) if self.config.init_from_checkpoint else None,
+            "init_from_report": self.init_from_report,
             "device": str(self.device),
             "duration_sec": duration_sec,
             "status": "completed",

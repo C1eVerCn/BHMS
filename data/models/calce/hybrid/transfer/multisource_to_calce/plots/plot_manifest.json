@@ -1,0 +1,26 @@
+{
+  "plots": [
+    {
+      "key": "error_distribution",
+      "title": "CALCE hybrid transfer error distribution",
+      "description": "Prediction error histogram for the fine-tuned transfer runs.",
+      "path": "data/models/calce/hybrid/transfer/multisource_to_calce/plots/error_distribution.png",
+      "generated_at": "2026-03-22T03:34:41.228695"
+    },
+    {
+      "key": "metrics_overview",
+      "title": "CALCE hybrid transfer metrics",
+      "description": "Mean and std across fine-tune seeds for the transfer benchmark.",
+      "path": "data/models/calce/hybrid/transfer/multisource_to_calce/plots/metrics_overview.png",
+      "generated_at": "2026-03-22T03:34:41.179733"
+    },
+    {
+      "key": "training_curves",
+      "title": "CALCE hybrid transfer curves",
+      "description": "Train/validation curves for the fine-tuned transfer runs.",
+      "path": "data/models/calce/hybrid/transfer/multisource_to_calce/plots/training_curves.png",
+      "generated_at": "2026-03-22T03:34:41.281099"
+    }
+  ],
+  "generated_at": "2026-03-22T03:34:41.281594"
+}

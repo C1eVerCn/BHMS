@@ -35,6 +35,7 @@ const modelLabels: Record<string, string> = {
 const projectionLabels: Record<string, string> = {
   linear: '线性投影',
   exponential: '指数投影',
+  lifecycle_decoder: '轨迹解码投影',
 }
 
 const featureLabels: Record<string, string> = {
@@ -74,10 +75,10 @@ const trainingScopeLabels: Record<string, string> = {
 }
 
 const trainingJobKindLabels: Record<string, string> = {
-  baseline: '基线训练',
-  multi_seed: '多随机种子',
-  ablation: '消融实验',
-  full_suite: '完整实验套件',
+  baseline: '基础训练',
+  multi_seed: '稳定性测试',
+  ablation: '结构对比',
+  full_suite: '完整实验',
 }
 
 const trainingStatusLabels: Record<string, string> = {
@@ -96,7 +97,7 @@ const trainingStageLabels: Record<string, string> = {
   baseline_hybrid: '基线 Hybrid',
   multi_seed_bilstm: 'Bi-LSTM 多随机种子',
   multi_seed_hybrid: 'Hybrid 多随机种子',
-  ablation_hybrid: 'Hybrid 消融实验',
+  ablation_hybrid: 'Hybrid 结构对比',
   compare_models: '生成对比',
   generate_plots: '生成图表',
   completed: '完成',
@@ -175,6 +176,8 @@ export function formatValidationSummary(summary: Record<string, unknown>) {
     let label = '内置样例'
     if (ingestionMode === 'uploaded_file') {
       label = '上传文件'
+    } else if (ingestionMode === 'demo_preset') {
+      label = '演示样本'
     } else if (String(ingestionMode).includes('raw_converter')) {
       label = '原始资产转换'
     } else if (String(ingestionMode).includes('enhancement_assets')) {
@@ -188,7 +191,7 @@ export function formatValidationSummary(summary: Record<string, unknown>) {
     items.push({ label: '分析状态', value: summary.ready_for_immediate_analysis ? '可立即分析' : '待补充数据' })
   }
   if (typeof summary.include_in_training === 'boolean') {
-    items.push({ label: '训练池', value: summary.include_in_training ? '已加入' : '仅导入' })
+    items.push({ label: '训练用途', value: summary.include_in_training ? '训练数据' : '展示样本' })
   }
   if (summary.source_distribution && typeof summary.source_distribution === 'object') {
     const labels = Object.entries(summary.source_distribution as Record<string, number>).map(([key, count]) => `${formatSourceLabel(key)} ${count} 节`)
@@ -196,5 +199,33 @@ export function formatValidationSummary(summary: Record<string, unknown>) {
       items.push({ label: '来源分布', value: labels.join(' / ') })
     }
   }
+  if (typeof summary.preset_name === 'string') {
+    items.push({ label: '演示样本', value: summary.preset_name })
+  }
   return items
+}
+
+export function buildBatteryProfileItems(
+  battery?: {
+    source?: string | null
+    dataset_name?: string | null
+    chemistry?: string | null
+    form_factor?: string | null
+    protocol_id?: string | null
+    cycle_count?: number | null
+    latest_capacity?: number | null
+    eol_ratio?: number | null
+  } | null,
+) {
+  if (!battery) return []
+  return [
+    { label: '来源', value: formatSourceLabel(battery.source) },
+    { label: '数据集', value: battery.dataset_name ?? '--' },
+    { label: '化学体系', value: battery.chemistry ?? '--' },
+    { label: '规格', value: battery.form_factor ?? '--' },
+    { label: '协议', value: battery.protocol_id ?? '--' },
+    { label: '循环数', value: typeof battery.cycle_count === 'number' ? `${battery.cycle_count}` : '--' },
+    { label: '当前容量', value: typeof battery.latest_capacity === 'number' ? `${battery.latest_capacity.toFixed(4)} Ah` : '--' },
+    { label: 'EOL 比例', value: typeof battery.eol_ratio === 'number' ? `${(battery.eol_ratio * 100).toFixed(0)}%` : '--' },
+  ]
 }

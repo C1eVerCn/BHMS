@@ -76,7 +76,7 @@ def test_prediction_service_supports_lifecycle_prediction_and_mechanism_explanat
     assert "lifecycle_evidence" in explanation
 
 
-def test_predict_lifecycle_does_not_delegate_to_predict_rul(tmp_path: Path):
+def test_prediction_service_uses_lifecycle_only_entrypoint(tmp_path: Path):
     settings = _make_settings(tmp_path)
     database = DatabaseManager(settings.database_path)
     database.initialize()
@@ -88,11 +88,42 @@ def test_predict_lifecycle_does_not_delegate_to_predict_rul(tmp_path: Path):
     battery_service.import_frame(frame, source="nasa", dataset_path=tmp_path / "nasa.csv", include_in_training=True)
     battery_id = str(frame["battery_id"].iloc[0])
 
-    def _should_not_run(*args, **kwargs):  # noqa: ANN002, ANN003
-        raise AssertionError("predict_rul should not be called from predict_lifecycle")
-
-    prediction_service.predict_rul = _should_not_run  # type: ignore[method-assign]
     lifecycle = prediction_service.predict_lifecycle(battery_id=battery_id, model_name="hybrid", seq_len=24)
 
+    assert not hasattr(prediction_service, "predict_rul")
     assert lifecycle["trajectory"]
     assert lifecycle["predicted_eol_cycle"] is not None
+
+
+def test_explain_mechanism_generates_requested_lifecycle_model_prediction(tmp_path: Path):
+    settings = replace(_make_settings(tmp_path), model_dir=PROJECT_ROOT / "data" / "models")
+    database = DatabaseManager(settings.database_path)
+    database.initialize()
+    repo = BHMSRepository(database)
+    battery_service = BatteryService(repository=repo, settings=settings)
+    prediction_service = PredictionService(repository=repo, settings=settings)
+
+    frame = create_synthetic_data(tmp_path / "calce_bilstm.csv", num_batteries=1, num_cycles=40, source="calce", dataset_name="calce_service")
+    battery_service.import_frame(frame, source="calce", dataset_path=tmp_path / "calce_bilstm.csv", include_in_training=True)
+    battery_id = str(frame["battery_id"].iloc[0])
+
+    explanation = prediction_service.explain_mechanism(
+        battery_id=battery_id,
+        anomalies=[
+            {
+                "code": "temperature_anomaly",
+                "symptom": "温度异常",
+                "severity": "high",
+                "description": "平均温度升高明显",
+                "source": "statistical",
+                "evidence": ["temperature_mean higher than expected"],
+            }
+        ],
+        model_name="bilstm",
+        seq_len=24,
+    )
+
+    latest_prediction = repo.list_predictions(battery_id, limit=1)[0]
+    assert latest_prediction["model_name"] == "bilstm"
+    assert explanation["model_evidence"]["model_name"] == "bilstm"
+    assert explanation["lifecycle_evidence"]["predicted_eol_cycle"] is not None

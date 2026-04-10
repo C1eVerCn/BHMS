@@ -13,8 +13,7 @@
     "temperature_std",
     "temperature_rise_rate",
     "capacity",
-    "cycle_number",
-    "capacity_ratio"
+    "cycle_number"
   ],
   "target_column": "capacity_ratio",
   "task_kind": "lifecycle"

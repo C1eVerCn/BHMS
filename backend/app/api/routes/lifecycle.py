@@ -27,5 +27,7 @@ def explain_mechanism(request: MechanismExplanationRequest):
         battery_id=request.battery_id,
         anomalies=anomalies,
         battery_info=request.battery_info,
+        model_name=request.model_name,
+        seq_len=request.seq_len,
     )
     return success_response(data, message="机理解释完成")

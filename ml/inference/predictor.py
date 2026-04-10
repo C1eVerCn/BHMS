@@ -104,15 +104,18 @@ class RULInferenceService:
         points: Optional[Sequence[dict[str, float]]] = None,
     ) -> PredictionOutput:
         source = source.lower()
-        for candidate in self._preferred_models(source, model_name):
+        requested_model = model_name
+        for candidate in self._preferred_models(source, requested_model):
             try:
-                return self._predict_with_checkpoint(
+                output = self._predict_with_checkpoint(
                     sequence=sequence,
                     points=points,
                     source=source,
                     model_name=candidate,
                     feature_cols=feature_cols,
                 )
+                output.fallback_used = candidate != requested_model
+                return output
             except Exception:
                 continue
         return self._heuristic_predict(sequence=sequence, points=points, source=source, feature_cols=feature_cols)
@@ -582,10 +585,97 @@ class RULInferenceService:
         effect = "提升" if delta < 0 else "压低"
         return f"遮挡 {feature_name} 后，模型输出相对基线{effect}了 RUL 估计。"
 
+    @classmethod
+    def _summary_checkpoint_candidates(
+        cls,
+        summary_path: Path,
+        payload: dict[str, object],
+        *,
+        run_keys: Sequence[str] = ("per_seed_runs",),
+        metric_keys: Sequence[str] = ("rmse",),
+    ) -> list[Path]:
+        candidates: list[Path] = []
+        seen: set[Path] = set()
+
+        def maybe_add(raw_path: object) -> None:
+            if not isinstance(raw_path, (str, Path)):
+                return
+            candidate = cls._resolve_reference_path(summary_path, raw_path)
+            if candidate is None or candidate in seen:
+                return
+            seen.add(candidate)
+            candidates.append(candidate)
+
+        best_checkpoint = payload.get("best_checkpoint")
+        if isinstance(best_checkpoint, dict):
+            maybe_add(best_checkpoint.get("path"))
+        else:
+            maybe_add(best_checkpoint)
+        maybe_add(payload.get("final_checkpoint"))
+
+        ranked_runs: list[tuple[float, object]] = []
+        for run_key in run_keys:
+            runs = payload.get(run_key) or []
+            if not isinstance(runs, list):
+                continue
+            for run in runs:
+                if not isinstance(run, dict):
+                    continue
+                metrics = run.get("metrics") or run.get("test_metrics") or {}
+                checkpoint_path = run.get("best_checkpoint") or run.get("final_checkpoint")
+                if checkpoint_path is None:
+                    continue
+                metric_value = float("inf")
+                if isinstance(metrics, dict):
+                    for metric_key in metric_keys:
+                        value = metrics.get(metric_key)
+                        if isinstance(value, (int, float)):
+                            metric_value = float(value)
+                            break
+                ranked_runs.append((metric_value, checkpoint_path))
+        ranked_runs.sort(key=lambda item: item[0])
+        for _, checkpoint_path in ranked_runs:
+            maybe_add(checkpoint_path)
+        return candidates
+
+    @classmethod
+    def _resolve_checkpoint_from_release_manifest(cls, release_path: Path) -> Optional[Path]:
+        if not release_path.exists():
+            return None
+        try:
+            payload = json.loads(release_path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            return None
+
+        explicit_checkpoint = payload.get("checkpoint_path")
+        if explicit_checkpoint is None:
+            best_checkpoint = payload.get("best_checkpoint")
+            if isinstance(best_checkpoint, dict):
+                explicit_checkpoint = best_checkpoint.get("path")
+            else:
+                explicit_checkpoint = best_checkpoint
+        if explicit_checkpoint:
+            candidate = cls._resolve_reference_path(release_path, explicit_checkpoint)
+            if candidate is not None:
+                return candidate
+
+        summary_reference = payload.get("summary_path")
+        if not summary_reference:
+            return None
+        summary_path = cls._resolve_reference_path(release_path, summary_reference)
+        if summary_path is None:
+            return None
+        return cls._resolve_checkpoint_from_summary(summary_path)
+
     def _resolve_checkpoint(self, source: str, model_name: str) -> Path:
+        release_manifest = self.model_dir / source / model_name / "release" / "final_release.json"
+        resolved = self._resolve_checkpoint_from_release_manifest(release_manifest)
+        if resolved is not None:
+            return resolved
         summary_candidates = [
-            self.model_dir / source / model_name / "optimized-config" / "optimized_multi_seed_summary.json",
             self.model_dir / source / model_name / f"{model_name}_multi_seed_summary.json",
+            self.model_dir / source / model_name / "optimized-config" / "optimized_multi_seed_summary.json",
+            self.model_dir / source / model_name / f"{model_name}_experiment_summary.json",
         ]
         for summary_path in summary_candidates:
             resolved = self._resolve_checkpoint_from_summary(summary_path)
@@ -610,25 +700,12 @@ class RULInferenceService:
         except json.JSONDecodeError:
             return None
 
-        best_checkpoint = payload.get("best_checkpoint") or {}
-        explicit_path = best_checkpoint.get("path") if isinstance(best_checkpoint, dict) else None
-        if explicit_path:
-            candidate = RULInferenceService._resolve_reference_path(summary_path, explicit_path)
-            if candidate is not None:
-                return candidate
-
-        per_seed_runs = payload.get("per_seed_runs") or []
-        ranked_runs = []
-        for run in per_seed_runs:
-            metrics = run.get("metrics") or {}
-            checkpoint_path = run.get("best_checkpoint") or run.get("final_checkpoint")
-            rmse = metrics.get("rmse")
-            if checkpoint_path is None or rmse is None:
-                continue
-            ranked_runs.append((float(rmse), checkpoint_path))
-        ranked_runs.sort(key=lambda item: item[0])
-        for _, checkpoint_path in ranked_runs:
-            candidate = RULInferenceService._resolve_reference_path(summary_path, checkpoint_path)
+        for candidate in RULInferenceService._summary_checkpoint_candidates(
+            summary_path,
+            payload,
+            run_keys=("per_seed_runs",),
+            metric_keys=("rmse",),
+        ):
             if candidate is not None:
                 return candidate
         return None
@@ -639,7 +716,9 @@ class RULInferenceService:
         if candidate.is_absolute():
             return candidate if candidate.exists() else None
 
-        search_roots = [PROJECT_ROOT, summary_path.parent, *summary_path.parents]
+        # Prefer paths relative to the artifact tree first so copied repos or relocated
+        # workspaces do not accidentally resolve back to the original project root.
+        search_roots = [summary_path.parent, *summary_path.parents, PROJECT_ROOT]
         seen: set[Path] = set()
         for root in search_roots:
             resolved = (root / candidate).resolve()
@@ -667,6 +746,20 @@ class RULInferenceService:
 
 
 class LifecycleInferenceService(RULInferenceService):
+    _LEGACY_LIFECYCLE_KEY_PREFIXES: dict[str, str] = {
+        "fusion.xlstm_proj.": "fusion.fused_path.xlstm_proj.",
+        "fusion.trans_proj.": "fusion.fused_path.trans_proj.",
+        "fusion.gate.": "fusion.fused_path.gate.",
+        "fusion.fusion_norm.": "fusion.fused_path.fusion_norm.",
+    }
+    _LEGACY_LIFECYCLE_ALLOWED_MISSING_PREFIXES: tuple[str, ...] = (
+        "fusion.xlstm_only.",
+        "fusion.transformer_only.",
+        "fusion.selector.",
+        "decoder.trajectory_gate.",
+        "decoder.fluctuation_head.",
+    )
+
     @staticmethod
     def _checkpoint_is_lifecycle(checkpoint_path: Path) -> bool:
         import torch
@@ -683,33 +776,33 @@ class LifecycleInferenceService(RULInferenceService):
         except json.JSONDecodeError:
             return None
 
-        best_checkpoint = payload.get("best_checkpoint") or {}
-        explicit_path = best_checkpoint.get("path") if isinstance(best_checkpoint, dict) else None
-        if explicit_path:
-            candidate = cls._resolve_reference_path(summary_path, explicit_path)
-            if candidate is not None and cls._checkpoint_is_lifecycle(candidate):
-                return candidate
-
-        per_seed_runs = payload.get("per_seed_runs") or []
-        ranked_runs = []
-        for run in per_seed_runs:
-            metrics = run.get("metrics") or {}
-            checkpoint_path = run.get("best_checkpoint") or run.get("final_checkpoint")
-            rmse = metrics.get("rmse")
-            if checkpoint_path is None or rmse is None:
-                continue
-            ranked_runs.append((float(rmse), checkpoint_path))
-        ranked_runs.sort(key=lambda item: item[0])
-        for _, checkpoint_path in ranked_runs:
-            candidate = cls._resolve_reference_path(summary_path, checkpoint_path)
+        for candidate in cls._summary_checkpoint_candidates(
+            summary_path,
+            payload,
+            run_keys=("fine_tune_runs", "per_seed_runs"),
+            metric_keys=("trajectory_rmse", "rmse"),
+        ):
             if candidate is not None and cls._checkpoint_is_lifecycle(candidate):
                 return candidate
         return None
 
+    @classmethod
+    def _resolve_lifecycle_checkpoint_from_release_manifest(cls, release_path: Path) -> Optional[Path]:
+        candidate = cls._resolve_checkpoint_from_release_manifest(release_path)
+        if candidate is None or not cls._checkpoint_is_lifecycle(candidate):
+            return None
+        return candidate
+
     def _resolve_checkpoint(self, source: str, model_name: str) -> Path:
+        release_manifest = self.model_dir / source / model_name / "release" / "final_release.json"
+        resolved = self._resolve_lifecycle_checkpoint_from_release_manifest(release_manifest)
+        if resolved is not None:
+            return resolved
         summary_candidates = [
+            self.model_dir / source / model_name / "transfer" / f"multisource_to_{source}" / f"{model_name}_transfer_summary.json",
             self.model_dir / source / model_name / f"{model_name}_multi_seed_summary.json",
             self.model_dir / source / model_name / "optimized-config" / "optimized_multi_seed_summary.json",
+            self.model_dir / source / model_name / f"{model_name}_experiment_summary.json",
         ]
         for summary_path in summary_candidates:
             resolved = self._resolve_lifecycle_checkpoint_from_summary(summary_path)
@@ -735,9 +828,10 @@ class LifecycleInferenceService(RULInferenceService):
         battery_info: Optional[dict[str, object]] = None,
     ) -> LifecyclePredictionOutput:
         source = source.lower()
-        for candidate in self._preferred_models(source, model_name):
+        requested_model = model_name
+        for candidate in self._preferred_models(source, requested_model):
             try:
-                return self._predict_with_checkpoint(
+                output = self._predict_with_checkpoint(
                     sequence=sequence,
                     points=points,
                     source=source,
@@ -745,6 +839,8 @@ class LifecycleInferenceService(RULInferenceService):
                     feature_cols=feature_cols,
                     battery_info=battery_info or {},
                 )
+                output.fallback_used = candidate != requested_model
+                return output
             except Exception:
                 continue
         return self._heuristic_predict(
@@ -754,6 +850,63 @@ class LifecycleInferenceService(RULInferenceService):
             feature_cols=feature_cols,
             battery_info=battery_info or {},
         )
+
+    @classmethod
+    def _remap_legacy_lifecycle_state_dict(cls, model_state: dict[str, object]) -> dict[str, object]:
+        remapped: dict[str, object] = {}
+        for name, value in model_state.items():
+            mapped_name = name
+            for legacy_prefix, current_prefix in cls._LEGACY_LIFECYCLE_KEY_PREFIXES.items():
+                if name.startswith(legacy_prefix):
+                    mapped_name = current_prefix + name[len(legacy_prefix):]
+                    break
+            remapped[mapped_name] = value
+        return remapped
+
+    @classmethod
+    def _is_allowed_legacy_lifecycle_missing_key(cls, name: str) -> bool:
+        return any(name.startswith(prefix) for prefix in cls._LEGACY_LIFECYCLE_ALLOWED_MISSING_PREFIXES)
+
+    @classmethod
+    def _load_lifecycle_model_state(cls, model, checkpoint: dict[str, object], checkpoint_path: Path) -> None:
+        model_state = checkpoint.get("model_state_dict")
+        if not model_state:
+            raise ValueError(f"checkpoint {checkpoint_path.name} 缺少 model_state_dict")
+        try:
+            model.load_state_dict(model_state)
+            return
+        except RuntimeError as exc:
+            remapped_state = cls._remap_legacy_lifecycle_state_dict(model_state)
+            current_state = model.state_dict()
+            compatible_state: dict[str, object] = {}
+            skipped_shape_mismatches: list[str] = []
+            for name, value in remapped_state.items():
+                target = current_state.get(name)
+                if target is None:
+                    continue
+                if getattr(value, "shape", None) != target.shape:
+                    skipped_shape_mismatches.append(name)
+                    continue
+                compatible_state[name] = value
+
+            if not compatible_state:
+                raise RuntimeError(f"checkpoint {checkpoint_path.name} 与当前生命周期模型结构不兼容") from exc
+
+            missing_keys = [name for name in current_state.keys() if name not in compatible_state]
+            unexpected_keys = [name for name in remapped_state.keys() if name not in current_state]
+            unsupported_missing = [name for name in missing_keys if not cls._is_allowed_legacy_lifecycle_missing_key(name)]
+            if unsupported_missing or unexpected_keys or skipped_shape_mismatches:
+                details: list[str] = []
+                if unsupported_missing:
+                    details.append(f"missing={unsupported_missing[:8]}")
+                if unexpected_keys:
+                    details.append(f"unexpected={unexpected_keys[:8]}")
+                if skipped_shape_mismatches:
+                    details.append(f"shape_mismatch={skipped_shape_mismatches[:8]}")
+                detail_text = ", ".join(details) if details else "legacy compatibility load failed"
+                raise RuntimeError(f"checkpoint {checkpoint_path.name} 无法兼容当前生命周期模型: {detail_text}") from exc
+
+            model.load_state_dict(compatible_state, strict=False)
 
     def _predict_with_checkpoint(
         self,
@@ -786,7 +939,7 @@ class LifecycleInferenceService(RULInferenceService):
                 model = LifecycleHybridPredictor(LifecycleHybridConfig(**config))
             else:
                 model = LifecycleBiLSTMPredictor(LifecycleBiLSTMConfig(**config))
-            model.load_state_dict(checkpoint["model_state_dict"])
+            self._load_lifecycle_model_state(model, checkpoint, checkpoint_path)
             model.eval()
             runtime = model
             self._cache[runtime_key] = runtime
@@ -838,6 +991,7 @@ class LifecycleInferenceService(RULInferenceService):
             observed_cycle=observed_cycle,
             fallback_knee=raw_knee_cycle,
             predicted_eol_cycle=predicted_eol_cycle,
+            eol_ratio=eol_ratio,
         )
         projection = self._build_lifecycle_projection(
             raw_cycles=raw_cycles,
@@ -886,7 +1040,12 @@ class LifecycleInferenceService(RULInferenceService):
             model_source=source,
             checkpoint_id=checkpoint_path.name,
             fallback_used=False,
-            trajectory=self._serialize_trajectory(trajectory, observed_cycle=observed_cycle, predicted_eol_cycle=predicted_eol_cycle),
+            trajectory=self._serialize_trajectory(
+                trajectory,
+                observed_cycle=observed_cycle,
+                predicted_eol_cycle=predicted_eol_cycle,
+                eol_ratio=eol_ratio,
+            ),
             projection=projection,
             uncertainty=uncertainty,
             explanation=explanation,
@@ -989,7 +1148,12 @@ class LifecycleInferenceService(RULInferenceService):
             model_source=source,
             checkpoint_id=None,
             fallback_used=True,
-            trajectory=self._serialize_trajectory(trajectory, observed_cycle=observed_cycle, predicted_eol_cycle=predicted_eol_cycle),
+            trajectory=self._serialize_trajectory(
+                trajectory,
+                observed_cycle=observed_cycle,
+                predicted_eol_cycle=predicted_eol_cycle,
+                eol_ratio=eol_ratio,
+            ),
             projection=projection,
             uncertainty=None,
             explanation=explanation,
@@ -1027,35 +1191,182 @@ class LifecycleInferenceService(RULInferenceService):
         }
 
     @staticmethod
+    def _trajectory_progress(point_count: int) -> np.ndarray:
+        if point_count <= 0:
+            return np.asarray([], dtype=float)
+        return np.linspace(1.0 / point_count, 1.0, num=point_count, dtype=float)
+
+    @classmethod
+    def _estimate_eol_progress(cls, trajectory: np.ndarray, *, eol_ratio: float) -> float:
+        values = np.asarray(trajectory, dtype=float).reshape(-1)
+        if values.size == 0:
+            return 1.0
+        progress = cls._trajectory_progress(values.size)
+        below = np.where(values <= eol_ratio)[0]
+        if not below.size:
+            return 1.0
+        index = int(below[0])
+        if index <= 0:
+            return float(progress[index])
+        previous_index = index - 1
+        upper = float(values[previous_index])
+        lower = float(values[index])
+        if upper <= eol_ratio:
+            return float(progress[index])
+        ratio = (upper - eol_ratio) / max(upper - lower, 1e-6)
+        interpolated = progress[previous_index] + (progress[index] - progress[previous_index]) * np.clip(ratio, 0.0, 1.0)
+        return float(np.clip(interpolated, progress[0], progress[-1]))
+
+    @classmethod
+    def _map_trajectory_cycles(
+        cls,
+        point_count: int,
+        *,
+        observed_cycle: float,
+        predicted_eol_cycle: float,
+        eol_progress: float,
+    ) -> np.ndarray:
+        progress = cls._trajectory_progress(point_count)
+        if progress.size == 0:
+            return progress
+        horizon = max(float(predicted_eol_cycle - observed_cycle), 1.0)
+        safe_eol_progress = max(float(eol_progress), float(progress[0]))
+        return observed_cycle + (progress / safe_eol_progress) * horizon
+
+    @classmethod
+    def _build_variation_pattern(
+        cls,
+        raw_cycles: np.ndarray,
+        raw_capacities: np.ndarray,
+        *,
+        initial_capacity: float,
+    ) -> tuple[np.ndarray, float]:
+        recent_window = min(24, raw_capacities.size)
+        if recent_window < 6:
+            return np.asarray([], dtype=float), 0.0
+        recent_cycles = np.asarray(raw_cycles[-recent_window:], dtype=float)
+        recent_capacities = np.asarray(raw_capacities[-recent_window:], dtype=float)
+        if not np.all(np.isfinite(recent_capacities)):
+            return np.asarray([], dtype=float), 0.0
+        trend = np.polyval(np.polyfit(recent_cycles, recent_capacities, deg=1), recent_cycles)
+        residuals = recent_capacities - trend
+        residuals = residuals - float(np.mean(residuals))
+        scale = float(np.percentile(np.abs(residuals), 75))
+        minimum_scale = max(initial_capacity * 0.002, 0.0025)
+        if scale < minimum_scale:
+            return np.asarray([], dtype=float), 0.0
+        pattern = np.clip(residuals / max(scale, 1e-6), -1.25, 1.25)
+        return pattern.astype(float), scale
+
+    @classmethod
+    def _build_display_projection_points(
+        cls,
+        *,
+        raw_cycles: np.ndarray,
+        raw_capacities: np.ndarray,
+        forecast_cycles: np.ndarray,
+        forecast_capacities: np.ndarray,
+        display_seed_capacities: np.ndarray,
+        band_widths: np.ndarray,
+        initial_capacity: float,
+        predicted_eol_cycle: float,
+    ) -> list[dict[str, float]]:
+        if forecast_cycles.size == 0:
+            return []
+        if display_seed_capacities.size == forecast_capacities.size and display_seed_capacities.size:
+            positive_rebounds = np.diff(display_seed_capacities)
+            rebound_threshold = max(initial_capacity * 0.0012, 0.0015)
+            if np.any(positive_rebounds > rebound_threshold):
+                lower_bound = np.maximum(0.0, forecast_capacities - band_widths * 0.9)
+                upper_bound = forecast_capacities + band_widths * 0.9
+                display_capacities = np.clip(display_seed_capacities, lower_bound, upper_bound)
+                display_capacities[0] = forecast_capacities[0]
+                display_capacities[-1] = forecast_capacities[-1]
+                return [
+                    {"cycle": round(float(cycle), 2), "capacity": round(float(capacity), 4)}
+                    for cycle, capacity in zip(forecast_cycles, display_capacities)
+                ]
+        pattern, pattern_scale = cls._build_variation_pattern(
+            raw_cycles,
+            raw_capacities,
+            initial_capacity=initial_capacity,
+        )
+        if pattern.size == 0 or pattern_scale <= 0.0:
+            return [
+                {"cycle": round(float(cycle), 2), "capacity": round(float(capacity), 4)}
+                for cycle, capacity in zip(forecast_cycles, forecast_capacities)
+            ]
+
+        repeated_pattern = np.resize(pattern, forecast_capacities.size)
+        repeated_pattern[0] = 0.0
+        repeated_pattern[-1] = 0.0
+
+        start_cycle = float(forecast_cycles[0])
+        end_cycle = float(forecast_cycles[-1])
+        total_horizon = max(end_cycle - start_cycle, 1e-6)
+        eol_anchor = float(np.clip((predicted_eol_cycle - start_cycle) / total_horizon, 0.0, 1.0))
+        progress = (forecast_cycles - start_cycle) / total_horizon
+        if eol_anchor <= 1e-6:
+            decay = 0.18 * (1.0 - progress)
+        else:
+            decay = np.where(
+                progress <= eol_anchor,
+                1.0 - 0.45 * (progress / max(eol_anchor, 1e-6)),
+                0.55 * (1.0 - (progress - eol_anchor) / max(1.0 - eol_anchor, 1e-6)) + 0.12 * ((progress - eol_anchor) / max(1.0 - eol_anchor, 1e-6)),
+            )
+        decay = np.clip(decay, 0.08, 1.0)
+
+        amplitude_cap = np.minimum(pattern_scale * decay * 0.85, band_widths * 0.48)
+        modulation = repeated_pattern * amplitude_cap
+        lower_bound = np.maximum(0.0, forecast_capacities - band_widths * 0.72)
+        upper_bound = forecast_capacities + band_widths * 0.72
+        display_capacities = np.clip(forecast_capacities + modulation, lower_bound, upper_bound)
+        display_capacities[0] = forecast_capacities[0]
+        display_capacities[-1] = forecast_capacities[-1]
+
+        return [
+            {"cycle": round(float(cycle), 2), "capacity": round(float(capacity), 4)}
+            for cycle, capacity in zip(forecast_cycles, display_capacities)
+        ]
+
+    @classmethod
     def _infer_eol_cycle(
+        cls,
         trajectory: np.ndarray,
         *,
         observed_cycle: float,
         eol_ratio: float,
         fallback_eol: float,
     ) -> float:
-        below = np.where(trajectory <= eol_ratio)[0]
-        if below.size:
-            step = below[0] + 1
-            return round(observed_cycle + float(step), 2)
-        return round(max(observed_cycle, float(fallback_eol)), 2)
+        candidate = float(fallback_eol)
+        if np.isfinite(candidate) and candidate > observed_cycle:
+            return round(candidate, 2)
+        progress = cls._estimate_eol_progress(trajectory, eol_ratio=eol_ratio)
+        fallback_horizon = max(8.0, trajectory.size * max(progress, 0.3))
+        return round(observed_cycle + fallback_horizon, 2)
 
-    @staticmethod
+    @classmethod
     def _infer_knee_cycle(
+        cls,
         trajectory: np.ndarray,
         *,
         observed_cycle: float,
         fallback_knee: float,
         predicted_eol_cycle: float,
+        eol_ratio: float,
     ) -> Optional[float]:
         if trajectory.size >= 6:
             slopes = np.diff(trajectory)
             curvature = np.diff(slopes)
             if curvature.size:
                 candidate = int(np.argmin(curvature)) + 2
-                estimated = observed_cycle + candidate
-                if estimated <= predicted_eol_cycle:
-                    return round(float(estimated), 2)
+                progress = cls._trajectory_progress(trajectory.size)
+                eol_progress = cls._estimate_eol_progress(trajectory, eol_ratio=eol_ratio)
+                candidate_progress = float(progress[min(candidate, progress.size - 1)])
+                if candidate_progress <= eol_progress:
+                    estimated = observed_cycle + (candidate_progress / max(eol_progress, progress[0])) * max(predicted_eol_cycle - observed_cycle, 1.0)
+                    if observed_cycle <= estimated <= predicted_eol_cycle:
+                        return round(float(estimated), 2)
         if fallback_knee >= observed_cycle:
             return round(min(float(fallback_knee), float(predicted_eol_cycle)), 2)
         return None
@@ -1089,22 +1400,40 @@ class LifecycleInferenceService(RULInferenceService):
             rows.append(row)
         return np.asarray(rows, dtype=float)
 
-    @staticmethod
-    def _serialize_trajectory(trajectory: np.ndarray, *, observed_cycle: float, predicted_eol_cycle: float) -> list[dict[str, float]]:
+    @classmethod
+    def _serialize_trajectory(
+        cls,
+        trajectory: np.ndarray,
+        *,
+        observed_cycle: float,
+        predicted_eol_cycle: Optional[float] = None,
+        eol_ratio: float = 0.8,
+    ) -> list[dict[str, float]]:
         if trajectory.size == 0:
             return []
-        cycles = np.linspace(observed_cycle + 1.0, max(observed_cycle + 1.0, predicted_eol_cycle), num=len(trajectory))
+        values = np.asarray(trajectory, dtype=float)
+        if predicted_eol_cycle is not None and predicted_eol_cycle > observed_cycle:
+            eol_progress = cls._estimate_eol_progress(values, eol_ratio=eol_ratio)
+            cycles = cls._map_trajectory_cycles(
+                len(values),
+                observed_cycle=observed_cycle,
+                predicted_eol_cycle=predicted_eol_cycle,
+                eol_progress=eol_progress,
+            )
+        else:
+            cycles = observed_cycle + np.arange(1, len(values) + 1, dtype=float)
         return [
             {
                 "cycle": round(float(cycle), 2),
                 "capacity_ratio": round(float(value), 4),
                 "soh": round(float(value), 4),
             }
-            for cycle, value in zip(cycles, trajectory)
+            for cycle, value in zip(cycles, values)
         ]
 
-    @staticmethod
+    @classmethod
     def _build_lifecycle_projection(
+        cls,
         *,
         raw_cycles: np.ndarray,
         raw_capacities: np.ndarray,
@@ -1115,16 +1444,91 @@ class LifecycleInferenceService(RULInferenceService):
         uncertainty: Optional[float],
         eol_ratio: float,
     ) -> dict[str, object]:
-        forecast_cycles = np.linspace(observed_cycle + 1.0, max(observed_cycle + 1.0, predicted_eol_cycle), num=len(trajectory))
-        forecast_capacities = np.minimum.accumulate(np.asarray(trajectory, dtype=float)) * max(initial_capacity, 1e-6)
-        band_width = max(initial_capacity * 0.01, float(uncertainty or 0.0) * initial_capacity * 0.05)
+        trajectory = np.asarray(trajectory, dtype=float).reshape(-1)
+        forecast_cycles = np.asarray([], dtype=float)
+        raw_forecast_capacities = np.clip(trajectory, 0.0, None) * max(initial_capacity, 1e-6)
+        forecast_capacities = np.maximum(raw_forecast_capacities.copy(), 0.0)
+        eol_capacity = initial_capacity * eol_ratio
+        last_observed_capacity = float(raw_capacities[-1]) if raw_capacities.size else eol_capacity
+        display_seed_capacities = np.asarray([], dtype=float)
+        if forecast_capacities.size:
+            upper_cap = max(last_observed_capacity + initial_capacity * 0.03, last_observed_capacity)
+            raw_forecast_capacities = np.clip(raw_forecast_capacities, 0.0, upper_cap)
+            forecast_capacities = np.minimum(np.maximum(raw_forecast_capacities.copy(), 0.0), last_observed_capacity)
+            display_seed_capacities = raw_forecast_capacities.copy()
+            eol_progress = cls._estimate_eol_progress(trajectory, eol_ratio=eol_ratio)
+            forecast_cycles = cls._map_trajectory_cycles(
+                forecast_capacities.size,
+                observed_cycle=observed_cycle,
+                predicted_eol_cycle=predicted_eol_cycle,
+                eol_progress=eol_progress,
+            )
+        if forecast_cycles.size == 0:
+            forecast_cycles = np.asarray([observed_cycle + 1.0], dtype=float)
+            fallback_capacity = float(raw_capacities[-1]) if raw_capacities.size else eol_capacity
+            forecast_capacities = np.asarray([fallback_capacity], dtype=float)
+            display_seed_capacities = forecast_capacities.copy()
+
+        forecast_capacities = np.maximum(forecast_capacities, 0.0)
+        reference_horizon = max(float(forecast_cycles[-1] - observed_cycle), float(predicted_eol_cycle - observed_cycle), 1.0)
+        predicted_zero_cycle = round(float(forecast_cycles[-1]), 2)
+        tail_points: list[dict[str, float]] = []
+
+        zero_index = np.where(forecast_capacities <= 1e-6)[0]
+        if zero_index.size:
+            stop = int(zero_index[0]) + 1
+            forecast_cycles = forecast_cycles[:stop]
+            forecast_capacities = forecast_capacities[:stop]
+            forecast_capacities[-1] = 0.0
+            predicted_zero_cycle = round(float(forecast_cycles[-1]), 2)
+        elif forecast_cycles.size >= 2 and forecast_capacities[-1] > 1e-6:
+            recent_window = min(6, forecast_cycles.size)
+            recent_cycles = forecast_cycles[-recent_window:]
+            recent_capacities = forecast_capacities[-recent_window:]
+            slope_steps = np.diff(recent_cycles)
+            slope_drop = -np.diff(recent_capacities)
+            tail_slopes = slope_drop / np.maximum(slope_steps, 1e-6)
+            tail_slopes = tail_slopes[tail_slopes > 1e-6]
+            tail_slope = float(np.median(tail_slopes)) if tail_slopes.size else initial_capacity * 0.002
+            raw_extra_horizon = forecast_capacities[-1] / max(tail_slope, 1e-6)
+            extra_horizon = float(np.clip(raw_extra_horizon, reference_horizon * 0.35, reference_horizon * 2.0))
+            predicted_zero_cycle = round(float(forecast_cycles[-1] + extra_horizon), 2)
+            tail_cycles = np.linspace(forecast_cycles[-1], predicted_zero_cycle, num=max(10, min(64, int(extra_horizon) + 1)))
+            tail_progress = (tail_cycles - tail_cycles[0]) / max(extra_horizon, 1e-6)
+            tail_shape = float(np.clip((tail_slope * extra_horizon) / max(forecast_capacities[-1], 1e-6), 0.9, 2.4))
+            tail_capacities = np.maximum(0.0, forecast_capacities[-1] * np.power(np.clip(1.0 - tail_progress, 0.0, 1.0), tail_shape))
+            tail_points = [
+                {"cycle": round(float(cycle), 2), "capacity": round(float(capacity), 4)}
+                for cycle, capacity in zip(tail_cycles[1:], tail_capacities[1:])
+            ]
+            if tail_points:
+                tail_points[-1]["capacity"] = 0.0
+                forecast_cycles = np.concatenate([forecast_cycles, tail_cycles[1:]])
+                forecast_capacities = np.concatenate([forecast_capacities, tail_capacities[1:]])
+                forecast_capacities[-1] = 0.0
+                display_seed_capacities = np.concatenate([display_seed_capacities, tail_capacities[1:]])
+                display_seed_capacities[-1] = 0.0
+        band_progress = np.linspace(0.0, 1.0, num=forecast_cycles.size, dtype=float)
+        base_band = max(initial_capacity * 0.012, float(uncertainty or 0.0) * initial_capacity * 0.06)
+        growth_band = max(initial_capacity * 0.01, base_band * 0.75)
+        band_widths = base_band + growth_band * np.power(band_progress, 1.15)
+        display_points = cls._build_display_projection_points(
+            raw_cycles=raw_cycles,
+            raw_capacities=raw_capacities,
+            forecast_cycles=forecast_cycles,
+            forecast_capacities=forecast_capacities,
+            display_seed_capacities=display_seed_capacities,
+            band_widths=band_widths,
+            initial_capacity=initial_capacity,
+            predicted_eol_cycle=predicted_eol_cycle,
+        )
         confidence_band = [
             {
                 "cycle": round(float(cycle), 2),
-                "lower": round(float(max(initial_capacity * eol_ratio, capacity - band_width)), 4),
+                "lower": round(float(max(0.0, capacity - band_width)), 4),
                 "upper": round(float(capacity + band_width), 4),
             }
-            for cycle, capacity in zip(forecast_cycles, forecast_capacities)
+            for cycle, capacity, band_width in zip(forecast_cycles, forecast_capacities, band_widths)
         ]
         return {
             "actual_points": [
@@ -1135,9 +1539,12 @@ class LifecycleInferenceService(RULInferenceService):
                 {"cycle": round(float(cycle), 2), "capacity": round(float(capacity), 4)}
                 for cycle, capacity in zip(forecast_cycles, forecast_capacities)
             ],
-            "eol_capacity": round(float(initial_capacity * eol_ratio), 4),
+            "eol_capacity": round(float(eol_capacity), 4),
             "predicted_eol_cycle": round(float(predicted_eol_cycle), 2),
             "confidence_band": confidence_band,
+            "display_points": display_points,
+            "tail_points": tail_points,
+            "predicted_zero_cycle": predicted_zero_cycle,
             "projection_method": "lifecycle_decoder",
         }
 

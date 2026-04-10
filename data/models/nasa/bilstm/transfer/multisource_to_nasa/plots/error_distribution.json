@@ -1,0 +1,7 @@
+{
+  "key": "error_distribution",
+  "title": "NASA bilstm transfer error distribution",
+  "description": "Prediction error histogram for the fine-tuned transfer runs.",
+  "path": "data/models/nasa/bilstm/transfer/multisource_to_nasa/plots/error_distribution.png",
+  "generated_at": "2026-03-22T03:47:39.221633"
+}

@@ -1,7 +1,0 @@
-{
-  "key": "error_distribution",
-  "title": "KAGGLE no_transformer error distribution",
-  "description": "Prediction error histogram for each seed in the ablation variant.",
-  "path": "data/models/kaggle/hybrid/ablation/no_transformer/plots/error_distribution.png",
-  "generated_at": "2026-03-15T08:29:25.631966"
-}

@@ -1,0 +1,7 @@
+{
+  "key": "training_curves",
+  "title": "CALCE hybrid transfer curves",
+  "description": "Train/validation curves for the fine-tuned transfer runs.",
+  "path": "data/models/calce/hybrid/transfer/multisource_to_calce/plots/training_curves.png",
+  "generated_at": "2026-03-22T03:34:41.281099"
+}

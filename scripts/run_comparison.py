@@ -14,6 +14,7 @@ if str(PROJECT_ROOT) not in sys.path:
 import argparse
 
 from ml.data.source_registry import get_dataset_card, list_supported_sources
+from ml.training.benchmark_truth import sync_ablation_summary, write_source_comparison_summary
 from ml.training.experiment_runner import default_config_for, generate_source_plot_bundle, run_training_experiment
 from ml.training.lifecycle_experiment_runner import run_lifecycle_experiment
 
@@ -24,22 +25,25 @@ def load_json(path: Path) -> dict | None:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def preferred_metrics(experiment_summary: dict, multi_seed_summary: dict | None) -> dict:
+def preferred_metrics(experiment_summary: dict | None, multi_seed_summary: dict | None) -> dict:
     aggregate_mean = ((multi_seed_summary or {}).get("aggregate_metrics") or {}).get("mean") or {}
-    return aggregate_mean or experiment_summary.get("test_metrics", {}) or {}
+    return aggregate_mean or (experiment_summary or {}).get("test_metrics", {}) or {}
 
 
-def preferred_checkpoint(experiment_summary: dict, multi_seed_summary: dict | None) -> str | None:
+def preferred_checkpoint(experiment_summary: dict | None, multi_seed_summary: dict | None) -> str | None:
     best_checkpoint = (multi_seed_summary or {}).get("best_checkpoint") or {}
     if isinstance(best_checkpoint, dict) and best_checkpoint.get("path"):
         return best_checkpoint["path"]
-    return experiment_summary.get("best_checkpoint")
+    return (experiment_summary or {}).get("best_checkpoint")
 
 
-def load_or_train(source: str, model_type: str, force: bool, task: str) -> tuple[dict, dict | None]:
+def load_or_train(source: str, model_type: str, force: bool, task: str) -> tuple[dict | None, dict | None]:
     summary_path = Path("data/models") / source / model_type / f"{model_type}_experiment_summary.json"
+    multi_seed_summary = load_json(Path("data/models") / source / model_type / f"{model_type}_multi_seed_summary.json")
     if summary_path.exists() and not force:
         experiment_summary = json.loads(summary_path.read_text(encoding="utf-8"))
+    elif multi_seed_summary is not None and not force:
+        experiment_summary = None
     else:
         runner = run_lifecycle_experiment if task == "lifecycle" else run_training_experiment
         experiment_summary = runner(
@@ -48,7 +52,6 @@ def load_or_train(source: str, model_type: str, force: bool, task: str) -> tuple
             config_path=default_config_for(source, model_type),
             persist_training_run=True,
         )
-    multi_seed_summary = load_json(Path("data/models") / source / model_type / f"{model_type}_multi_seed_summary.json")
     return experiment_summary, multi_seed_summary
 
 
@@ -63,27 +66,22 @@ def main() -> None:
         raise SystemExit(f"{args.source} is marked as {card.ingestion_mode} and is excluded from lifecycle comparison benchmarks.")
 
     results = {model_type: load_or_train(args.source, model_type, force=args.force, task=args.task) for model_type in ("bilstm", "hybrid")}
-    comparison = {
-        "source": args.source,
-        "task_kind": args.task,
-        "models": {
-            model: {
-                "best_val_loss": experiment_summary.get("best_val_loss"),
-                "test_metrics": preferred_metrics(experiment_summary, multi_seed_summary),
-                "single_run_test_metrics": experiment_summary.get("test_metrics", {}),
-                "best_checkpoint": preferred_checkpoint(experiment_summary, multi_seed_summary),
-                "final_checkpoint": experiment_summary.get("final_checkpoint"),
-                "requested_model_type": experiment_summary.get("requested_model_type", model),
-                "multi_seed_available": bool(multi_seed_summary),
-            }
-            for model, (experiment_summary, multi_seed_summary) in results.items()
-        },
+    _ = {
+        model: {
+            "best_val_loss": (experiment_summary or {}).get("best_val_loss"),
+            "test_metrics": preferred_metrics(experiment_summary, multi_seed_summary),
+            "single_run_test_metrics": (experiment_summary or {}).get("test_metrics", {}),
+            "best_checkpoint": preferred_checkpoint(experiment_summary, multi_seed_summary),
+            "final_checkpoint": (experiment_summary or {}).get("final_checkpoint"),
+            "requested_model_type": (experiment_summary or {}).get("requested_model_type", model),
+            "multi_seed_available": bool(multi_seed_summary),
+        }
+        for model, (experiment_summary, multi_seed_summary) in results.items()
     }
-    output_path = Path("data/models") / args.source / "comparison_summary.json"
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    output_path.write_text(json.dumps(comparison, ensure_ascii=False, indent=2), encoding="utf-8")
+    sync_ablation_summary(args.source, write=True)
+    output_path = write_source_comparison_summary(args.source)
     generate_source_plot_bundle(args.source)
-    print(json.dumps(comparison, ensure_ascii=False, indent=2))
+    print(output_path.read_text(encoding="utf-8"))
 
 
 if __name__ == "__main__":

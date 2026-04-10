@@ -3,7 +3,7 @@
   "title": "KAGGLE dataset split",
   "description": "Battery counts in the fixed train/validation/test split.",
   "path": "data/models/kaggle/plots/dataset_split.png",
-  "generated_at": "2026-03-21T14:26:06.763287",
+  "generated_at": "2026-04-09T05:54:40.728247",
   "split_snapshot": {
     "train_batteries": [
       "kaggle::kaggle_demo::KAGGLE_000",

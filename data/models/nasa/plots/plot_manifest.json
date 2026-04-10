@@ -5,14 +5,14 @@
       "title": "NASA ablation overview",
       "description": "Aggregate RMSE for each hybrid ablation variant.",
       "path": "data/models/nasa/plots/ablation_overview.png",
-      "generated_at": "2026-03-17T07:57:52.082307"
+      "generated_at": "2026-04-07T09:16:03.156387"
     },
     {
       "key": "dataset_split",
       "title": "NASA dataset split",
       "description": "Battery counts in the fixed train/validation/test split.",
       "path": "data/models/nasa/plots/dataset_split.png",
-      "generated_at": "2026-03-21T14:24:43.533313",
+      "generated_at": "2026-04-09T05:54:39.912029",
       "split_snapshot": {
         "train_batteries": [
           "nasa::nasa_pcoe::B0005",
@@ -61,15 +61,15 @@
       "title": "NASA ablation summary",
       "description": "Aggregate RMSE comparison for the configured ablation variants.",
       "path": "data/models/nasa/plots/experiment_ablations.png",
-      "generated_at": "2026-03-21T14:24:43.603212"
+      "generated_at": "2026-04-09T05:54:40.029149"
     },
     {
       "key": "experiment_summary",
       "title": "NASA model comparison",
       "description": "Aggregate multi-seed metric comparison between Bi-LSTM and Hybrid.",
       "path": "data/models/nasa/plots/experiment_summary.png",
-      "generated_at": "2026-03-21T14:24:43.497838"
+      "generated_at": "2026-04-09T05:54:39.807806"
     }
   ],
-  "generated_at": "2026-03-21T14:24:43.603697"
+  "generated_at": "2026-04-09T05:54:40.031590"
 }

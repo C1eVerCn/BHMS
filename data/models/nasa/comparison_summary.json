@@ -1,80 +1,391 @@
 {
   "source": "nasa",
   "task_kind": "lifecycle",
-  "models": {
-    "bilstm": {
-      "best_val_loss": 10.958420435587565,
-      "test_metrics": {
-        "rmse": 0.312726,
-        "mae": 0.212544,
-        "mape": 3584689.536338,
-        "r2": -1.168166
+  "summary_version": "paper_truth_v1",
+  "required_units": [
+    "within_source",
+    "transfer",
+    "ablation"
+  ],
+  "benchmark_units": [
+    {
+      "key": "within_source",
+      "label": "Within-source multi-seed",
+      "suite_kind": "multi_seed",
+      "required_for_paper": true,
+      "available": true,
+      "winner_model": "hybrid",
+      "paper_gate_passed": true,
+      "paper_gate": {
+        "hybrid_beats_bilstm": true,
+        "checks": {
+          "rmse": true,
+          "r2": true
+        },
+        "metric_snapshot": {
+          "hybrid_rmse": 0.30343,
+          "bilstm_rmse": 0.304044,
+          "hybrid_r2": -1.123352,
+          "bilstm_r2": -1.124386
+        }
       },
-      "single_run_test_metrics": {
-        "loss": 38.17451318105062,
-        "traj_loss": 0.060374501471718155,
-        "rul_loss": 36.339734395345054,
-        "eol_loss": 37.18444379170736,
-        "knee_loss": 20.280046463012695,
-        "mono_loss": 0.0,
-        "smooth_loss": 5.367622198567308e-09,
-        "domain_loss": 0.004819309571757913,
-        "trajectory_rmse": 0.30395959317684174,
-        "trajectory_mae": 0.20170970757802328,
-        "trajectory_mape": 3624888.2622044883,
-        "trajectory_r2": -1.1177855332692463,
-        "rul_mae": 36.839734395345054,
-        "rul_rmse": 38.94154898325602,
-        "eol_mae": 37.68308321634928,
-        "eol_rmse": 39.849762280782066,
-        "knee_mae": 20.613379796346027,
-        "rmse": 0.30395959317684174,
-        "mae": 0.20170970757802328,
-        "mape": 3624888.2622044883,
-        "r2": -1.1177855332692463,
-        "lr": 0.00012711304747648549
+      "models": {
+        "bilstm": {
+          "model_type": "bilstm",
+          "suite_kind": "multi_seed",
+          "summary_path": "data/models/nasa/bilstm/bilstm_multi_seed_summary.json",
+          "available": true,
+          "metrics": {
+            "rmse": 0.304044,
+            "mae": 0.208533,
+            "mape": 4001222.749474,
+            "r2": -1.124386,
+            "trajectory_rmse": 0.304044,
+            "trajectory_mae": 0.208533,
+            "trajectory_r2": -1.124386,
+            "rul_mae": 35.504758,
+            "rul_rmse": 37.986228,
+            "eol_mae": 35.926536,
+            "eol_rmse": 38.336402,
+            "knee_mae": 21.355361,
+            "loss": 37.011679,
+            "traj_loss": 0.060433,
+            "rul_loss": 35.030742,
+            "eol_loss": 35.431626,
+            "knee_loss": 21.022027,
+            "mono_loss": 0.000159,
+            "smooth_loss": 0.00025,
+            "domain_loss": 0.077164,
+            "trajectory_mape": 4001222.749474,
+            "lr": 0.000127
+          },
+          "std": {
+            "rmse": 0.000681,
+            "mae": 0.001528,
+            "mape": 196549.931083,
+            "r2": 0.000993,
+            "trajectory_rmse": 0.000681,
+            "trajectory_mae": 0.001528,
+            "trajectory_r2": 0.000993,
+            "rul_mae": 0.904777,
+            "rul_rmse": 0.684638,
+            "eol_mae": 1.309003,
+            "eol_rmse": 1.107255,
+            "knee_mae": 0.278888,
+            "loss": 0.944904,
+            "traj_loss": 6.7e-05,
+            "rul_loss": 0.898562,
+            "eol_loss": 1.308535,
+            "knee_loss": 0.278888,
+            "mono_loss": 3e-05,
+            "smooth_loss": 4e-05,
+            "domain_loss": 0.060282,
+            "trajectory_mape": 196549.931083,
+            "lr": 0.0
+          },
+          "best_checkpoint": {
+            "seed": 21,
+            "path": "data/models/nasa/bilstm/release/checkpoints/bilstm_release.pt"
+          },
+          "generated_at": "2026-04-08T09:26:33.776941",
+          "summary_version": null,
+          "task_kind": "lifecycle",
+          "seeds": [
+            7,
+            21,
+            42
+          ],
+          "release_path": "data/models/nasa/bilstm/release/final_release.json"
+        },
+        "hybrid": {
+          "model_type": "hybrid",
+          "suite_kind": "multi_seed",
+          "summary_path": "data/models/nasa/hybrid/hybrid_multi_seed_summary.json",
+          "available": true,
+          "metrics": {
+            "rmse": 0.30343,
+            "mae": 0.206458,
+            "mape": 3975049.041123,
+            "r2": -1.123352,
+            "trajectory_rmse": 0.30343,
+            "trajectory_mae": 0.206458,
+            "trajectory_r2": -1.123352,
+            "rul_mae": 39.272841,
+            "rul_rmse": 41.813367,
+            "eol_mae": 40.111685,
+            "eol_rmse": 42.317507,
+            "knee_mae": 22.91157,
+            "loss": 40.947843,
+            "traj_loss": 0.060331,
+            "rul_loss": 38.796548,
+            "eol_loss": 39.611686,
+            "knee_loss": 22.578237,
+            "mono_loss": 0.000148,
+            "smooth_loss": 0.000243,
+            "domain_loss": 0.0,
+            "trajectory_mape": 3975049.041123,
+            "lr": 0.000157
+          },
+          "std": {
+            "rmse": 2.3e-05,
+            "mae": 0.000852,
+            "mape": 77551.393408,
+            "r2": 1.6e-05,
+            "trajectory_rmse": 2.3e-05,
+            "trajectory_mae": 0.000852,
+            "trajectory_r2": 1.6e-05,
+            "rul_mae": 0.788868,
+            "rul_rmse": 0.859224,
+            "eol_mae": 0.611892,
+            "eol_rmse": 0.642876,
+            "knee_mae": 0.397704,
+            "loss": 0.704223,
+            "traj_loss": 1e-05,
+            "rul_loss": 0.790107,
+            "eol_loss": 0.611893,
+            "knee_loss": 0.397704,
+            "mono_loss": 2e-05,
+            "smooth_loss": 3.5e-05,
+            "domain_loss": 0.0,
+            "trajectory_mape": 77551.393408,
+            "lr": 0.000106
+          },
+          "best_checkpoint": {
+            "seed": 42,
+            "path": "data/models/nasa/hybrid/release/checkpoints/hybrid_release.pt"
+          },
+          "generated_at": "2026-04-08T09:28:45.770817",
+          "summary_version": null,
+          "task_kind": "lifecycle",
+          "seeds": [
+            7,
+            21,
+            42
+          ],
+          "release_path": "data/models/nasa/hybrid/release/final_release.json"
+        }
       },
-      "best_checkpoint": "data/models/nasa/bilstm/runs/seed-21/bilstm_best.pt",
-      "final_checkpoint": "data/models/nasa/bilstm/bilstm_final.pt",
-      "requested_model_type": "bilstm",
-      "multi_seed_available": true
+      "notes": [
+        "Hybrid 在该 benchmark 单元同时满足更低 RMSE 与更高 R2。"
+      ]
     },
-    "hybrid": {
-      "best_val_loss": 10.857244809468588,
-      "test_metrics": {
-        "rmse": 0.30368,
-        "mae": 0.201833,
-        "mape": 3621058.914982,
-        "r2": -1.117342
+    {
+      "key": "transfer",
+      "label": "Transfer benchmark",
+      "suite_kind": "transfer",
+      "required_for_paper": true,
+      "available": true,
+      "winner_model": "hybrid",
+      "paper_gate_passed": true,
+      "paper_gate": {
+        "hybrid_beats_bilstm": true,
+        "checks": {
+          "rmse": true,
+          "r2": true
+        },
+        "metric_snapshot": {
+          "hybrid_rmse": 0.303572,
+          "bilstm_rmse": 0.304276,
+          "hybrid_r2": -1.11717,
+          "bilstm_r2": -1.134913
+        }
       },
-      "single_run_test_metrics": {
-        "loss": 41.93113644917806,
-        "traj_loss": 0.060381050842503704,
-        "rul_loss": 39.68313757578532,
-        "eol_loss": 40.43111244837443,
-        "knee_loss": 23.39477252960205,
-        "mono_loss": 0.0,
-        "smooth_loss": 5.728134411242536e-09,
-        "domain_loss": 0.08050585289796193,
-        "trajectory_rmse": 0.3040068546930949,
-        "trajectory_mae": 0.20173358793059984,
-        "trajectory_mape": 3625366.3872044883,
-        "trajectory_r2": -1.1178609530131023,
-        "rul_mae": 40.17516771952311,
-        "rul_rmse": 42.69193331400553,
-        "eol_mae": 40.931113719940186,
-        "eol_rmse": 43.065988063812256,
-        "knee_mae": 23.709932327270508,
-        "rmse": 0.3040068546930949,
-        "mae": 0.20173358793059984,
-        "mape": 3625366.3872044883,
-        "r2": -1.1178609530131023,
-        "lr": 0.0003
+      "models": {
+        "bilstm": {
+          "model_type": "bilstm",
+          "suite_kind": "transfer",
+          "summary_path": "data/models/nasa/bilstm/transfer/multisource_to_nasa/bilstm_transfer_summary.json",
+          "available": true,
+          "metrics": {
+            "rmse": 0.304276,
+            "mae": 0.202682,
+            "mape": 3623311.921314,
+            "r2": -1.134913,
+            "trajectory_rmse": 0.304276,
+            "trajectory_mae": 0.202682,
+            "trajectory_r2": -1.134913,
+            "rul_mae": 46.282745,
+            "rul_rmse": 49.839977,
+            "eol_mae": 48.300124,
+            "eol_rmse": 51.845942,
+            "knee_mae": 21.015754,
+            "loss": 47.29171,
+            "traj_loss": 0.060453,
+            "rul_loss": 45.78913,
+            "eol_loss": 47.800124,
+            "knee_loss": 20.682421,
+            "mono_loss": 0.0,
+            "smooth_loss": 3e-06,
+            "domain_loss": 0.460369,
+            "trajectory_mape": 3623311.921314,
+            "lr": 8.6e-05
+          },
+          "std": {
+            "rmse": 0.000611,
+            "mae": 0.001161,
+            "mape": 3110.17654,
+            "r2": 0.024382,
+            "trajectory_rmse": 0.000611,
+            "trajectory_mae": 0.001161,
+            "trajectory_r2": 0.024382,
+            "rul_mae": 9.766586,
+            "rul_rmse": 9.320858,
+            "eol_mae": 10.692142,
+            "eol_rmse": 10.123962,
+            "knee_mae": 3.185394,
+            "loss": 9.360897,
+            "traj_loss": 0.00013,
+            "rul_loss": 9.761758,
+            "eol_loss": 10.692143,
+            "knee_loss": 3.185394,
+            "mono_loss": 0.0,
+            "smooth_loss": 4e-06,
+            "domain_loss": 0.131059,
+            "trajectory_mape": 3110.17654,
+            "lr": 0.0
+          },
+          "best_checkpoint": {
+            "seed": 21,
+            "path": "data/models/nasa/bilstm/release/checkpoints/bilstm_release.pt"
+          },
+          "generated_at": "2026-03-22T03:47:39.082872",
+          "summary_version": null,
+          "task_kind": "lifecycle",
+          "seeds": [
+            7,
+            21,
+            42
+          ],
+          "release_path": "data/models/nasa/bilstm/release/final_release.json"
+        },
+        "hybrid": {
+          "model_type": "hybrid",
+          "suite_kind": "transfer",
+          "summary_path": "data/models/nasa/hybrid/transfer/multisource_to_nasa/hybrid_transfer_summary.json",
+          "available": true,
+          "metrics": {
+            "rmse": 0.303572,
+            "mae": 0.201888,
+            "mape": 3619478.31776,
+            "r2": -1.11717,
+            "trajectory_rmse": 0.303572,
+            "trajectory_mae": 0.201888,
+            "trajectory_r2": -1.11717,
+            "rul_mae": 35.344406,
+            "rul_rmse": 38.472331,
+            "eol_mae": 35.77964,
+            "eol_rmse": 39.187135,
+            "knee_mae": 21.109248,
+            "loss": 36.835032,
+            "traj_loss": 0.060322,
+            "rul_loss": 34.844443,
+            "eol_loss": 35.279639,
+            "knee_loss": 20.775915,
+            "mono_loss": 0.0,
+            "smooth_loss": 0.0,
+            "domain_loss": 0.466537,
+            "trajectory_mape": 3619478.31776,
+            "lr": 8.6e-05
+          },
+          "std": {
+            "rmse": 0.000268,
+            "mae": 0.000257,
+            "mape": 4405.767147,
+            "r2": 0.000423,
+            "trajectory_rmse": 0.000268,
+            "trajectory_mae": 0.000257,
+            "trajectory_r2": 0.000423,
+            "rul_mae": 2.745357,
+            "rul_rmse": 3.847479,
+            "eol_mae": 2.552257,
+            "eol_rmse": 3.684427,
+            "knee_mae": 2.164487,
+            "loss": 2.12657,
+            "traj_loss": 3.5e-05,
+            "rul_loss": 2.7454,
+            "eol_loss": 2.552257,
+            "knee_loss": 2.164487,
+            "mono_loss": 0.0,
+            "smooth_loss": 0.0,
+            "domain_loss": 0.197198,
+            "trajectory_mape": 4405.767147,
+            "lr": 0.0
+          },
+          "best_checkpoint": {
+            "seed": 7,
+            "path": "data/models/nasa/hybrid/release/checkpoints/hybrid_release.pt"
+          },
+          "generated_at": "2026-03-22T03:44:51.844201",
+          "summary_version": null,
+          "task_kind": "lifecycle",
+          "seeds": [
+            7,
+            21,
+            42
+          ],
+          "release_path": "data/models/nasa/hybrid/release/final_release.json"
+        }
       },
-      "best_checkpoint": "data/models/nasa/hybrid/runs/seed-7/hybrid_best.pt",
-      "final_checkpoint": "data/models/nasa/hybrid/hybrid_final.pt",
-      "requested_model_type": "hybrid",
-      "multi_seed_available": true
+      "notes": [
+        "Hybrid 在该 benchmark 单元同时满足更低 RMSE 与更高 R2。"
+      ]
     }
-  }
+  ],
+  "best_models": {
+    "within_source": "hybrid",
+    "transfer": "hybrid"
+  },
+  "best_model": "hybrid",
+  "paper_gate": {
+    "required_units": [
+      "within_source",
+      "transfer",
+      "ablation"
+    ],
+    "available_units": [
+      "within_source",
+      "transfer",
+      "ablation"
+    ],
+    "passing_units": [
+      "within_source",
+      "transfer"
+    ],
+    "failing_units": [
+      "ablation"
+    ],
+    "passed": false
+  },
+  "ablation_gate": {
+    "available": true,
+    "checked_variants": [
+      "no_xlstm",
+      "no_transformer"
+    ],
+    "blocking_variants": [
+      {
+        "key": "no_xlstm",
+        "rmse": 0.303318,
+        "r2": -1.119997,
+        "delta_vs_full": {
+          "rmse": -0.000112,
+          "r2": 0.003355
+        }
+      },
+      {
+        "key": "no_transformer",
+        "rmse": 0.30312,
+        "r2": -1.11695,
+        "delta_vs_full": {
+          "rmse": -0.00031,
+          "r2": 0.006402
+        }
+      }
+    ],
+    "passed": false
+  },
+  "warnings": [
+    "Hybrid 消融存在优于 full_hybrid 的关键反例，当前不能作为结构优势强证据。"
+  ],
+  "generated_at": "2026-04-09T05:54:40.037205"
 }

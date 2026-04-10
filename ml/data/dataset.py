@@ -17,6 +17,8 @@ from ml.data.nasa_preprocessor import DEFAULT_FEATURE_COLUMNS, DatasetSplit, NAS
 from ml.data.processed_paths import resolve_cycle_summary_path
 from ml.data.source_registry import SOURCE_REGISTRY
 
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+
 
 @dataclass(slots=True)
 class NormalizationStats:
@@ -247,13 +249,13 @@ class RULDataModule:
 
 def _serialize_path(path: Path, path_root: str | Path | None = None) -> str:
     resolved = path.resolve()
-    if path_root is None:
-        return str(resolved)
-    root = Path(path_root).resolve()
+    root = Path(path_root).resolve() if path_root is not None else PROJECT_ROOT
     try:
         return str(resolved.relative_to(root))
     except ValueError:
-        return os.path.relpath(resolved, root)
+        if path_root is not None:
+            return os.path.relpath(resolved, root)
+        return str(resolved)
 
 
 def create_synthetic_data(

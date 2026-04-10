@@ -1,0 +1,7 @@
+{
+  "key": "training_curves",
+  "title": "HUST bilstm training curves",
+  "description": "Train/validation loss curves for the configured seed runs.",
+  "path": "data/models/hust/bilstm/plots/training_curves.png",
+  "generated_at": "2026-04-08T09:50:02.437813"
+}

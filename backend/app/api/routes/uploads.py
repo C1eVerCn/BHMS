@@ -6,7 +6,7 @@ from fastapi import APIRouter, File, Form, UploadFile
 
 from backend.app.core.config import get_settings
 from backend.app.core.responses import success_response
-from backend.app.schemas import DataImportRequest
+from backend.app.schemas import DataImportRequest, DemoPresetImportRequest
 from backend.app.services import BatteryService
 
 router = APIRouter()
@@ -43,3 +43,9 @@ def import_source_dataset(request: DataImportRequest):
         include_in_training=request.include_in_training,
     )
     return success_response(summary, message=f"{request.source.upper()} 数据导入成功")
+
+
+@router.post("/data/import-demo-preset")
+def import_demo_preset(request: DemoPresetImportRequest):
+    summary = service.import_demo_preset(request.preset_name, include_in_training=request.include_in_training)
+    return success_response(summary, message=f"演示样本 {request.preset_name} 导入成功")

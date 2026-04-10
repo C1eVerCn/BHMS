@@ -1,7 +1,0 @@
-{
-  "key": "error_distribution",
-  "title": "KAGGLE no_xlstm error distribution",
-  "description": "Prediction error histogram for each seed in the ablation variant.",
-  "path": "data/models/kaggle/hybrid/ablation/no_xlstm/plots/error_distribution.png",
-  "generated_at": "2026-03-15T08:29:25.498728"
-}
