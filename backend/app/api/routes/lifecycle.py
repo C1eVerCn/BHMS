@@ -2,7 +2,7 @@ from fastapi import APIRouter
 
 from backend.app.core.responses import success_response
 from backend.app.schemas import LifecyclePredictionRequest, MechanismExplanationRequest
-from backend.app.services import PredictionService
+from backend.app.services.model_service import PredictionService
 
 router = APIRouter()
 service = PredictionService()

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from importlib import import_module
 from pathlib import Path
 from typing import Any, Optional
 
@@ -10,27 +11,26 @@ import pandas as pd
 from backend.app.core.config import Settings, get_settings
 from backend.app.core.exceptions import BHMSException
 from backend.app.services.repository import BHMSRepository
-from ml.data.adapters import CALCEAdapter, HUSTAdapter, KaggleAdapter, MATRAdapter, NASAAdapter, OxfordAdapter, PulseBatAdapter
-from ml.data import LifecycleDataModule
-from ml.data.dataset import RULDataModule
 from ml.data.processed_paths import cleanup_cycle_summary_variants, cycle_summary_path
 from ml.data.schema import BATTERY_SCHEMA_COLUMNS, enrich_existing_cycle_frame
 from ml.data.source_registry import get_dataset_card, list_supported_sources
 
 
 class BatteryService:
+    _ADAPTER_SPECS = {
+        "nasa": ("ml.data.adapters.nasa_adapter", "NASAAdapter"),
+        "calce": ("ml.data.adapters.csv_adapter", "CALCEAdapter"),
+        "kaggle": ("ml.data.adapters.csv_adapter", "KaggleAdapter"),
+        "hust": ("ml.data.adapters.external_adapter", "HUSTAdapter"),
+        "matr": ("ml.data.adapters.external_adapter", "MATRAdapter"),
+        "oxford": ("ml.data.adapters.external_adapter", "OxfordAdapter"),
+        "pulsebat": ("ml.data.adapters.external_adapter", "PulseBatAdapter"),
+    }
+
     def __init__(self, repository: Optional[BHMSRepository] = None, settings: Optional[Settings] = None):
         self.repository = repository or BHMSRepository()
         self.settings = settings or get_settings()
-        self.adapters = {
-            "nasa": NASAAdapter(eol_capacity_ratio=self.settings.battery_eol_ratio),
-            "calce": CALCEAdapter(eol_capacity_ratio=self.settings.battery_eol_ratio),
-            "kaggle": KaggleAdapter(eol_capacity_ratio=self.settings.battery_eol_ratio),
-            "hust": HUSTAdapter(eol_capacity_ratio=self.settings.battery_eol_ratio),
-            "matr": MATRAdapter(eol_capacity_ratio=self.settings.battery_eol_ratio),
-            "oxford": OxfordAdapter(eol_capacity_ratio=self.settings.battery_eol_ratio),
-            "pulsebat": PulseBatAdapter(eol_capacity_ratio=self.settings.battery_eol_ratio),
-        }
+        self.adapters: dict[str, Any] = {}
 
     def bootstrap_demo_data(self) -> None:
         for source in list_supported_sources():
@@ -206,7 +206,8 @@ class BatteryService:
 
     def import_demo_preset(self, preset_name: str, include_in_training: bool = False) -> dict[str, Any]:
         candidate = self._find_demo_preset(preset_name)
-        source = candidate.parent.name.lower() if candidate.parent.name.lower() in self.adapters else self._resolve_source(None, candidate)
+        source_name = candidate.parent.name.lower()
+        source = source_name if source_name in self._ADAPTER_SPECS else self._resolve_source(None, candidate)
         summary = self.import_uploaded_file(candidate, source=source, include_in_training=include_in_training)
         summary["validation_summary"]["ingestion_mode"] = "demo_preset"
         summary["validation_summary"]["preset_name"] = candidate.stem
@@ -295,7 +296,8 @@ class BatteryService:
         source_csv = cycle_summary_path(source, output_dir)
         enriched.to_csv(source_csv, index=False)
         cleanup_cycle_summary_variants(source, output_dir, source_csv)
-        rul_data_module = RULDataModule(
+        rul_data_module_cls = self._load_symbol("ml.data.dataset", "RULDataModule")
+        rul_data_module = rul_data_module_cls(
             csv_path=source_csv,
             source=source,
             seq_len=seq_len,
@@ -303,7 +305,8 @@ class BatteryService:
             output_dir=output_dir,
         )
         rul_metadata_paths = rul_data_module.export_metadata(path_root=self.settings.project_root)
-        lifecycle_data_module = LifecycleDataModule(
+        lifecycle_data_module_cls = self._load_symbol("ml.data", "LifecycleDataModule")
+        lifecycle_data_module = lifecycle_data_module_cls(
             csv_path=source_csv,
             source=source,
             batch_size=batch_size,
@@ -387,16 +390,24 @@ class BatteryService:
         if source and source.lower() != "auto":
             return source.lower()
         name = file_path.name.lower()
-        for candidate in self.adapters:
+        for candidate in self._ADAPTER_SPECS:
             if candidate in name:
                 return candidate
         return "kaggle"
 
     def _get_adapter(self, source: str):
+        source = source.lower()
         try:
-            return self.adapters[source.lower()]
+            return self.adapters[source]
         except KeyError as exc:
-            raise BHMSException(f"暂不支持的数据源: {source}", status_code=400, code="unsupported_source") from exc
+            spec = self._ADAPTER_SPECS.get(source)
+            if spec is None:
+                raise BHMSException(f"暂不支持的数据源: {source}", status_code=400, code="unsupported_source") from exc
+            module_name, class_name = spec
+            adapter_cls = self._load_symbol(module_name, class_name)
+            adapter = adapter_cls(eol_capacity_ratio=self.settings.battery_eol_ratio)
+            self.adapters[source] = adapter
+            return adapter
 
     def _source_dir(self, source: str) -> Path:
         source = source.lower()
@@ -427,3 +438,8 @@ class BatteryService:
             return str(get_dataset_card(source).metadata_defaults.get("chemistry", "Imported Battery"))
         except KeyError:
             return "Imported Battery"
+
+    @staticmethod
+    def _load_symbol(module_name: str, symbol_name: str):
+        module = import_module(module_name)
+        return getattr(module, symbol_name)

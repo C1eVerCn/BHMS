@@ -7,7 +7,7 @@ from fastapi import APIRouter, File, Form, UploadFile
 from backend.app.core.config import get_settings
 from backend.app.core.responses import success_response
 from backend.app.schemas import DataImportRequest, DemoPresetImportRequest
-from backend.app.services import BatteryService
+from backend.app.services.battery_service import BatteryService
 
 router = APIRouter()
 service = BatteryService()

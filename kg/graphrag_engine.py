@@ -159,7 +159,10 @@ class SeedKnowledge:
         return normalized
 
     def get_fault_details(self, fault_name: str) -> dict[str, Any]:
-        return self.seed.get_fault_details(fault_name)
+        for fault in self.faults:
+            if fault.get("name") == fault_name:
+                return dict(fault)
+        return {}
 
 
 class KnowledgeGraph:

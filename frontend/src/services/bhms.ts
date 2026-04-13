@@ -1,4 +1,4 @@
-import { request } from './api'
+import { API_V2_BASE_URL, request } from './api'
 import type {
   AblationResult,
   AnomalyDetectionResult,
@@ -95,7 +95,7 @@ export function importDemoPreset(presetName: string, includeInTraining = false) 
 }
 
 export function predictLifecycle(payload: { battery_id: string; model_name: LifecycleModelName; seq_len: number; historical_data?: CyclePoint[] }) {
-  return request<LifecyclePredictionResult>({ method: 'POST', url: '/predict/lifecycle', data: payload, baseURL: '/api/v2' })
+  return request<LifecyclePredictionResult>({ method: 'POST', url: '/predict/lifecycle', data: payload, baseURL: API_V2_BASE_URL })
 }
 
 export function detectAnomaly(payload: { battery_id: string; current_data?: CyclePoint; baseline_capacity?: number; use_latest?: boolean }) {
@@ -109,7 +109,7 @@ export function explainMechanism(payload: {
   model_name?: LifecycleModelName
   seq_len?: number
 }) {
-  return request<MechanismExplanationResult>({ method: 'POST', url: '/explain/mechanism', data: payload, baseURL: '/api/v2' })
+  return request<MechanismExplanationResult>({ method: 'POST', url: '/explain/mechanism', data: payload, baseURL: API_V2_BASE_URL })
 }
 
 export function getTrainingComparison(source: string) {

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Query
 
 from backend.app.core.responses import success_response
-from backend.app.services import TrainingService
+from backend.app.services.training_service import TrainingService
 
 router = APIRouter()
 service = TrainingService()

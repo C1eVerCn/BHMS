@@ -2,7 +2,7 @@ from fastapi import APIRouter, Query
 
 from backend.app.core.responses import success_response
 from backend.app.schemas import UpdateTrainingCandidateRequest
-from backend.app.services import BatteryService
+from backend.app.services.battery_service import BatteryService
 
 router = APIRouter()
 service = BatteryService()
