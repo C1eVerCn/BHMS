@@ -64,13 +64,16 @@ class Battery(BaseModel):
     include_in_training: bool = False
 
 
-class BatteryOption(BaseModel):
-    battery_id: str
+class TrainingRun(BaseModel):
+    id: int
     source: str
-    dataset_name: Optional[str] = None
-    status: str
-    cycle_count: int
-    include_in_training: bool = False
+    model_type: str
+    model_version: Optional[str] = None
+    best_checkpoint_path: Optional[str] = None
+    final_checkpoint_path: Optional[str] = None
+    metrics: dict[str, Any] = Field(default_factory=dict)
+    metadata: dict[str, Any] = Field(default_factory=dict)
+    created_at: str
 
 
 class PredictionPoint(BaseModel):
@@ -118,13 +121,9 @@ class PredictionExplanation(BaseModel):
 class PredictionProjection(BaseModel):
     actual_points: list[PredictionPoint] = Field(default_factory=list)
     forecast_points: list[PredictionPoint] = Field(default_factory=list)
-    display_points: list[PredictionPoint] = Field(default_factory=list)
     eol_capacity: float
     predicted_eol_cycle: float
     confidence_band: list[ConfidenceBandPoint] = Field(default_factory=list)
-    tail_points: list[PredictionPoint] = Field(default_factory=list)
-    predicted_zero_cycle: Optional[float] = None
-    projection_method: Optional[str] = None
 
 
 class LifecycleTrajectoryPoint(BaseModel):
@@ -166,6 +165,16 @@ class PredictionRecord(BaseModel):
     projection: Optional[PredictionProjection] = None
     explanation: Optional[PredictionExplanation] = None
     report_markdown: Optional[str] = None
+
+
+class PredictionResult(PredictionRecord):
+    model_version: str
+    model_source: str
+    fallback_used: bool
+    prediction_time: str
+    projection: PredictionProjection
+    explanation: PredictionExplanation
+    report_markdown: str
 
 
 class LifecyclePredictionResult(BaseModel):
@@ -340,11 +349,6 @@ class PaginatedBatteries(BaseModel):
     total: int
 
 
-class BatteryOptionsResponse(BaseModel):
-    items: list[BatteryOption]
-    total: int
-
-
 class BatteryHistory(BaseModel):
     battery_id: str
     predictions: list[PredictionRecord]
@@ -388,14 +392,19 @@ class TrainingComparison(BaseModel):
     previous: Optional[dict[str, Any]] = None
     current: Optional[dict[str, Any]] = None
     latest_job: Optional[TrainingJob] = None
+    runs: list[TrainingRun] = Field(default_factory=list)
 
 
-LifecycleModelName = Literal["hybrid", "bilstm", "auto"]
+class RULPredictionRequest(BaseModel):
+    battery_id: str
+    model_name: str = "hybrid"
+    seq_len: int = Field(default=30, ge=10, le=500)
+    historical_data: Optional[list[CyclePoint]] = None
 
 
 class LifecyclePredictionRequest(BaseModel):
     battery_id: str
-    model_name: LifecycleModelName = "hybrid"
+    model_name: str = "hybrid"
     seq_len: int = Field(default=30, ge=10, le=500)
     historical_data: Optional[list[CyclePoint]] = None
 
@@ -407,12 +416,16 @@ class AnomalyDetectionRequest(BaseModel):
     use_latest: bool = True
 
 
+class DiagnosisRequest(BaseModel):
+    battery_id: str
+    anomalies: list[AnomalyEventModel] = Field(default_factory=list)
+    battery_info: Optional[dict[str, Any]] = None
+
+
 class MechanismExplanationRequest(BaseModel):
     battery_id: str
     anomalies: list[AnomalyEventModel] = Field(default_factory=list)
     battery_info: Optional[dict[str, Any]] = None
-    model_name: LifecycleModelName = "hybrid"
-    seq_len: int = Field(default=30, ge=10, le=500)
 
 
 class DataImportRequest(BaseModel):
@@ -421,13 +434,16 @@ class DataImportRequest(BaseModel):
     include_in_training: bool = False
 
 
-class DemoPresetImportRequest(BaseModel):
-    preset_name: str
-    include_in_training: bool = False
-
-
 class UpdateTrainingCandidateRequest(BaseModel):
     include_in_training: bool = True
+
+
+class CreateTrainingJobRequest(BaseModel):
+    source: Literal["nasa", "calce", "kaggle", "hust", "matr", "oxford", "pulsebat"]
+    model_scope: Literal["bilstm", "hybrid", "all"] = "all"
+    force_run: bool = False
+    job_kind: Literal["baseline", "multi_seed", "ablation", "full_suite"] = "baseline"
+    seed_count: int = Field(default=3, ge=1, le=5)
 
 
 class BatteryCyclesResponse(BaseModel):

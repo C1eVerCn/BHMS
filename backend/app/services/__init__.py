@@ -1,21 +1,8 @@
 """服务层导出。"""
 
-from __future__ import annotations
-
-from importlib import import_module
+from backend.app.services.battery_service import BatteryService
+from backend.app.services.model_service import PredictionService
+from backend.app.services.repository import BHMSRepository
+from backend.app.services.training_service import TrainingService
 
 __all__ = ["BatteryService", "BHMSRepository", "PredictionService", "TrainingService"]
-
-_SERVICE_MODULES = {
-    "BatteryService": "backend.app.services.battery_service",
-    "BHMSRepository": "backend.app.services.repository",
-    "PredictionService": "backend.app.services.model_service",
-    "TrainingService": "backend.app.services.training_service",
-}
-
-
-def __getattr__(name: str):
-    if name not in _SERVICE_MODULES:
-        raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
-    module = import_module(_SERVICE_MODULES[name])
-    return getattr(module, name)

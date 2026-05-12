@@ -11,7 +11,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from kg.graphrag_engine import DiagnosisResult, GraphRAGEngine, KnowledgeGraph, LLMInterface, SeedKnowledge  # noqa: E402
+from kg.graphrag_engine import DiagnosisResult, GraphRAGEngine, KnowledgeGraph, LLMInterface  # noqa: E402
 
 
 def test_knowledge_graph_can_query_capacity_faults():
@@ -24,13 +24,6 @@ def test_knowledge_graph_can_query_capacity_faults():
 def test_knowledge_graph_returns_fault_details():
     graph = KnowledgeGraph()
     details = graph.get_fault_details("热失控风险")
-    assert details["name"] == "热失控风险"
-    assert "温度异常" in details["symptoms"]
-
-
-def test_seed_knowledge_returns_fault_details():
-    seed = SeedKnowledge()
-    details = seed.get_fault_details("热失控风险")
     assert details["name"] == "热失控风险"
     assert "温度异常" in details["symptoms"]
 

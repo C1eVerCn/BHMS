@@ -2,7 +2,7 @@ from fastapi import APIRouter
 
 from backend.app.core.responses import success_response
 from backend.app.schemas import LifecyclePredictionRequest, MechanismExplanationRequest
-from backend.app.services.model_service import PredictionService
+from backend.app.services import PredictionService
 
 router = APIRouter()
 service = PredictionService()
@@ -27,7 +27,5 @@ def explain_mechanism(request: MechanismExplanationRequest):
         battery_id=request.battery_id,
         anomalies=anomalies,
         battery_info=request.battery_info,
-        model_name=request.model_name,
-        seq_len=request.seq_len,
     )
     return success_response(data, message="机理解释完成")

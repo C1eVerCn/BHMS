@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 
 from backend.app.core.responses import success_response
-from backend.app.services.battery_service import BatteryService
+from backend.app.services import BatteryService
 
 router = APIRouter()
 service = BatteryService()

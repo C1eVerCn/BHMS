@@ -24,10 +24,6 @@ class LifecycleEvidence:
 
 @dataclass
 class ModelEvidence:
-    model_name: Optional[str] = None
-    model_version: Optional[str] = None
-    checkpoint_id: Optional[str] = None
-    fallback_used: bool = False
     top_features: list[str] = field(default_factory=list)
     critical_windows: list[str] = field(default_factory=list)
     confidence_factors: list[str] = field(default_factory=list)
@@ -159,10 +155,7 @@ class SeedKnowledge:
         return normalized
 
     def get_fault_details(self, fault_name: str) -> dict[str, Any]:
-        for fault in self.faults:
-            if fault.get("name") == fault_name:
-                return dict(fault)
-        return {}
+        return self.seed.get_fault_details(fault_name)
 
 
 class KnowledgeGraph:
@@ -535,7 +528,11 @@ class LLMInterface:
         if backend_warning:
             evidence.append(backend_warning)
         evidence.extend(decision_basis)
-        description = primary.get("description", "")
+        usage_hint = ""
+        battery_info = context.get("battery_info") or {}
+        if battery_info:
+            usage_hint = f" 当前样本电池信息：{json.dumps(battery_info, ensure_ascii=False)}。"
+        description = primary.get("description", "") + usage_hint
         report = self._render_report(
             fault_type=primary["name"],
             confidence=float(primary["score"]),

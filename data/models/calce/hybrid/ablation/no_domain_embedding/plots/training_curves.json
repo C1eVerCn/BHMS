@@ -1,0 +1,7 @@
+{
+  "key": "training_curves",
+  "title": "CALCE no_domain_embedding training curves",
+  "description": "Train/validation loss for the ablation variant.",
+  "path": "data/models/calce/hybrid/ablation/no_domain_embedding/plots/training_curves.png",
+  "generated_at": "2026-03-17T07:48:00.220759"
+}

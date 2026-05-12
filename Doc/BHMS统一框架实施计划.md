@@ -287,8 +287,8 @@ GraphRAG 从“当前诊断”升级为“未来退化机理解释”，统一�
 
 #### 兼容策略
 
-- 已完成旧 `RUL` 兼容接口退役，生命周期主链路只保留 `v2`
-- 异常检测保留在 `v1`，但预测与机理解释统一走 lifecycle-first 主链
+- 保留 `/api/v1/predict/rul` 一轮迭代
+- `v1` 内部使用 `v2` 生命周期结果派生 `RUL/EOL/projection`
 
 ### 6.2 前端迁移固定方向
 
@@ -320,7 +320,7 @@ GraphRAG 从“当前诊断”升级为“未来退化机理解释”，统一�
 
 - 写入主计划文档：`Doc/BHMS统一框架实施计划.md`
 - `README.md` 增加主计划入口
-- 当前仓库状态、封版判断与交付优先级统一收口到 `README.md`、`Doc/BHMS封版检查清单.md` 与 `Doc/BHMS最终封版说明.md`
+- `Doc/BHMS毕业设计成品落地方案.md` 改成“当前仓库状态与封版优先级”定位
 - 强力整理仓库结构，清理过时文档、脚本、缓存与误生成目录
 - 实验 summary / metadata / checkpoint 引用改成仓库相对路径
 
@@ -330,12 +330,10 @@ GraphRAG 从“当前诊断”升级为“未来退化机理解释”，统一�
 
 - `README.md`
 - `Doc/BHMS统一框架实施计划.md`
-- `Doc/BHMS前后端接口梳理.md`
 - `Doc/系统使用说明.md`
 - `Doc/实验复现说明.md`
 - `Doc/答辩演示手册.md`
-- `Doc/BHMS封版检查清单.md`
-- `Doc/BHMS最终封版说明.md`
+- `Doc/BHMS毕业设计成品落地方案.md`
 
 删除或归档：
 
@@ -346,7 +344,7 @@ GraphRAG 从“当前诊断”升级为“未来退化机理解释”，统一�
   - `Doc/BHMS文档分析报告.md`
   - `Doc/BHMS系统开发文档_整合版.md`
   - `Doc/BHMS系统设计文档_整合版.md`
-- 学校过程材料不再保留在当前仓库主体中
+- 归档学校过程材料到：`Doc/archive/academic/`
 - 保留优化资产：`configs/*_optimized.yaml`、`data/models/*/hybrid/optimized-config/`
 - 删除探索性残留：`data/models/*/hybrid/search/`、非 canonical 的 `optimized/` 目录
 
@@ -468,4 +466,4 @@ GraphRAG 从“当前诊断”升级为“未来退化机理解释”，统一�
 - 提交策略：多阶段细分提交
 - 技术主线：坚持 `xLSTM` 为中心，不转纯 Transformer
 - 数据优先级：先扩容，再做统一框架
-- 实施路线记忆载体：`Doc/BHMS统一框架实施计划.md`；接口、使用、复现、答辩与封版信息分别收口到对应专用文档
+- 文档记忆载体：只维护 `Doc/BHMS统一框架实施计划.md`

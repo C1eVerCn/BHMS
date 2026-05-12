@@ -2,7 +2,7 @@ from fastapi import APIRouter, Query
 
 from backend.app.core.responses import success_response
 from backend.app.schemas import UpdateTrainingCandidateRequest
-from backend.app.services.battery_service import BatteryService
+from backend.app.services import BatteryService
 
 router = APIRouter()
 service = BatteryService()
@@ -11,11 +11,6 @@ service = BatteryService()
 @router.get("/batteries")
 def list_batteries(page: int = Query(1, ge=1), page_size: int = Query(10, ge=1, le=100)):
     return success_response(service.list_batteries(page=page, page_size=page_size))
-
-
-@router.get("/batteries/options")
-def list_battery_options():
-    return success_response(service.list_battery_options())
 
 
 @router.get("/battery/{battery_id}")

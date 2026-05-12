@@ -14,7 +14,7 @@ from backend.app.core.config import get_settings
 from backend.app.core.database import get_database
 from backend.app.core.exceptions import BHMSException
 from backend.app.core.responses import error_response, success_response
-from backend.app.services.battery_service import BatteryService
+from backend.app.services import BatteryService
 
 settings = get_settings()
 database = get_database()

@@ -1,0 +1,7 @@
+{
+  "key": "metrics_overview",
+  "title": "CALCE no_domain_embedding metrics",
+  "description": "Aggregate mean/std metrics for the ablation variant.",
+  "path": "data/models/calce/hybrid/ablation/no_domain_embedding/plots/metrics_overview.png",
+  "generated_at": "2026-03-17T07:48:00.093304"
+}

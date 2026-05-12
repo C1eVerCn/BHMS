@@ -2,12 +2,14 @@
   "source": "nasa",
   "model_type": "bilstm",
   "task_kind": "lifecycle",
-  "release_label": "nasa-lifecycle-bilstm-multiseed-20260409",
-  "checkpoint_path": "data/models/nasa/bilstm/release/checkpoints/bilstm_release.pt",
-  "summary_path": "data/models/nasa/bilstm/bilstm_multi_seed_summary.json",
-  "suite_kind": "multi_seed",
+  "release_label": "transfer-final-2026-03-22",
+  "checkpoint_path": "data/models/nasa/bilstm/transfer/multisource_to_nasa/fine_tune/seed-21/bilstm_best.pt",
+  "summary_path": "data/models/nasa/bilstm/transfer/multisource_to_nasa/bilstm_transfer_summary.json",
+  "suite_kind": "transfer",
   "stage_kind": null,
-  "transfer_key": null,
-  "source_scope": null,
-  "generated_at": "2026-04-09T02:39:43.621945"
+  "transfer_key": "multisource_to_nasa",
+  "source_scope": [
+    "nasa"
+  ],
+  "generated_at": "2026-03-22T04:22:51.837227"
 }
